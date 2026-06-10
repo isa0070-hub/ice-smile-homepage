@@ -1,31 +1,54 @@
-import { supabase } from "@/lib/supabase"
+const branches = [
+  {
+    name: "강변점",
+    mapImage: "/images/map-gangbyeon.svg",
+    address1: "서울특별시 광진구 광나루로56길 85",
+    address2: "강변테크노마트 5층 B-20호",
+    phone: "02-3424-5295",
+    subway: "강변역 1번 출구 쪽 강변테크노마트 5층으로 오시면 됩니다.",
+    naverMap: "https://map.naver.com/p/entry/place/31476004",
+  },
+  {
+    name: "선릉점",
+    mapImage: "/images/map-seolleung.svg",
+    address1: "서울특별시 강남구 테헤란로 406",
+    address2: "샹제리제센터 A동 406호",
+    phone: "02-554-5295",
+    subway: "선릉역 1번 출구에서 나오자마자 바로 옆 1분 거리에 위치하고 있습니다.",
+    naverMap: "https://map.naver.com/p/entry/place/20557661",
+  },
+  {
+    name: "신도림점",
+    mapImage: "/images/map-sindorim.svg",
+    address1: "서울특별시 구로구 새말로 97",
+    address2: "신도림테크노마트 9층 57번 기둥 앞",
+    phone: "02-2111-8899",
+    subway: "신도림역에서 도보로 방문 가능한 신도림테크노마트 안에 위치하고 있습니다.",
+    naverMap: "https://map.naver.com",
+  },
+]
 
-export default async function BranchesPage() {
-  const { data: branches } = await supabase
-    .from("branches")
-    .select("*")
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true })
+export const metadata = {
+  title: "지점안내 | 아이스마일어게인",
+  description: "아이스마일어게인 강변점, 선릉점, 신도림점 위치와 연락처 안내입니다.",
+}
 
+export default function BranchesPage() {
   return (
     <main style={styles.page}>
       <section style={styles.hero}>
         <p style={styles.breadcrumb}>홈 &gt; 지점안내</p>
         <h1 style={styles.title}>아이스마일어게인 지점안내</h1>
         <p style={styles.subtitle}>
-          가까운 지점의 약도, 주소, 연락처, 방문 안내를 확인하실 수 있습니다.
+          가까운 지점을 선택하시면 약도, 주소, 연락처, 방문 안내를 한 번에 확인하실 수 있습니다.
         </p>
       </section>
 
       <section style={styles.list}>
-        {(branches || []).map((branch) => (
-          <article key={branch.id} style={styles.card}>
+        {branches.map((branch) => (
+          <article key={branch.name} id={branch.name} style={styles.card}>
             <div style={styles.mapBox}>
-              <img
-                src={branch.map_image}
-                alt={`${branch.name} 약도`}
-                style={styles.mapImage}
-              />
+              <img src={branch.mapImage} alt={`${branch.name} 약도`} style={styles.mapImage} />
             </div>
 
             <div style={styles.info}>
@@ -51,19 +74,13 @@ export default async function BranchesPage() {
 
               <div style={styles.infoRow}>
                 <strong>방문안내</strong>
-                <p>{branch.visit_info}</p>
+                <p>{branch.subway}</p>
               </div>
 
               <div style={styles.buttons}>
-                <a
-                  href={branch.naver_map}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={styles.primaryButton}
-                >
+                <a href={branch.naverMap} target="_blank" rel="noreferrer" style={styles.primaryButton}>
                   네이버지도 보기
                 </a>
-
                 <a href={`tel:${branch.phone}`} style={styles.secondaryButton}>
                   전화 문의
                 </a>
@@ -117,7 +134,7 @@ const styles = {
     border: "1px solid #e2e8f0",
     borderRadius: "28px",
     padding: "28px",
-    boxShadow: "0 18px 45px rgba(15,23,42,0.08)",
+    boxShadow: "0 18px 45px rgba(15, 23, 42, 0.08)",
   },
   mapBox: {
     borderRadius: "22px",

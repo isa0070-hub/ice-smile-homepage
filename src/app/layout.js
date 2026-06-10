@@ -1,5 +1,6 @@
 import "./globals.css";
 import SiteHeader from "@/components/SiteHeader";
+import HomeNoticePopup from "@/components/HomeNoticePopup";
 
 export const metadata = {
   title: "아이스마일어게인 | 아이폰 아이패드 맥북 서피스 노트북 수리",
@@ -23,6 +24,7 @@ export default function RootLayout({ children }) {
     <html lang="ko">
       <body>
         <SiteHeader />
+        <HomeNoticePopup />
 
         <div style={{ paddingTop: "78px" }}>{children}</div>
 
@@ -45,6 +47,18 @@ export default function RootLayout({ children }) {
             <p>강변점 : 02-3424-5295</p>
             <p>선릉점 : 02-554-5295</p>
             <p>네이버 톡톡 : https://talk.naver.com/WCH5S2X</p>
+            <p style={{ marginTop: "18px" }}>
+              <a
+                href="/admin"
+                style={{
+                  color: "#94a3b8",
+                  fontSize: "13px",
+                  textDecoration: "none",
+                }}
+              >
+                관리자
+              </a>
+            </p>
           </div>
         </footer>
       </body>

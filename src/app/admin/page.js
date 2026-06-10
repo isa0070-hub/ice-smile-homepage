@@ -27,14 +27,26 @@ export default function AdminPage() {
   const [login, setLogin] = useState({ id: "", password: "" })
   const [activeMenu, setActiveMenu] = useState("repairCases")
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault()
-    if (login.id === "admin" && login.password === "1234") {
+
+    const response = await fetch("/api/admin-login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(login),
+    })
+
+    const result = await response.json()
+
+    if (result.ok) {
       localStorage.setItem("homepageAdminLogin", "true")
       setIsLogin(true)
       return
     }
-    alert("아이디 또는 비밀번호가 맞지 않아.")
+
+    alert(result.message || "아이디 또는 비밀번호가 맞지 않습니다.")
   }
 
   if (!isLogin) {
@@ -60,7 +72,7 @@ export default function AdminPage() {
           />
 
           <button style={styles.primaryButton}>로그인</button>
-          <p style={styles.hint}>임시 계정: admin / 1234</p>
+          <p style={styles.hint}>관리자 계정으로 로그인해 주세요.</p>
         </form>
       </main>
     )
@@ -71,7 +83,7 @@ export default function AdminPage() {
       <aside style={styles.sidebar}>
         <h2 style={styles.logo}>관리자 모드</h2>
 
-        <button style={menuStyle(activeMenu === "branches")} onClick={() => setActiveMenu("branches")}>
+        <button style={menuStyle(activeMenu === "branches")} onClick={() => { window.location.href = "/admin/branches" }}>
           지점관리
         </button>
         <button style={menuStyle(false)} onClick={() => window.location.href = "/admin/repair-cases"}>
@@ -80,8 +92,8 @@ export default function AdminPage() {
         <button style={menuStyle(activeMenu === "inquiries")} onClick={() => { window.location.href = "/admin/online-inquiries" }}>
           온라인접수조회
         </button>
-        <button style={menuStyle(activeMenu === "notice")} onClick={() => setActiveMenu("notice")}>
-          공지/팝업관리
+        <button style={menuStyle(activeMenu === "notice")} onClick={() => { window.location.href = "/admin/notices" }}>
+        공지/팝업
         </button>
 
         <button
