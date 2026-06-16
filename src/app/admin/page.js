@@ -45,6 +45,13 @@ export default function AdminPage() {
   function go(path) {
     router.push(path);
   }
+  
+  function logout() {
+    document.cookie =
+      "admin_auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+  
+    router.push("/login");
+  }
 
   return (
     <main style={{ maxWidth: "1200px", margin: "60px auto", padding: "24px" }}>
@@ -58,9 +65,15 @@ export default function AdminPage() {
           </p>
         </div>
 
-        <a href="/" style={homeButtonStyle}>
-          홈페이지 보기
-        </a>
+        <div style={{ display: "flex", gap: "10px" }}>
+  <a href="/" style={homeButtonStyle}>
+    홈페이지 보기
+  </a>
+
+  <button type="button" onClick={logout} style={logoutButtonStyle}>
+    로그아웃
+  </button>
+</div>
       </div>
 
       <div style={summaryGridStyle}>
@@ -291,3 +304,12 @@ const emptyStyle = { padding: "20px", borderRadius: "14px", background: "#f8fafc
 const tableWrapStyle = { overflowX: "auto", border: "1px solid #e5e7eb", borderRadius: "16px" };
 const thStyle = { padding: "12px", border: "1px solid #1f2937", whiteSpace: "nowrap" };
 const tdStyle = { padding: "10px", border: "1px solid #e5e7eb", whiteSpace: "nowrap" };
+const logoutButtonStyle = {
+  border: "none",
+  padding: "12px 18px",
+  borderRadius: "999px",
+  background: "#dc2626",
+  color: "#fff",
+  cursor: "pointer",
+  fontWeight: "900",
+};
