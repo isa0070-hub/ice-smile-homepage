@@ -1,3 +1,4 @@
+import PhoneContactButton from "@/components/PhoneContactButton";
 import { supabase } from "@/lib/supabase";
 
 export const metadata = {
@@ -34,25 +35,40 @@ export default async function Home() {
 
   return (
     <main style={{ fontFamily: "Arial, sans-serif", color: "#111827" }}>
-      <section
-        style={{
-          background: "linear-gradient(135deg, #0f172a, #1e3a8a)",
-          color: "white",
-          padding: "90px 24px",
-          textAlign: "center",
-        }}
-      >
-        <p style={{ fontSize: "18px", marginBottom: "12px", opacity: 0.9 }}>
+      <section style={heroSectionStyle}>
+        
+      <p
+  style={{
+    fontSize: "24px",
+    marginBottom: "18px",
+    opacity: 0.95,
+    textShadow: "0 2px 10px rgba(0,0,0,0.5)",
+  }}
+>
           아이스마일어게인
         </p>
 
-        <h1 style={{ fontSize: "50px", marginBottom: "18px" }}>
+        <h1
+  style={{
+    fontSize: "62px",
+    marginBottom: "24px",
+    fontWeight: "900",
+    textShadow: "0 4px 20px rgba(0,0,0,0.6)",
+  }}
+>
           수리전문 공식서비스센터
         </h1>
 
-        <p style={{ fontSize: "23px", lineHeight: 1.6 }}>
-          애플 제품 · 마이크로소프트 서피스 · 레노버 엘지 노트북 · 태블릿 전문 수리
-        </p>
+        <p
+  style={{
+    fontSize: "28px",
+    color: "#fff",
+    WebkitTextStroke: "2px rgba(0,0,0,0.05)",
+    textShadow: "0 2px 10px rgba(0,0,0,0.45)",
+  }}
+>
+  아이폰 · 아이패드 · 맥북 · 애플워치 · 서피스 · 레노버 · LG그램 전문 수리
+</p>
 
         <div style={{ marginTop: "32px" }}>
           <a
@@ -60,12 +76,10 @@ export default async function Home() {
             target="_blank"
             style={buttonStyle}
           >
-            네이버톡톡 문의하기
+            네이버톡톡 문의
           </a>
 
-          <a href="tel:02-3424-5295" style={buttonStyle}>
-            지점 전화문의
-          </a>
+          <PhoneContactButton buttonStyle={buttonStyle}/>
 
           <a href="/contact" style={buttonStyle}>
             온라인 수리문의
@@ -73,7 +87,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section style={sectionStyle}>
+      <section id="repair-items" style={sectionStyle}>
         <h2 style={titleStyle}>수리 가능 품목</h2>
 
         <div style={gridStyle}>
@@ -238,6 +252,21 @@ export default async function Home() {
   );
 }
 
+const heroSectionStyle = {
+  color: "white",
+  padding: "90px 24px",
+  textAlign: "center",
+  backgroundImage:
+    "linear-gradient(rgba(15,23,42,0.35), rgba(15,23,42,0.45)), url('/images/hero-iphone-repair.jpg')",
+  backgroundSize: "cover",
+  backgroundPosition: "center",
+  backgroundRepeat: "no-repeat",
+  minHeight: "600px",
+  display: "flex",
+  flexDirection: "column",
+  justifyContent: "center",
+  animation: "heroSlide 24s infinite",
+};
 const sectionStyle = {
   maxWidth: "1180px",
   margin: "0 auto",

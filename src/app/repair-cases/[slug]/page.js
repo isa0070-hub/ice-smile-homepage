@@ -37,13 +37,25 @@ export default async function RepairCaseDetailPage({ params }) {
 
     await supabase
       .from("repair_cases")
-      .update({
-        views: nextViews,
-      })
+      .update({ views: nextViews })
       .eq("id", item.id);
 
     item.views = nextViews;
   }
+
+  const { data: detailImages } = await supabase
+    .from("repair_case_images")
+    .select("*")
+    .eq("repair_case_id", item?.id)
+    .order("sort_order", { ascending: true });
+
+  const { data: relatedCases } = await supabase
+    .from("repair_cases")
+    .select("*")
+    .eq("category", item?.category)
+    .neq("id", item?.id)
+    .order("created_at", { ascending: false })
+    .limit(3);
 
   let phoneNumber = "02-3424-5295";
 
@@ -58,24 +70,7 @@ export default async function RepairCaseDetailPage({ params }) {
   if (!item) {
     return (
       <main style={{ maxWidth: "900px", margin: "80px auto", padding: "24px" }}>
-        <a
-        href="/repair-cases"
-        style={{
-          display: "inline-block",
-          marginBottom: "18px",
-          padding: "10px 14px",
-          borderRadius: "10px",
-          backgroundColor: "#f1f5f9",
-          color: "#111827",
-          textDecoration: "none",
-          fontWeight: 800,
-          border: "1px solid #cbd5e1",
-        }}
-      >
-        ← 수리사례 목록으로 돌아가기
-      </a>
-      <h1>수리사례를 찾을 수 없습니다.</h1>
-
+        <h1>수리사례를 찾을 수 없습니다.</h1>
         <FloatingButtons phoneNumber={phoneNumber} />
       </main>
     );
@@ -95,13 +90,7 @@ export default async function RepairCaseDetailPage({ params }) {
         대표 키워드 : {item.seo_keyword}
       </p>
 
-      <p
-        style={{
-          color: "#64748b",
-          fontWeight: "700",
-          marginBottom: "30px",
-        }}
-      >
+      <p style={{ color: "#64748b", fontWeight: "700", marginBottom: "30px" }}>
         조회수 : {item.views || 0}
       </p>
 
@@ -109,29 +98,15 @@ export default async function RepairCaseDetailPage({ params }) {
         <img
           src={item.image_url}
           alt={item.alt_text || item.title}
-          style={{
-            width: "100%",
-            maxHeight: "460px",
-            objectFit: "cover",
-            borderRadius: "18px",
-            marginBottom: "34px",
-          }}
+          style={mainImageStyle}
         />
       )}
 
       <section style={infoBoxStyle}>
-        <p>
-          <strong>기기 :</strong> {item.device}
-        </p>
-        <p>
-          <strong>모델명 :</strong> {item.model}
-        </p>
-        <p>
-          <strong>증상 :</strong> {item.symptom}
-        </p>
-        <p>
-          <strong>지점 :</strong> {item.branch}
-        </p>
+        <p><strong>기기 :</strong> {item.device}</p>
+        <p><strong>모델명 :</strong> {item.model}</p>
+        <p><strong>증상 :</strong> {item.symptom}</p>
+        <p><strong>지점 :</strong> {item.branch}</p>
         <p>
           <strong>연락처 :</strong>{" "}
           <a href={`tel:${phoneNumber}`} style={phoneLinkStyle}>
@@ -140,16 +115,75 @@ export default async function RepairCaseDetailPage({ params }) {
         </p>
       </section>
 
-      <section
-        style={{
-          fontSize: "18px",
-          lineHeight: 1.9,
-          whiteSpace: "pre-wrap",
-          marginTop: "34px",
-        }}
-      >
-        {item.repair_content}
-      </section>
+      <section style={contentStyle}>{item.repair_content}</section>
+
+      {detailImages && detailImages.length > 0 && (
+        <section style={detailImageSectionStyle}>
+          <h3 style={{ fontSize: "30px", marginBottom: "24px" }}>
+            수리 과정 상세 이미지
+          </h3>
+
+          {detailImages.map((image, index) => (
+            <div key={image.id} style={detailImageCardStyle}>
+              {image.image_url && (
+                <img
+                  src={image.image_url}
+                  alt={
+                    image.alt_text ||
+                    image.description ||
+                    `${item.title} 상세 이미지 ${index + 1}`
+                  }
+                  style={detailImageStyle}
+                />
+              )}
+
+              <div style={detailTextBoxStyle}>
+                <p style={detailImageNumberStyle}>사진 {index + 1}</p>
+
+                <p style={detailDescriptionStyle}>
+                  {image.description || "수리 과정 상세 이미지입니다."}
+                </p>
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {relatedCases && relatedCases.length > 0 && (
+        <section style={relatedBoxStyle}>
+          <h3 style={{ fontSize: "28px", marginBottom: "22px" }}>
+            함께 보면 좋은 수리사례
+          </h3>
+
+          <div style={relatedGridStyle}>
+            {relatedCases.map((related) => (
+              <a
+                key={related.id}
+                href={`/repair-cases/${related.slug}`}
+                style={relatedCardStyle}
+              >
+                {related.image_url ? (
+                  <img
+                    src={related.image_url}
+                    alt={related.alt_text || related.title}
+                    style={relatedImageStyle}
+                  />
+                ) : (
+                  <div style={relatedNoImageStyle}>이미지 없음</div>
+                )}
+
+                <p style={{ color: "#1e3a8a", fontWeight: "800" }}>
+                  {related.branch} · {related.category}
+                </p>
+
+                <h4 style={{ fontSize: "18px", lineHeight: 1.5 }}>
+                  {related.title}
+                </h4>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section style={contactBoxStyle}>
         <h3 style={{ fontSize: "26px", marginBottom: "12px" }}>
@@ -203,13 +237,23 @@ function FloatingButtons({ phoneNumber }) {
         <span>톡톡</span>
       </a>
 
-      <a href={`tel:${phoneNumber}`} style={floatingPhoneButtonStyle}>
-        <span style={floatingIconStyle}>📞</span>
-        <span>전화</span>
-      </a>
+      {/*
+<a href={`tel:${phoneNumber}`} style={floatingPhoneButtonStyle}>
+  <span style={floatingIconStyle}>📞</span>
+  <span>전화</span>
+</a>
+*/}
     </div>
   );
 }
+
+const mainImageStyle = {
+  width: "100%",
+  maxHeight: "460px",
+  objectFit: "cover",
+  borderRadius: "18px",
+  marginBottom: "34px",
+};
 
 const infoBoxStyle = {
   background: "#f8fafc",
@@ -223,6 +267,93 @@ const phoneLinkStyle = {
   color: "#1e3a8a",
   fontWeight: "900",
   textDecoration: "none",
+};
+
+const contentStyle = {
+  fontSize: "18px",
+  lineHeight: 1.9,
+  whiteSpace: "pre-wrap",
+  marginTop: "34px",
+};
+
+const detailImageSectionStyle = {
+  marginTop: "60px",
+};
+
+const detailImageCardStyle = {
+  marginBottom: "34px",
+  background: "#ffffff",
+  border: "1px solid #e5e7eb",
+  borderRadius: "20px",
+  overflow: "hidden",
+  boxShadow: "0 8px 22px rgba(15, 23, 42, 0.08)",
+};
+
+const detailImageStyle = {
+  width: "100%",
+  maxHeight: "520px",
+  objectFit: "cover",
+  display: "block",
+};
+
+const detailTextBoxStyle = {
+  padding: "22px",
+  background: "#f8fafc",
+};
+
+const detailImageNumberStyle = {
+  color: "#1e3a8a",
+  fontWeight: "900",
+  marginBottom: "8px",
+};
+
+const detailDescriptionStyle = {
+  fontSize: "17px",
+  lineHeight: 1.8,
+  color: "#334155",
+  margin: 0,
+  whiteSpace: "pre-wrap",
+};
+
+const relatedBoxStyle = {
+  marginTop: "60px",
+};
+
+const relatedGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gap: "18px",
+};
+
+const relatedCardStyle = {
+  display: "block",
+  background: "white",
+  border: "1px solid #e5e7eb",
+  borderRadius: "18px",
+  padding: "16px",
+  textDecoration: "none",
+  color: "#111827",
+  boxShadow: "0 8px 20px rgba(15, 23, 42, 0.08)",
+};
+
+const relatedImageStyle = {
+  width: "100%",
+  height: "140px",
+  objectFit: "cover",
+  borderRadius: "14px",
+  marginBottom: "12px",
+};
+
+const relatedNoImageStyle = {
+  height: "140px",
+  borderRadius: "14px",
+  background: "#f1f5f9",
+  color: "#64748b",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontWeight: "800",
+  marginBottom: "12px",
 };
 
 const contactBoxStyle = {

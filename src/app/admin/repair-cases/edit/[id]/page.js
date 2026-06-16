@@ -4,67 +4,16 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-
-function AdminBackButtons() {
-  return (
-    <div style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
-      <a
-        href="/admin"
-        style={{
-          display: "inline-block",
-          padding: "10px 14px",
-          borderRadius: "10px",
-          backgroundColor: "#f1f5f9",
-          color: "#111827",
-          textDecoration: "none",
-          fontWeight: 800,
-          border: "1px solid #cbd5e1",
-        }}
-      >
-        ← 관리자 메인
-      </a>
-      <a
-        href="/admin/repair-cases"
-        style={{
-          display: "inline-block",
-          padding: "10px 14px",
-          borderRadius: "10px",
-          backgroundColor: "#2563eb",
-          color: "#fff",
-          textDecoration: "none",
-          fontWeight: 800,
-        }}
-      >
-        + 수리사례등록
-      </a>
-      <a
-        href="/admin/repair-cases/list"
-        style={{
-          display: "inline-block",
-          padding: "10px 14px",
-          borderRadius: "10px",
-          backgroundColor: "#fff",
-          color: "#2563eb",
-          textDecoration: "none",
-          fontWeight: 800,
-          border: "1px solid #bfdbfe",
-        }}
-      >
-        수리사례목록
-      </a>
-    </div>
-  )
-}
-
-
 export default function EditRepairCasePage() {
   const params = useParams();
   const router = useRouter();
 
   const [form, setForm] = useState(null);
+  const [detailImages, setDetailImages] = useState([]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -85,6 +34,14 @@ export default function EditRepairCasePage() {
     }
 
     setForm(data);
+
+    const { data: images } = await supabase
+      .from("repair_case_images")
+      .select("*")
+      .eq("repair_case_id", params.id)
+      .order("sort_order", { ascending: true });
+
+    setDetailImages(images || []);
     setLoading(false);
   }
 
@@ -123,16 +80,140 @@ export default function EditRepairCasePage() {
       nextForm.slug = makeSlug(value);
     }
 
-    nextForm.seo_keyword = makeSeoKeyword(nextForm);
-    nextForm.alt_text = makeAltText(nextForm);
+    if (["title", "branch", "device", "model", "symptom"].includes(name)) {
+      nextForm.seo_keyword = makeSeoKeyword(nextForm);
+      nextForm.alt_text = makeAltText(nextForm);
+    }
 
     setForm(nextForm);
   }
 
+  async function uploadFile(file, folder = "repair-cases") {
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(2)}.${fileExt}`;
+    const filePath = `${folder}/${fileName}`;
+
+    const { error } = await supabase.storage
+      .from("repair-images")
+      .upload(filePath, file);
+
+    if (error) throw error;
+
+    const { data } = supabase.storage
+      .from("repair-images")
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  }
+
+  async function handleMainImageUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setUploading(true);
+      setMessage("");
+
+      const publicUrl = await uploadFile(file, "repair-cases-main");
+
+      setForm({
+        ...form,
+        image_url: publicUrl,
+      });
+
+      setMessage("대표사진 업로드 완료");
+    } catch (error) {
+      console.error(error);
+      setMessage("대표사진 업로드 중 오류가 발생했습니다.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleDetailImagesUpload(e) {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    try {
+      setUploading(true);
+      setMessage("");
+
+      for (let i = 0; i < files.length; i++) {
+        const publicUrl = await uploadFile(files[i], "repair-cases-detail");
+
+        const sortOrder = detailImages.length + i + 1;
+
+        await supabase.from("repair_case_images").insert([
+          {
+            repair_case_id: Number(params.id),
+            image_url: publicUrl,
+            description: "",
+            alt_text: `${form.title || "수리사례"} 상세 이미지 ${sortOrder}`,
+            sort_order: sortOrder,
+          },
+        ]);
+      }
+
+      setMessage("상세사진 추가 완료");
+      await loadData();
+    } catch (error) {
+      console.error(error);
+      setMessage("상세사진 업로드 중 오류가 발생했습니다.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function handleDetailInputChange(id, field, value) {
+    setDetailImages((prev) =>
+      prev.map((img) => (img.id === id ? { ...img, [field]: value } : img))
+    );
+  }
+
+  async function handleSaveDetailImage(image) {
+    const { error } = await supabase
+      .from("repair_case_images")
+      .update({
+        description: image.description || "",
+        alt_text: image.alt_text || "",
+        sort_order: Number(image.sort_order || 0),
+      })
+      .eq("id", image.id);
+
+    if (error) {
+      console.error(error);
+      setMessage("상세사진 설명 저장 중 오류가 발생했습니다.");
+      return;
+    }
+
+    setMessage("상세사진 설명 저장 완료");
+    await loadData();
+  }
+
+  async function handleDeleteDetailImage(id) {
+    if (!confirm("이 상세사진을 삭제할까요?")) return;
+
+    const { error } = await supabase
+      .from("repair_case_images")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error(error);
+      setMessage("상세사진 삭제 중 오류가 발생했습니다.");
+      return;
+    }
+
+    setMessage("상세사진 삭제 완료");
+    await loadData();
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
-    setMessage("");
     setSaving(true);
+    setMessage("");
 
     const finalForm = {
       ...form,
@@ -162,153 +243,74 @@ export default function EditRepairCasePage() {
 
     if (error) {
       console.error(error);
-      setMessage("수정 중 오류가 발생했습니다. SEO 주소 중복 여부를 확인해주세요.");
+      setMessage("수정 중 오류가 발생했습니다.");
       return;
     }
 
     setMessage("수리사례가 수정되었습니다.");
-
-    setTimeout(() => {
-      router.push("/admin/repair-cases/list");
-    }, 700);
   }
 
   if (loading) {
-    return (
-      <main style={{ padding: "50px" }}>
-        <h2>불러오는 중...</h2>
-      </main>
-    );
+    return <main style={{ padding: "50px" }}>불러오는 중...</main>;
   }
 
   if (!form) {
-    return (
-      <main style={{ padding: "50px" }}>
-        <h2>{message || "수리사례를 찾을 수 없습니다."}</h2>
-        <a href="/admin/repair-cases/list" style={backButtonStyle}>
-          목록으로 돌아가기
-        </a>
-      </main>
-    );
+    return <main style={{ padding: "50px" }}>데이터를 찾을 수 없습니다.</main>;
   }
 
   return (
-    <main style={{ maxWidth: "900px", margin: "60px auto", padding: "20px" }}>
-      <AdminBackButtons />
+    <main style={{ maxWidth: "1000px", margin: "60px auto", padding: "20px" }}>
       <h1 style={{ fontSize: "38px", marginBottom: "12px" }}>
         수리사례 수정
       </h1>
 
-      <p style={{ marginBottom: "26px", color: "#475569", lineHeight: 1.7 }}>
-        수리사례 제목, 지점, 기기, 모델명, 증상, SEO 키워드, ALT 문구,
-        대표 이미지 주소와 수리 내용을 수정할 수 있습니다.
-      </p>
-
       <form onSubmit={handleSubmit} style={formStyle}>
         <label style={labelStyle}>제목</label>
-        <input
-          name="title"
-          value={form.title || ""}
-          onChange={handleChange}
-          style={inputStyle}
-          required
-        />
+        <input name="title" value={form.title || ""} onChange={handleChange} style={inputStyle} />
 
         <label style={labelStyle}>SEO 주소</label>
-        <input
-          name="slug"
-          value={form.slug || ""}
-          onChange={handleChange}
-          style={inputStyle}
-          required
-        />
+        <input name="slug" value={form.slug || ""} onChange={handleChange} style={inputStyle} />
 
         <label style={labelStyle}>카테고리</label>
-        <select
-          name="category"
-          value={form.category || "애플"}
-          onChange={handleChange}
-          style={inputStyle}
-        >
+        <select name="category" value={form.category || "애플"} onChange={handleChange} style={inputStyle}>
           <option>애플</option>
           <option>마이크로소프트 서피스</option>
           <option>노트북 및 태블릿</option>
         </select>
 
         <label style={labelStyle}>지점</label>
-        <select
-          name="branch"
-          value={form.branch || "강변점"}
-          onChange={handleChange}
-          style={inputStyle}
-        >
+        <select name="branch" value={form.branch || "강변점"} onChange={handleChange} style={inputStyle}>
           <option>강변점</option>
           <option>선릉점</option>
           <option>신도림점</option>
         </select>
 
         <label style={labelStyle}>기기</label>
-        <input
-          name="device"
-          value={form.device || ""}
-          onChange={handleChange}
-          style={inputStyle}
-        />
+        <input name="device" value={form.device || ""} onChange={handleChange} style={inputStyle} />
 
         <label style={labelStyle}>모델명</label>
-        <input
-          name="model"
-          value={form.model || ""}
-          onChange={handleChange}
-          style={inputStyle}
-        />
+        <input name="model" value={form.model || ""} onChange={handleChange} style={inputStyle} />
 
         <label style={labelStyle}>증상</label>
-        <input
-          name="symptom"
-          value={form.symptom || ""}
-          onChange={handleChange}
-          style={inputStyle}
-        />
+        <input name="symptom" value={form.symptom || ""} onChange={handleChange} style={inputStyle} />
 
-        <label style={labelStyle}>대표 이미지 주소</label>
-        <input
-          name="image_url"
-          value={form.image_url || ""}
-          onChange={handleChange}
-          style={inputStyle}
-          placeholder="이미지 주소가 있으면 입력해주세요."
-        />
+        <label style={labelStyle}>대표 이미지 변경</label>
+        <input type="file" accept="image/*" onChange={handleMainImageUpload} style={inputStyle} />
 
         {form.image_url ? (
-          <img
-            src={form.image_url}
-            alt={form.alt_text || form.title || "수리사례 이미지"}
-            style={previewImageStyle}
-          />
+          <img src={form.image_url} alt={form.alt_text || form.title} style={previewImageStyle} />
         ) : (
-          <div style={noImageStyle}>이미지 없음</div>
+          <div style={noImageStyle}>대표 이미지 없음</div>
         )}
 
-        <div style={autoBoxStyle}>
-          <strong>SEO 키워드</strong>
-          <input
-            name="seo_keyword"
-            value={form.seo_keyword || ""}
-            onChange={handleChange}
-            style={{ ...inputStyle, marginTop: "10px", width: "100%" }}
-          />
-        </div>
+        <label style={labelStyle}>대표 이미지 주소</label>
+        <input name="image_url" value={form.image_url || ""} onChange={handleChange} style={inputStyle} />
 
-        <div style={autoBoxStyle}>
-          <strong>ALT 문구</strong>
-          <input
-            name="alt_text"
-            value={form.alt_text || ""}
-            onChange={handleChange}
-            style={{ ...inputStyle, marginTop: "10px", width: "100%" }}
-          />
-        </div>
+        <label style={labelStyle}>SEO 키워드</label>
+        <input name="seo_keyword" value={form.seo_keyword || ""} onChange={handleChange} style={inputStyle} />
+
+        <label style={labelStyle}>ALT 문구</label>
+        <input name="alt_text" value={form.alt_text || ""} onChange={handleChange} style={inputStyle} />
 
         <label style={labelStyle}>수리 내용</label>
         <textarea
@@ -316,21 +318,99 @@ export default function EditRepairCasePage() {
           value={form.repair_content || ""}
           onChange={handleChange}
           style={{ ...inputStyle, minHeight: "260px" }}
-          required
         />
 
         <button type="submit" disabled={saving} style={buttonStyle}>
-          {saving ? "수정 저장 중..." : "수정 저장하기"}
+          {saving ? "저장 중..." : "기본 정보 저장"}
         </button>
-
-        <a href="/admin/repair-cases/list" style={listButtonStyle}>
-          목록으로 돌아가기
-        </a>
-
-        {message && (
-          <p style={{ fontWeight: "800", marginTop: "18px" }}>{message}</p>
-        )}
       </form>
+
+      <section style={detailSectionStyle}>
+        <h2>상세사진 관리</h2>
+
+        <p style={{ color: "#64748b", lineHeight: 1.7 }}>
+          여러 장을 한 번에 선택해 추가할 수 있습니다. 각 사진마다 설명, ALT 문구, 순서를 수정할 수 있습니다.
+        </p>
+
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleDetailImagesUpload}
+          style={inputStyle}
+        />
+
+        {uploading && <p style={{ fontWeight: "800" }}>업로드 중...</p>}
+
+        <div style={{ marginTop: "24px" }}>
+          {detailImages.length > 0 ? (
+            detailImages.map((image, index) => (
+              <div key={image.id} style={detailCardStyle}>
+                {image.image_url && (
+                  <img src={image.image_url} alt={image.alt_text || ""} style={detailImageStyle} />
+                )}
+
+                <label style={labelStyle}>사진 순서</label>
+                <input
+                  type="number"
+                  value={image.sort_order || index + 1}
+                  onChange={(e) =>
+                    handleDetailInputChange(image.id, "sort_order", e.target.value)
+                  }
+                  style={inputStyle}
+                />
+
+                <label style={labelStyle}>사진 설명</label>
+                <textarea
+                  value={image.description || ""}
+                  onChange={(e) =>
+                    handleDetailInputChange(image.id, "description", e.target.value)
+                  }
+                  style={{ ...inputStyle, minHeight: "90px" }}
+                  placeholder="예: 액정 파손 상태를 확인한 사진입니다."
+                />
+
+                <label style={labelStyle}>ALT 문구</label>
+                <input
+                  value={image.alt_text || ""}
+                  onChange={(e) =>
+                    handleDetailInputChange(image.id, "alt_text", e.target.value)
+                  }
+                  style={inputStyle}
+                />
+
+                <div style={{ display: "flex", gap: "10px", marginTop: "14px" }}>
+                  <button
+                    type="button"
+                    onClick={() => handleSaveDetailImage(image)}
+                    style={smallSaveButtonStyle}
+                  >
+                    사진 정보 저장
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteDetailImage(image.id)}
+                    style={smallDeleteButtonStyle}
+                  >
+                    사진 삭제
+                  </button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p>등록된 상세사진이 없습니다.</p>
+          )}
+        </div>
+      </section>
+
+      {message && <p style={{ fontWeight: "900", marginTop: "20px" }}>{message}</p>}
+
+      <div style={{ marginTop: "30px" }}>
+        <a href="/admin/repair-cases/list" style={listButtonStyle}>
+          수리사례 관리로 돌아가기
+        </a>
+      </div>
     </main>
   );
 }
@@ -356,14 +436,7 @@ const inputStyle = {
   border: "1px solid #cbd5e1",
   fontSize: "16px",
   boxSizing: "border-box",
-};
-
-const autoBoxStyle = {
-  background: "white",
-  border: "1px solid #dbeafe",
-  borderRadius: "14px",
-  padding: "16px",
-  lineHeight: 1.6,
+  width: "100%",
 };
 
 const previewImageStyle = {
@@ -383,7 +456,6 @@ const noImageStyle = {
   alignItems: "center",
   justifyContent: "center",
   fontWeight: "800",
-  marginTop: "10px",
 };
 
 const buttonStyle = {
@@ -398,24 +470,56 @@ const buttonStyle = {
   cursor: "pointer",
 };
 
+const detailSectionStyle = {
+  marginTop: "36px",
+  background: "#ffffff",
+  padding: "30px",
+  borderRadius: "18px",
+  border: "1px solid #e5e7eb",
+};
+
+const detailCardStyle = {
+  border: "1px solid #e5e7eb",
+  borderRadius: "18px",
+  padding: "20px",
+  marginBottom: "22px",
+  background: "#f8fafc",
+};
+
+const detailImageStyle = {
+  width: "100%",
+  maxHeight: "360px",
+  objectFit: "cover",
+  borderRadius: "14px",
+  marginBottom: "16px",
+};
+
+const smallSaveButtonStyle = {
+  padding: "12px 16px",
+  border: "none",
+  borderRadius: "999px",
+  background: "#1e3a8a",
+  color: "white",
+  fontWeight: "900",
+  cursor: "pointer",
+};
+
+const smallDeleteButtonStyle = {
+  padding: "12px 16px",
+  border: "none",
+  borderRadius: "999px",
+  background: "#dc2626",
+  color: "white",
+  fontWeight: "900",
+  cursor: "pointer",
+};
+
 const listButtonStyle = {
   display: "inline-block",
-  textAlign: "center",
-  padding: "14px",
+  padding: "14px 22px",
   borderRadius: "999px",
   background: "#e5e7eb",
   color: "#111827",
   textDecoration: "none",
   fontWeight: "900",
-};
-
-const backButtonStyle = {
-  display: "inline-block",
-  marginTop: "20px",
-  padding: "12px 18px",
-  borderRadius: "999px",
-  background: "#1e3a8a",
-  color: "white",
-  textDecoration: "none",
-  fontWeight: "800",
 };

@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { supabase } from "@/lib/supabase"
+import PhoneContactButton from "@/components/PhoneContactButton"
 
 export default function SiteHeader() {
   const [isOpen, setIsOpen] = useState(false)
@@ -39,6 +40,14 @@ export default function SiteHeader() {
 
     if (error) return alert("온라인 접수 저장에 실패했습니다: " + error.message)
 
+    await fetch("/api/send-telegram", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(form),
+    })
+
     alert("온라인 접수가 완료되었습니다. 확인 후 연락드리겠습니다.")
     setIsOpen(false)
     setForm({
@@ -61,7 +70,9 @@ export default function SiteHeader() {
 
           <nav style={navWrapStyle}>
             <a style={navStyle} href="/">홈</a>
-            <a style={navStyle} href="/repair">수리품목</a>
+            <a href="/#repair-items" style={navStyle}>
+  수리품목
+</a>
             <a style={navStyle} href="/repair-cases">수리사례</a>
             <button type="button" onClick={() => setIsOpen(true)} style={navButtonStyle}>
               온라인접수
@@ -69,7 +80,7 @@ export default function SiteHeader() {
             <a style={navStyle} href="/branches">지점안내</a>
           </nav>
 
-          <a href="tel:02-3424-5295" style={phoneButtonStyle}>전화문의</a>
+          <PhoneContactButton buttonStyle={phoneButtonStyle} />
         </div>
       </header>
 

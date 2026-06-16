@@ -118,10 +118,12 @@ function FloatingButtons() {
         <span>톡톡</span>
       </a>
 
-      <a href="tel:02-3424-5295" style={floatingPhoneButtonStyle}>
-        <span style={floatingIconStyle}>📞</span>
-        <span>전화</span>
-      </a>
+      {/*
+<a href="tel:02-3424-5295" style={floatingPhoneButtonStyle}>
+  <span style={floatingIconStyle}>📞</span>
+  <span>전화</span>
+</a>
+*/}
     </div>
   );
 }

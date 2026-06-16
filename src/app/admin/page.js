@@ -1,386 +1,293 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabase"
-
-const emptyCase = {
-  title: "",
-  slug: "",
-  branch: "강변점",
-  category: "",
-  device: "",
-  model: "",
-  symptom: "",
-  repair_summary: "",
-  content: "",
-  seo_keyword: "",
-  image_url: "",
-  is_published: true,
-}
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 export default function AdminPage() {
-  const [isLogin, setIsLogin] = useState(false)
+  const router = useRouter();
+  const [contacts, setContacts] = useState([]);
+  const [cases, setCases] = useState([]);
+  const [notices, setNotices] = useState([]);
+  const [popups, setPopups] = useState([]);
 
   useEffect(() => {
-    setIsLogin(localStorage.getItem("homepageAdminLogin") === "true")
-  }, [])
-  const [login, setLogin] = useState({ id: "", password: "" })
-  const [activeMenu, setActiveMenu] = useState("repairCases")
+    loadData();
+  }, []);
 
-  const handleLogin = async (e) => {
-    e.preventDefault()
+  async function loadData() {
+    const { data: contactData } = await supabase
+      .from("contacts")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-    const response = await fetch("/api/admin-login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(login),
-    })
-
-    const result = await response.json()
-
-    if (result.ok) {
-      localStorage.setItem("homepageAdminLogin", "true")
-      setIsLogin(true)
-      return
-    }
-
-    alert(result.message || "아이디 또는 비밀번호가 맞지 않습니다.")
-  }
-
-  if (!isLogin) {
-    return (
-      <main style={styles.loginPage}>
-        <form onSubmit={handleLogin} style={styles.loginBox}>
-          <h1 style={styles.title}>홈페이지 관리자</h1>
-          <p style={styles.desc}>관리자 로그인 후 홈페이지 내용을 관리할 수 있어.</p>
-
-          <input
-            value={login.id}
-            onChange={(e) => setLogin({ ...login, id: e.target.value })}
-            placeholder="아이디"
-            style={styles.input}
-          />
-
-          <input
-            type="password"
-            value={login.password}
-            onChange={(e) => setLogin({ ...login, password: e.target.value })}
-            placeholder="비밀번호"
-            style={styles.input}
-          />
-
-          <button style={styles.primaryButton}>로그인</button>
-          <p style={styles.hint}>관리자 계정으로 로그인해 주세요.</p>
-        </form>
-      </main>
-    )
-  }
-
-  return (
-    <main style={styles.page}>
-      <aside style={styles.sidebar}>
-        <h2 style={styles.logo}>관리자 모드</h2>
-
-        <button style={menuStyle(activeMenu === "branches")} onClick={() => { window.location.href = "/admin/branches" }}>
-          지점관리
-        </button>
-        <button style={menuStyle(false)} onClick={() => window.location.href = "/admin/repair-cases"}>
-          수리사례등록
-        </button>
-        <button style={menuStyle(activeMenu === "inquiries")} onClick={() => { window.location.href = "/admin/online-inquiries" }}>
-          온라인접수조회
-        </button>
-        <button style={menuStyle(activeMenu === "notice")} onClick={() => { window.location.href = "/admin/notices" }}>
-        공지/팝업
-        </button>
-
-        <button
-          style={styles.logoutButton}
-          onClick={() => {
-            localStorage.removeItem("homepageAdminLogin")
-            setIsLogin(false)
-          }}
-        >
-          로그아웃
-        </button>
-      </aside>
-
-      <section style={styles.content}>
-        {activeMenu === "branches" && <BranchManager />}
-        {activeMenu === "repairCases" && <EmptyManager title="수리사례등록" />}
-        {activeMenu === "inquiries" && <EmptyManager title="온라인접수조회" />}
-        {activeMenu === "notice" && <EmptyManager title="공지/팝업관리" />}
-      </section>
-    </main>
-  )
-}
-
-function RepairCaseManager() {
-  const [cases, setCases] = useState([])
-  const [form, setForm] = useState(emptyCase)
-  const [editingId, setEditingId] = useState(null)
-  const [loading, setLoading] = useState(false)
-
-  const loadCases = async () => {
-    const { data, error } = await supabase
+    const { data: caseData } = await supabase
       .from("repair_cases")
       .select("*")
-      .order("created_at", { ascending: false })
+      .order("created_at", { ascending: false });
 
-    if (error) {
-      alert("수리사례를 불러오지 못했어: " + error.message)
-      return
-    }
+    const { data: noticeData } = await supabase
+      .from("notices")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-    setCases(data || [])
+    const { data: popupData } = await supabase
+      .from("popup_notices")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    setContacts(contactData || []);
+    setCases(caseData || []);
+    setNotices(noticeData || []);
+    setPopups(popupData || []);
   }
 
-  useEffect(() => {
-    loadCases()
-  }, [])
-
-  const makeSlug = (text) => {
-    return text
-      .trim()
-      .replace(/\s+/g, "-")
-      .replace(/[^\w가-힣-]/g, "")
-      .toLowerCase()
-  }
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target
-
-    if (name === "title") {
-      setForm((prev) => ({
-        ...prev,
-        title: value,
-        slug: prev.slug || makeSlug(value),
-      }))
-      return
-    }
-
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }))
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-
-    if (!form.title.trim()) return alert("제목을 입력해줘.")
-    if (!form.slug.trim()) return alert("slug를 입력해줘.")
-
-    setLoading(true)
-
-    const payload = {
-      ...form,
-      slug: makeSlug(form.slug),
-    }
-
-    const result = editingId
-      ? await supabase.from("repair_cases").update(payload).eq("id", editingId)
-      : await supabase.from("repair_cases").insert([payload])
-
-    setLoading(false)
-
-    if (result.error) {
-      alert("저장 실패: " + result.error.message)
-      return
-    }
-
-    alert(editingId ? "수리사례가 수정됐어." : "수리사례가 등록됐어.")
-    setForm(emptyCase)
-    setEditingId(null)
-    loadCases()
-  }
-
-  const handleEdit = (item) => {
-    setEditingId(item.id)
-    setForm({
-      title: item.title || "",
-      slug: item.slug || "",
-      branch: item.branch || "강변점",
-      category: item.category || "",
-      device: item.device || "",
-      model: item.model || "",
-      symptom: item.symptom || "",
-      repair_summary: item.repair_summary || "",
-      content: item.content || "",
-      seo_keyword: item.seo_keyword || "",
-      image_url: item.image_url || "",
-      is_published: item.is_published ?? true,
-    })
-    window.scrollTo({ top: 0, behavior: "smooth" })
-  }
-
-  const handleDelete = async (id) => {
-    if (!confirm("정말 삭제할까?")) return
-
-    const { error } = await supabase.from("repair_cases").delete().eq("id", id)
-
-    if (error) {
-      alert("삭제 실패: " + error.message)
-      return
-    }
-
-    alert("삭제됐어.")
-    loadCases()
+  function go(path) {
+    router.push(path);
   }
 
   return (
-    <div>
-      <h1 style={styles.contentTitle}>수리사례등록</h1>
-      <p style={styles.contentDesc}>수리사례를 등록하면 홈페이지 수리사례 페이지에 노출돼.</p>
-
-      <form onSubmit={handleSubmit} style={styles.formBox}>
-        <div style={styles.formGrid}>
-          <input name="title" value={form.title} onChange={handleChange} placeholder="제목" style={styles.input} />
-          <input name="slug" value={form.slug} onChange={handleChange} placeholder="주소 slug" style={styles.input} />
-
-          <select name="branch" value={form.branch} onChange={handleChange} style={styles.input}>
-            <option>강변점</option>
-            <option>선릉점</option>
-            <option>신도림점</option>
-          </select>
-
-          <input name="category" value={form.category} onChange={handleChange} placeholder="분류 예: 애플, 마이크로소프트" style={styles.input} />
-          <input name="device" value={form.device} onChange={handleChange} placeholder="기기 예: 아이폰, 아이패드, 서피스" style={styles.input} />
-          <input name="model" value={form.model} onChange={handleChange} placeholder="모델명" style={styles.input} />
-          <input name="symptom" value={form.symptom} onChange={handleChange} placeholder="증상" style={styles.input} />
-          <input name="seo_keyword" value={form.seo_keyword} onChange={handleChange} placeholder="SEO 키워드" style={styles.input} />
-          <input name="image_url" value={form.image_url} onChange={handleChange} placeholder="대표 이미지 URL" style={styles.input} />
+    <main style={{ maxWidth: "1200px", margin: "60px auto", padding: "24px" }}>
+      <div style={topStyle}>
+        <div>
+          <h1 style={{ fontSize: "40px", marginBottom: "8px" }}>
+            관리자 대시보드
+          </h1>
+          <p style={{ color: "#475569", lineHeight: 1.7 }}>
+            온라인 접수, 수리사례, 공지사항, 팝업을 관리하는 공간입니다.
+          </p>
         </div>
 
-        <textarea
-          name="repair_summary"
-          value={form.repair_summary}
-          onChange={handleChange}
-          placeholder="수리 요약"
-          style={styles.textarea}
-        />
+        <a href="/" style={homeButtonStyle}>
+          홈페이지 보기
+        </a>
+      </div>
 
-        <textarea
-          name="content"
-          value={form.content}
-          onChange={handleChange}
-          placeholder="본문 내용"
-          style={{ ...styles.textarea, minHeight: "180px" }}
-        />
+      <div style={summaryGridStyle}>
+        <div style={summaryCardStyle}>
+          <strong>온라인 접수</strong>
+          <p>{contacts.length}건</p>
+        </div>
 
-        <label style={styles.checkboxRow}>
-          <input type="checkbox" name="is_published" checked={form.is_published} onChange={handleChange} />
-          홈페이지에 공개
-        </label>
+        <div style={summaryCardStyle}>
+          <strong>등록된 수리사례</strong>
+          <p>{cases.length}건</p>
+        </div>
 
-        <div style={styles.buttonRow}>
-          <button type="submit" style={styles.primaryButton} disabled={loading}>
-            {loading ? "저장 중..." : editingId ? "수정 저장" : "수리사례 등록"}
+        <div style={summaryCardStyle}>
+          <strong>공지사항</strong>
+          <p>{notices.length}건</p>
+        </div>
+
+        <div style={summaryCardStyle}>
+          <strong>팝업</strong>
+          <p>{popups.length}건</p>
+        </div>
+      </div>
+
+      <section style={{ marginTop: "34px" }}>
+        <h2 style={sectionTitleStyle}>수리사례 관리</h2>
+
+        <div style={menuGridStyle}>
+          <button type="button" onClick={() => go("/admin/repair-cases")} style={menuCardStyle}>
+            <span style={menuIconStyle}>➕</span>
+            <strong>수리사례 등록</strong>
+            <p>새로운 수리사례와 대표사진, 상세사진을 등록합니다.</p>
           </button>
 
-          {editingId && (
-            <button
-              type="button"
-              style={styles.cancelButton}
-              onClick={() => {
-                setEditingId(null)
-                setForm(emptyCase)
-              }}
-            >
-              취소
-            </button>
+          <button type="button" onClick={() => go("/admin/repair-cases/list")} style={menuCardStyle}>
+            <span style={menuIconStyle}>🛠️</span>
+            <strong>수리사례 수정 · 삭제</strong>
+            <p>등록된 수리사례를 수정하거나 삭제합니다.</p>
+          </button>
+
+          <button type="button" onClick={() => go("/repair-cases")} style={menuCardStyle}>
+            <span style={menuIconStyle}>👀</span>
+            <strong>수리사례 화면 보기</strong>
+            <p>고객에게 노출되는 수리사례 목록을 확인합니다.</p>
+          </button>
+        </div>
+      </section>
+
+      <section style={{ marginTop: "46px" }}>
+        <h2 style={sectionTitleStyle}>공지사항 관리</h2>
+
+        <div style={menuGridStyle}>
+          <button type="button" onClick={() => go("/admin/notices")} style={menuCardStyle}>
+            <span style={menuIconStyle}>📢</span>
+            <strong>공지사항 등록</strong>
+            <p>영업시간, 휴무, 택배접수 안내 등 공지를 등록합니다.</p>
+          </button>
+
+          <button type="button" onClick={() => go("/admin/notices/list")} style={menuCardStyle}>
+            <span style={menuIconStyle}>✏️</span>
+            <strong>공지사항 수정 · 삭제</strong>
+            <p>등록된 공지사항을 수정하거나 삭제합니다.</p>
+          </button>
+
+          <button type="button" onClick={() => go("/notices")} style={menuCardStyle}>
+            <span style={menuIconStyle}>👀</span>
+            <strong>공지사항 화면 보기</strong>
+            <p>고객에게 노출되는 공지사항 목록을 확인합니다.</p>
+          </button>
+        </div>
+      </section>
+
+      <section style={{ marginTop: "46px" }}>
+        <h2 style={sectionTitleStyle}>팝업 관리</h2>
+
+        <div style={menuGridStyle}>
+          <button type="button" onClick={() => go("/admin/popups")} style={menuCardStyle}>
+            <span style={menuIconStyle}>🖼️</span>
+            <strong>팝업 등록</strong>
+            <p>이벤트, 휴무, 택배수리 안내 팝업을 등록합니다.</p>
+          </button>
+
+          <button type="button" onClick={() => go("/admin/popups/list")} style={menuCardStyle}>
+            <span style={menuIconStyle}>✏️</span>
+            <strong>팝업 수정 · 삭제</strong>
+            <p>등록된 팝업을 수정하거나 삭제합니다.</p>
+          </button>
+
+          <button type="button" onClick={() => go("/")} style={menuCardStyle}>
+            <span style={menuIconStyle}>👀</span>
+            <strong>팝업 화면 확인</strong>
+            <p>홈페이지에서 팝업 노출 상태를 확인합니다.</p>
+          </button>
+        </div>
+      </section>
+
+      <section style={{ marginTop: "46px" }}>
+        <div style={sectionHeaderStyle}>
+          <h2 style={sectionTitleStyle}>최근 수리사례</h2>
+          <a href="/admin/repair-cases/list" style={smallLinkButtonStyle}>전체 관리</a>
+        </div>
+
+        <div style={listStyle}>
+          {cases.length > 0 ? (
+            cases.slice(0, 8).map((item) => (
+              <div key={item.id} style={caseRowStyle}>
+                {item.image_url ? (
+                  <img src={item.image_url} alt={item.alt_text || item.title || "수리사례 이미지"} style={thumbStyle} />
+                ) : (
+                  <div style={noImageStyle}>이미지 없음</div>
+                )}
+
+                <div style={{ flex: 1 }}>
+                  <strong>{item.title || "제목 없음"}</strong>
+                  <p style={{ margin: "6px 0", color: "#475569" }}>
+                    {item.branch || "지점 없음"} · {item.category || "카테고리 없음"}
+                  </p>
+                  <p style={{ margin: 0, color: "#64748b" }}>
+                    {item.seo_keyword || "SEO 키워드 없음"}
+                  </p>
+                </div>
+
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <a href={`/admin/repair-cases/edit/${item.id}`} style={editButtonStyle}>수정</a>
+                  <a href={`/admin/repair-cases/delete/${item.id}`} style={deleteButtonStyle}>삭제</a>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p style={emptyStyle}>등록된 수리사례가 없습니다.</p>
           )}
         </div>
-      </form>
+      </section>
 
-      <div style={styles.tableBox}>
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th style={styles.th}>제목</th>
-              <th style={styles.th}>지점</th>
-              <th style={styles.th}>기기</th>
-              <th style={styles.th}>공개</th>
-              <th style={styles.th}>관리</th>
-            </tr>
-          </thead>
-          <tbody>
-            {cases.map((item) => (
-              <tr key={item.id}>
-                <td style={styles.td}>{item.title}</td>
-                <td style={styles.td}>{item.branch}</td>
-                <td style={styles.td}>{item.device}</td>
-                <td style={styles.td}>{item.is_published ? "공개" : "비공개"}</td>
-                <td style={styles.td}>
-                  <button style={styles.smallButton} onClick={() => handleEdit(item)}>수정</button>
-                  <button style={styles.deleteButton} onClick={() => handleDelete(item.id)}>삭제</button>
-                </td>
+      <section style={{ marginTop: "46px" }}>
+        <div style={sectionHeaderStyle}>
+          <h2 style={sectionTitleStyle}>최근 공지사항</h2>
+          <a href="/admin/notices/list" style={smallLinkButtonStyle}>전체 관리</a>
+        </div>
+
+        <div style={listStyle}>
+          {notices.length > 0 ? (
+            notices.slice(0, 5).map((item) => (
+              <div key={item.id} style={noticeRowStyle}>
+                <div style={{ flex: 1 }}>
+                  <p style={{ margin: "0 0 6px", color: "#1e3a8a", fontWeight: "900" }}>
+                    {item.is_pinned ? "📌 중요공지" : "공지사항"}
+                  </p>
+                  <strong>{item.title || "제목 없음"}</strong>
+                  <p style={{ margin: "6px 0 0", color: "#64748b" }}>
+                    {item.created_at ? new Date(item.created_at).toLocaleDateString("ko-KR") : ""}
+                  </p>
+                </div>
+
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <a href={`/admin/notices/edit/${item.id}`} style={editButtonStyle}>수정</a>
+                  <a href={`/admin/notices/delete/${item.id}`} style={deleteButtonStyle}>삭제</a>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p style={emptyStyle}>등록된 공지사항이 없습니다.</p>
+          )}
+        </div>
+      </section>
+
+      <section style={{ marginTop: "46px" }}>
+        <h2 style={sectionTitleStyle}>최근 온라인 접수</h2>
+
+        <div style={tableWrapStyle}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "#0f172a", color: "white" }}>
+                <th style={thStyle}>이름</th>
+                <th style={thStyle}>연락처</th>
+                <th style={thStyle}>지점</th>
+                <th style={thStyle}>기기</th>
+                <th style={thStyle}>모델명</th>
+                <th style={thStyle}>증상</th>
+                <th style={thStyle}>접수방식</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
+            </thead>
+
+            <tbody>
+              {contacts.slice(0, 10).map((item) => (
+                <tr key={item.id}>
+                  <td style={tdStyle}>{item.name}</td>
+                  <td style={tdStyle}>{item.phone}</td>
+                  <td style={tdStyle}>{item.branch}</td>
+                  <td style={tdStyle}>{item.device}</td>
+                  <td style={tdStyle}>{item.model}</td>
+                  <td style={tdStyle}>{item.symptom}</td>
+                  <td style={tdStyle}>{item.visit_type}</td>
+                </tr>
+              ))}
+
+              {contacts.length === 0 && (
+                <tr>
+                  <td style={tdStyle} colSpan="7">접수 내역이 없습니다.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  );
 }
 
-function BranchManager() {
-  return (
-    <div>
-      <h1 style={styles.contentTitle}>지점관리</h1>
-      <p style={styles.contentDesc}>지점 정보 수정 기능은 다음 단계에서 연결하면 돼.</p>
-    </div>
-  )
-}
-
-function EmptyManager({ title }) {
-  return (
-    <div>
-      <h1 style={styles.contentTitle}>{title}</h1>
-      <p style={styles.contentDesc}>이 메뉴는 다음 단계에서 관리 기능을 연결하면 돼.</p>
-    </div>
-  )
-}
-
-const menuStyle = (active) => ({
-  width: "100%",
-  padding: "12px",
-  border: "none",
-  borderRadius: "10px",
-  backgroundColor: active ? "#2563eb" : "#f1f5f9",
-  color: active ? "#fff" : "#111827",
-  fontWeight: 800,
-  cursor: "pointer",
-  textAlign: "left",
-})
-
-const styles = {
-  loginPage: { minHeight: "100vh", backgroundColor: "#f4f8fc", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" },
-  loginBox: { width: "380px", backgroundColor: "#fff", border: "1px solid #e2e8f0", borderRadius: "24px", padding: "28px", boxShadow: "0 18px 45px rgba(15,23,42,0.08)" },
-  title: { fontSize: "28px", fontWeight: 900, margin: "0 0 8px" },
-  desc: { color: "#64748b", marginBottom: "20px" },
-  input: { width: "100%", padding: "13px", border: "1px solid #cbd5e1", borderRadius: "12px", fontSize: "15px", boxSizing: "border-box" },
-  textarea: { width: "100%", padding: "13px", border: "1px solid #cbd5e1", borderRadius: "12px", fontSize: "15px", boxSizing: "border-box", marginTop: "10px" },
-  primaryButton: { padding: "13px 18px", border: "none", borderRadius: "12px", backgroundColor: "#2563eb", color: "#fff", fontWeight: 900, cursor: "pointer" },
-  cancelButton: { padding: "13px 18px", border: "1px solid #cbd5e1", borderRadius: "12px", backgroundColor: "#fff", fontWeight: 900, cursor: "pointer" },
-  hint: { fontSize: "13px", color: "#64748b", marginTop: "14px" },
-  page: { minHeight: "100vh", display: "grid", gridTemplateColumns: "240px 1fr", backgroundColor: "#f4f8fc" },
-  sidebar: { backgroundColor: "#fff", borderRight: "1px solid #e2e8f0", padding: "24px", display: "flex", flexDirection: "column", gap: "10px" },
-  logo: { fontSize: "22px", fontWeight: 900, marginBottom: "18px" },
-  logoutButton: { marginTop: "auto", padding: "12px", border: "1px solid #fecaca", borderRadius: "10px", backgroundColor: "#fff", color: "#dc2626", fontWeight: 800, cursor: "pointer" },
-  content: { padding: "34px" },
-  contentTitle: { fontSize: "32px", fontWeight: 900, margin: "0 0 8px" },
-  contentDesc: { color: "#64748b", marginBottom: "24px" },
-  formBox: { backgroundColor: "#fff", border: "1px solid #e2e8f0", borderRadius: "22px", padding: "20px", marginBottom: "24px" },
-  formGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "10px" },
-  checkboxRow: { display: "flex", gap: "8px", alignItems: "center", marginTop: "12px", fontWeight: 800 },
-  buttonRow: { display: "flex", gap: "10px", marginTop: "14px" },
-  tableBox: { backgroundColor: "#fff", border: "1px solid #e2e8f0", borderRadius: "22px", overflow: "auto" },
-  table: { width: "100%", borderCollapse: "collapse" },
-  th: { backgroundColor: "#f8fafc", padding: "12px", borderBottom: "1px solid #e2e8f0", textAlign: "left" },
-  td: { padding: "12px", borderBottom: "1px solid #e2e8f0" },
-  smallButton: { padding: "7px 10px", marginRight: "6px", border: "1px solid #cbd5e1", borderRadius: "8px", backgroundColor: "#fff", cursor: "pointer" },
-  deleteButton: { padding: "7px 10px", border: "none", borderRadius: "8px", backgroundColor: "#ef4444", color: "#fff", cursor: "pointer" },
-}
+const topStyle = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "20px", marginBottom: "28px" };
+const homeButtonStyle = { display: "inline-block", padding: "12px 18px", borderRadius: "999px", background: "#1e3a8a", color: "white", textDecoration: "none", fontWeight: "900" };
+const summaryGridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "18px" };
+const summaryCardStyle = { background: "#f8fafc", border: "1px solid #e5e7eb", borderRadius: "18px", padding: "24px", boxShadow: "0 8px 20px rgba(15, 23, 42, 0.06)" };
+const sectionTitleStyle = { fontSize: "28px", marginBottom: "18px" };
+const sectionHeaderStyle = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", marginBottom: "18px" };
+const smallLinkButtonStyle = { display: "inline-block", padding: "10px 14px", borderRadius: "999px", background: "#e5e7eb", color: "#111827", textDecoration: "none", fontWeight: "900" };
+const menuGridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" };
+const menuCardStyle = { textAlign: "left", background: "white", border: "1px solid #dbeafe", borderRadius: "20px", padding: "28px", color: "#111827", cursor: "pointer", boxShadow: "0 10px 25px rgba(15, 23, 42, 0.08)" };
+const menuIconStyle = { display: "block", fontSize: "34px", marginBottom: "14px" };
+const listStyle = { display: "grid", gap: "14px" };
+const caseRowStyle = { display: "flex", alignItems: "center", gap: "18px", background: "white", border: "1px solid #e5e7eb", borderRadius: "18px", padding: "18px" };
+const noticeRowStyle = { display: "flex", alignItems: "center", gap: "18px", background: "white", border: "1px solid #e5e7eb", borderRadius: "18px", padding: "18px" };
+const thumbStyle = { width: "120px", height: "82px", objectFit: "cover", borderRadius: "12px" };
+const noImageStyle = { width: "120px", height: "82px", borderRadius: "12px", background: "#f1f5f9", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "800", fontSize: "13px" };
+const editButtonStyle = { display: "inline-block", padding: "10px 14px", borderRadius: "999px", background: "#1e3a8a", color: "white", textDecoration: "none", fontWeight: "900" };
+const deleteButtonStyle = { display: "inline-block", padding: "10px 14px", borderRadius: "999px", background: "#dc2626", color: "white", textDecoration: "none", fontWeight: "900" };
+const emptyStyle = { padding: "20px", borderRadius: "14px", background: "#f8fafc", color: "#64748b", fontWeight: "800" };
+const tableWrapStyle = { overflowX: "auto", border: "1px solid #e5e7eb", borderRadius: "16px" };
+const thStyle = { padding: "12px", border: "1px solid #1f2937", whiteSpace: "nowrap" };
+const tdStyle = { padding: "10px", border: "1px solid #e5e7eb", whiteSpace: "nowrap" };
