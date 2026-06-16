@@ -1,56 +1,78 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [userid, setUserid] = useState("");
-  const [password, setPassword] = useState("");
+  const [adminId, setAdminId] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [message, setMessage] = useState("");
 
-  async function login() {
-    const { data } = await supabase
-      .from("admins")
-      .select("*")
-      .eq("userid", userid)
-      .eq("password", password)
-      .single();
+  async function handleLogin(e) {
+    e.preventDefault();
+    setMessage("");
 
-    if (!data) {
-      alert("로그인 실패");
+    const res = await fetch("/api/admin-login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ adminId, adminPassword }),
+    });
+
+    if (!res.ok) {
+      setMessage("아이디 또는 비밀번호가 올바르지 않습니다.");
       return;
     }
 
-    localStorage.setItem("admin", "true");
     router.push("/admin");
   }
 
   return (
-    <main style={{ maxWidth: "420px", margin: "120px auto", padding: "20px" }}>
-      <h1 style={{ marginBottom: "24px" }}>관리자 로그인</h1>
+    <main style={wrapStyle}>
+      <form onSubmit={handleLogin} style={boxStyle}>
+        <h1 style={{ marginBottom: "24px" }}>관리자 로그인</h1>
 
-      <input
-        placeholder="아이디"
-        value={userid}
-        onChange={(e) => setUserid(e.target.value)}
-        style={inputStyle}
-      />
+        <input
+          value={adminId}
+          onChange={(e) => setAdminId(e.target.value)}
+          placeholder="아이디"
+          style={inputStyle}
+        />
 
-      <input
-        type="password"
-        placeholder="비밀번호"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        style={inputStyle}
-      />
+        <input
+          type="password"
+          value={adminPassword}
+          onChange={(e) => setAdminPassword(e.target.value)}
+          placeholder="비밀번호"
+          style={inputStyle}
+        />
 
-      <button onClick={login} style={buttonStyle}>
-        로그인
-      </button>
+        <button type="submit" style={buttonStyle}>
+          로그인
+        </button>
+
+        {message && <p style={{ color: "#dc2626", fontWeight: "800" }}>{message}</p>}
+      </form>
     </main>
   );
 }
+
+const wrapStyle = {
+  minHeight: "70vh",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "40px",
+};
+
+const boxStyle = {
+  width: "360px",
+  maxWidth: "100%",
+  padding: "34px",
+  border: "1px solid #e5e7eb",
+  borderRadius: "20px",
+  boxShadow: "0 15px 35px rgba(15,23,42,0.12)",
+};
 
 const inputStyle = {
   width: "100%",
@@ -59,16 +81,16 @@ const inputStyle = {
   border: "1px solid #cbd5e1",
   borderRadius: "10px",
   fontSize: "16px",
+  boxSizing: "border-box",
 };
 
 const buttonStyle = {
   width: "100%",
-  padding: "15px",
+  padding: "14px",
+  border: "none",
+  borderRadius: "999px",
   background: "#1e3a8a",
   color: "white",
-  border: "none",
-  borderRadius: "10px",
-  fontSize: "16px",
-  fontWeight: "800",
+  fontWeight: "900",
   cursor: "pointer",
 };
