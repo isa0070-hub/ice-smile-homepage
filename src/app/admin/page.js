@@ -46,11 +46,13 @@ export default function AdminPage() {
     router.push(path);
   }
   
-  function logout() {
-    document.cookie =
-      "admin_auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+  async function logout() {
+    await fetch("/api/admin-logout", {
+      method: "POST",
+    });
   
-    router.push("/login");
+    router.replace("/login");
+    router.refresh();
   }
 
   return (
