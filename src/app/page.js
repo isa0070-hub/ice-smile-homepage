@@ -250,7 +250,7 @@ export default async function Home() {
 
   <div style={cardStyle}>
   <a
-  href="신도림점_네이버지도_링크"
+  href="https://map.naver.com/p/entry/place/13486497"
   target="_blank"
   rel="noreferrer"
 >
