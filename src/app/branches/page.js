@@ -19,7 +19,7 @@ export default async function BranchesPage() {
 
       <section style={styles.list}>
         {(branches || []).map((branch) => (
-          <article key={branch.id} style={styles.card}>
+          <article key={branch.id} className="branch-card" style={styles.card}>
             <div style={styles.mapBox}>
               <img
                 src={branch.map_image}
@@ -54,7 +54,7 @@ export default async function BranchesPage() {
                 <p>{branch.visit_info}</p>
               </div>
 
-              <div style={styles.buttons}>
+              <div className="branch-buttons" style={styles.buttons}>
                 <a
                   href={branch.naver_map}
                   target="_blank"

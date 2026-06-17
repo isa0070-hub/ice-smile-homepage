@@ -87,3 +87,32 @@ a {
     display: block !important;
   }
 }
+@media (max-width: 768px) {
+  .branch-card {
+    grid-template-columns: 1fr !important;
+    gap: 18px !important;
+    padding: 18px !important;
+    border-radius: 22px !important;
+  }
+
+  .branch-card h2 {
+    font-size: 30px !important;
+  }
+
+  .branch-card a[href^="tel:"] {
+    white-space: nowrap !important;
+    word-break: keep-all !important;
+  }
+
+  .branch-buttons {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  .branch-buttons a {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+  }
+}
