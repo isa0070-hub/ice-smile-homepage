@@ -64,9 +64,9 @@ export default async function BranchesPage() {
                   네이버지도 보기
                 </a>
 
-                <a href={`tel:${branch.phone}`} style={styles.secondaryButton}>
-                  전화 문의
-                </a>
+                <a href="/contact" style={styles.secondaryButton}>
+  온라인 문의
+</a>
               </div>
             </div>
           </article>
