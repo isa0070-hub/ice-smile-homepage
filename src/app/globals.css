@@ -48,36 +48,35 @@ a {
   }
 }
 @keyframes heroSlide {
-  0% {
+  0%,
+  20% {
     background-image:
-      linear-gradient(rgba(15, 23, 42, 0.35), rgba(15, 23, 42, 0.45)),
+      linear-gradient(rgba(15,23,42,0.35), rgba(15,23,42,0.45)),
       url("/images/hero-iphone-repair.jpg");
   }
 
-  25% {
+  25%,
+  45% {
     background-image:
-      linear-gradient(rgba(15, 23, 42, 0.35), rgba(15, 23, 42, 0.45)),
+      linear-gradient(rgba(15,23,42,0.35), rgba(15,23,42,0.45)),
       url("/images/hero-ipad-repair.jpg");
   }
 
-  50% {
+  50%,
+  70% {
     background-image:
-      linear-gradient(rgba(15, 23, 42, 0.35), rgba(15, 23, 42, 0.45)),
+      linear-gradient(rgba(15,23,42,0.35), rgba(15,23,42,0.45)),
       url("/images/hero-notebook-repair.jpg");
   }
 
-  75% {
-    background-image:
-      linear-gradient(rgba(15, 23, 42, 0.35), rgba(15, 23, 42, 0.45)),
-      url("/images/hero-service-center.jpg");
-  }
-
+  75%,
   100% {
     background-image:
-      linear-gradient(rgba(15, 23, 42, 0.35), rgba(15, 23, 45, 0.45)),
-      url("/images/hero-iphone-repair.jpg");
+      linear-gradient(rgba(15,23,42,0.35), rgba(15,23,42,0.45)),
+      url("/images/hero-service-center.jpg");
   }
-}@media (max-width: 768px) {
+}
+@media (max-width: 768px) {
   .desktop-nav,
   .desktop-phone {
     display: none !important;
@@ -155,11 +154,15 @@ a {
   }
 
   .home-hero-buttons a,
-  .home-hero-buttons button {
-    width: 100% !important;
-    max-width: 280px !important;
-    box-sizing: border-box !important;
-    text-align: center !important;
-    justify-content: center !important;
-  }
+.home-hero-buttons button {
+  width: 100% !important;
+  max-width: 280px !important;
+  box-sizing: border-box !important;
+  text-align: center !important;
+  justify-content: center !important;
+  font-size: 18px !important;
+  font-weight: 900 !important;
+  font-family: inherit !important;
+  line-height: 1.2 !important;
+}
 }
