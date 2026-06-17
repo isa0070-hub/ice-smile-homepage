@@ -77,4 +77,13 @@ a {
       linear-gradient(rgba(15, 23, 42, 0.35), rgba(15, 23, 45, 0.45)),
       url("/images/hero-iphone-repair.jpg");
   }
+}@media (max-width: 768px) {
+  .desktop-nav,
+  .desktop-phone {
+    display: none !important;
+  }
+
+  .mobile-menu-button {
+    display: block !important;
+  }
 }

@@ -6,6 +6,7 @@ import PhoneContactButton from "@/components/PhoneContactButton"
 
 export default function SiteHeader() {
   const [isOpen, setIsOpen] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
     customer_name: "",
@@ -21,6 +22,15 @@ export default function SiteHeader() {
   const handleChange = (e) => {
     const { name, value } = e.target
     setForm((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const closeMenu = () => {
+    setIsMenuOpen(false)
+  }
+
+  const openInquiry = () => {
+    setIsMenuOpen(false)
+    setIsOpen(true)
   }
 
   const handleSubmit = async (e) => {
@@ -64,15 +74,13 @@ export default function SiteHeader() {
 
   return (
     <>
-      <header style={headerStyle}>
+      <header className="site-header" style={headerStyle}>
         <div style={innerStyle}>
           <a href="/" style={logoStyle}>아이스마일어게인</a>
 
-          <nav style={navWrapStyle}>
+          <nav className="desktop-nav" style={navWrapStyle}>
             <a style={navStyle} href="/">홈</a>
-            <a href="/#repair-items" style={navStyle}>
-  수리품목
-</a>
+            <a href="/#repair-items" style={navStyle}>수리품목</a>
             <a style={navStyle} href="/repair-cases">수리사례</a>
             <button type="button" onClick={() => setIsOpen(true)} style={navButtonStyle}>
               온라인접수
@@ -80,9 +88,39 @@ export default function SiteHeader() {
             <a style={navStyle} href="/branches">지점안내</a>
           </nav>
 
-          <PhoneContactButton buttonStyle={phoneButtonStyle} />
+          <div className="desktop-phone">
+            <PhoneContactButton buttonStyle={phoneButtonStyle} />
+          </div>
+
+          <button
+            type="button"
+            className="mobile-menu-button"
+            onClick={() => setIsMenuOpen(true)}
+            style={mobileMenuButtonStyle}
+          >
+            ☰
+          </button>
         </div>
       </header>
+
+      {isMenuOpen && (
+        <div className="mobile-menu-overlay" style={mobileMenuOverlayStyle} onClick={closeMenu}>
+          <div style={mobileMenuStyle} onClick={(e) => e.stopPropagation()}>
+            <div style={mobileMenuTopStyle}>
+              <strong style={{ fontSize: "22px" }}>아이스마일어게인</strong>
+              <button type="button" onClick={closeMenu} style={closeButtonStyle}>×</button>
+            </div>
+
+            <a href="/" onClick={closeMenu} style={mobileNavStyle}>홈</a>
+            <a href="/#repair-items" onClick={closeMenu} style={mobileNavStyle}>수리품목</a>
+            <a href="/repair-cases" onClick={closeMenu} style={mobileNavStyle}>수리사례</a>
+            <button type="button" onClick={openInquiry} style={mobileNavButtonStyle}>온라인접수</button>
+            <a href="/branches" onClick={closeMenu} style={mobileNavStyle}>지점안내</a>
+
+            <PhoneContactButton buttonStyle={mobilePhoneButtonStyle} />
+          </div>
+        </div>
+      )}
 
       {isOpen && (
         <div style={overlayStyle} onClick={() => setIsOpen(false)}>
@@ -151,6 +189,81 @@ const navStyle = { textDecoration: "none", color: "#111827", fontWeight: "700" }
 const navButtonStyle = { border: "none", background: "transparent", color: "#111827", fontWeight: "700", fontSize: "16px", cursor: "pointer", padding: 0 }
 const phoneButtonStyle = { background: "#1e3a8a", color: "#fff", padding: "10px 18px", borderRadius: "999px", textDecoration: "none", fontWeight: "700" }
 
+const mobileMenuButtonStyle = {
+  display: "none",
+  border: "none",
+  background: "#1e3a8a",
+  color: "#fff",
+  width: "44px",
+  height: "44px",
+  borderRadius: "50%",
+  fontSize: "22px",
+  cursor: "pointer",
+}
+
+const mobileMenuOverlayStyle = {
+  position: "fixed",
+  inset: 0,
+  zIndex: 10001,
+  background: "rgba(15,23,42,0.55)",
+}
+
+const mobileMenuStyle = {
+  marginLeft: "auto",
+  width: "78%",
+  maxWidth: "320px",
+  height: "100%",
+  background: "#fff",
+  padding: "24px",
+  boxShadow: "-10px 0 30px rgba(15,23,42,0.2)",
+  display: "flex",
+  flexDirection: "column",
+  gap: "12px",
+}
+
+const mobileMenuTopStyle = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: "14px",
+}
+
+const mobileNavStyle = {
+  display: "block",
+  padding: "15px 12px",
+  borderRadius: "12px",
+  background: "#f8fafc",
+  color: "#111827",
+  textDecoration: "none",
+  fontWeight: "900",
+}
+
+const mobileNavButtonStyle = {
+  display: "block",
+  width: "100%",
+  padding: "15px 12px",
+  border: "none",
+  borderRadius: "12px",
+  background: "#f8fafc",
+  color: "#111827",
+  fontWeight: "900",
+  fontSize: "16px",
+  textAlign: "left",
+  cursor: "pointer",
+}
+
+const mobilePhoneButtonStyle = {
+  marginTop: "10px",
+  display: "block",
+  textAlign: "center",
+  background: "#1e3a8a",
+  color: "#fff",
+  padding: "15px 18px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: "900",
+}
+
 const overlayStyle = {
   position: "fixed",
   inset: 0,
@@ -159,23 +272,56 @@ const overlayStyle = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  padding: "24px",
+  padding: "18px",
 }
 
 const modalStyle = {
   width: "100%",
   maxWidth: "640px",
-  maxHeight: "88vh",
+  maxHeight: "86vh",
   overflowY: "auto",
   backgroundColor: "#fff",
   borderRadius: "26px",
-  padding: "28px",
+  padding: "24px",
   boxShadow: "0 24px 70px rgba(15,23,42,0.25)",
 }
 
 const modalHeaderStyle = { display: "flex", justifyContent: "space-between", gap: "16px", marginBottom: "20px" }
-const closeButtonStyle = { width: "38px", height: "38px", borderRadius: "50%", border: "1px solid #e2e8f0", backgroundColor: "#fff", fontSize: "26px", cursor: "pointer" }
-const inputStyle = { padding: "13px", border: "1px solid #cbd5e1", borderRadius: "13px", fontSize: "15px" }
-const textareaStyle = { minHeight: "120px", padding: "13px", border: "1px solid #cbd5e1", borderRadius: "13px", fontSize: "15px" }
-const smallTextareaStyle = { minHeight: "80px", padding: "13px", border: "1px solid #cbd5e1", borderRadius: "13px", fontSize: "15px" }
+const closeButtonStyle = { width: "42px", height: "42px", borderRadius: "50%", border: "1px solid #e2e8f0", backgroundColor: "#fff", color: "#1e3a8a", fontSize: "30px", cursor: "pointer" }
+
+const inputStyle = {
+  width: "100%",
+  boxSizing: "border-box",
+  padding: "13px",
+  border: "1px solid #cbd5e1",
+  borderRadius: "13px",
+  fontSize: "15px",
+  backgroundColor: "#ffffff",
+  color: "#111827",
+}
+
+const textareaStyle = {
+  width: "100%",
+  boxSizing: "border-box",
+  minHeight: "120px",
+  padding: "13px",
+  border: "1px solid #cbd5e1",
+  borderRadius: "13px",
+  fontSize: "15px",
+  backgroundColor: "#ffffff",
+  color: "#111827",
+}
+
+const smallTextareaStyle = {
+  width: "100%",
+  boxSizing: "border-box",
+  minHeight: "80px",
+  padding: "13px",
+  border: "1px solid #cbd5e1",
+  borderRadius: "13px",
+  fontSize: "15px",
+  backgroundColor: "#ffffff",
+  color: "#111827",
+}
+
 const submitButtonStyle = { padding: "15px", border: "none", borderRadius: "14px", backgroundColor: "#1d4ed8", color: "#fff", fontWeight: 900, fontSize: "16px", cursor: "pointer" }
