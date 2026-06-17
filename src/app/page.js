@@ -35,9 +35,10 @@ export default async function Home() {
 
   return (
     <main style={{ fontFamily: "Arial, sans-serif", color: "#111827" }}>
-      <section style={heroSectionStyle}>
+      <section className="home-hero" style={heroSectionStyle}>
         
       <p
+  className="home-hero-label"
   style={{
     fontSize: "24px",
     marginBottom: "18px",
@@ -49,6 +50,7 @@ export default async function Home() {
         </p>
 
         <h1
+  className="home-hero-title"
   style={{
     fontSize: "62px",
     marginBottom: "24px",
@@ -60,6 +62,7 @@ export default async function Home() {
         </h1>
 
         <p
+  className="home-hero-subtitle"
   style={{
     fontSize: "28px",
     color: "#fff",
@@ -70,7 +73,7 @@ export default async function Home() {
   아이폰 · 아이패드 · 맥북 · 애플워치 · 서피스 · 레노버 · LG그램 전문 수리
 </p>
 
-        <div style={{ marginTop: "32px" }}>
+<div className="home-hero-buttons" style={{ marginTop: "32px" }}>
           <a
             href="https://talk.naver.com/WCH5S2X"
             target="_blank"
