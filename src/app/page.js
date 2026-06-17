@@ -202,13 +202,20 @@ export default async function Home() {
         <h2 style={titleStyle}>강변점 · 선릉점 · 신도림점 지점안내</h2>
 
         <div style={gridStyle}>
-  <div style={cardStyle}>
+        <div style={cardStyle}>
+  <a
+    href="https://map.naver.com/p/entry/place/31476004"
+    target="_blank"
+    rel="noreferrer"
+  >
     <img
       src="/images/gangbyeon-branch.jpg"
       alt="아이스마일어게인 강변점 강변테크노마트 지점 이미지"
       style={branchImageStyle}
     />
-    <h3>강변점</h3>
+  </a>
+
+  <h3>강변점</h3>
     <p>서울특별시 광진구 광나루로56길 85</p>
     <p>강변테크노마트 5층 B-20호</p>
     <p>
@@ -219,11 +226,17 @@ export default async function Home() {
   </div>
 
   <div style={cardStyle}>
-    <img
-      src="/images/seolleung-branch.jpg"
-      alt="아이스마일어게인 선릉점 선릉역 1번 출구 지점 이미지"
-      style={branchImageStyle}
-    />
+  <a
+  href="https://map.naver.com/p/entry/place/20557661"
+  target="_blank"
+  rel="noreferrer"
+>
+  <img
+    src="/images/seolleung-branch.jpg"
+    alt="아이스마일어게인 선릉점 선릉역 1번 출구 지점 이미지"
+    style={branchImageStyle}
+  />
+</a>
     <h3>선릉점</h3>
     <p>서울특별시 강남구 테헤란로 406</p>
     <p>샹제리제센터 A동 406호</p>
@@ -236,11 +249,17 @@ export default async function Home() {
   </div>
 
   <div style={cardStyle}>
-    <img
-      src="/images/sindorim-branch.jpg"
-      alt="아이스마일어게인 신도림점 신도림테크노마트 지점 이미지"
-      style={branchImageStyle}
-    />
+  <a
+  href="신도림점_네이버지도_링크"
+  target="_blank"
+  rel="noreferrer"
+>
+  <img
+    src="/images/sindorim-branch.jpg"
+    alt="아이스마일어게인 신도림점 신도림테크노마트 지점 이미지"
+    style={branchImageStyle}
+  />
+</a>
     <h3>신도림점</h3>
     <p>서울특별시 구로구 새말로 97</p>
     <p>신도림테크노마트 9층 57번 기둥 앞</p>
@@ -355,3 +374,4 @@ const branchImageStyle = {
     marginBottom: "18px",
     background: "#f8fafc",
   };
+  
