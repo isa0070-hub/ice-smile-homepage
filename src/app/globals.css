@@ -128,11 +128,13 @@ a {
     margin-bottom: 12px !important;
   }
 
-  .home-hero-title {
-    font-size: 46px !important;
-    line-height: 1.14 !important;
-    margin-bottom: 18px !important;
+  .home-hero-subtitle {
+    font-size: 22px !important;
+    line-height: 1.5 !important;
     word-break: keep-all !important;
+    max-width: 330px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
   }
 
   .home-hero-subtitle {

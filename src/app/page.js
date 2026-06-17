@@ -74,19 +74,20 @@ export default async function Home() {
 </p>
 
 <div className="home-hero-buttons" style={{ marginTop: "32px" }}>
-          <a
-            href="https://talk.naver.com/WCH5S2X"
-            target="_blank"
-            style={buttonStyle}
-          >
-            네이버톡톡 문의
-          </a>
+<a
+  href="https://talk.naver.com/WCH5S2X"
+  target="_blank"
+  rel="noreferrer"
+  style={buttonStyle}
+>
+  네이버톡톡 문의
+</a>
 
-          <PhoneContactButton buttonStyle={buttonStyle}/>
+<a href="/contact" style={buttonStyle}>
+  온라인 수리문의
+</a>
 
-          <a href="/contact" style={buttonStyle}>
-            온라인 수리문의
-          </a>
+<PhoneContactButton buttonStyle={buttonStyle} />
         </div>
       </section>
 

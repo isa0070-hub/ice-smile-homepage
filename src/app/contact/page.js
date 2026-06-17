@@ -40,12 +40,20 @@ export default function ContactPage() {
 
     setLoading(false)
 
-    if (error) {
-      alert("접수 저장에 실패했습니다: " + error.message)
-      return
-    }
+if (error) {
+  alert("접수 저장에 실패했습니다: " + error.message)
+  return
+}
 
-    alert("온라인 접수가 완료되었습니다. 확인 후 연락드리겠습니다.")
+await fetch("/api/send-telegram", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify(form),
+})
+
+alert("온라인 접수가 완료되었습니다. 확인 후 연락드리겠습니다.")
 
     setForm({
       customer_name: "",
