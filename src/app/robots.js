@@ -7,6 +7,6 @@ export default function robots() {
         },
       ],
   
-      sitemap: "https://www.icesmileagain.com/sitemap.xml",
+      sitemap: "https://www.ismileagain.co.kr/sitemap.xml",
     };
   }

@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 
 export default async function sitemap() {
-  const baseUrl = "https://www.icesmileagain.com";
+  const baseUrl = "https://www.ismileagain.co.kr";
 
   const { data: cases, error } = await supabase
     .from("repair_cases")
