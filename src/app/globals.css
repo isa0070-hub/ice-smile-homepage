@@ -166,3 +166,29 @@ a {
   line-height: 1.2 !important;
 }
 }
+html {
+  color-scheme: light;
+}
+
+body {
+  background: #ffffff !important;
+  color: #111827 !important;
+}
+
+input,
+textarea,
+select {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  border-color: #cbd5e1 !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #64748b !important;
+}
+section,
+article,
+form {
+  color-scheme: light;
+}
