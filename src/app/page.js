@@ -28,7 +28,7 @@ function maskText(text) {
 
 export default async function Home() {
   const { data: contacts } = await supabase
-    .from("contacts")
+    .from("online_inquiries")
     .select("*")
     .order("created_at", { ascending: false })
     .limit(7);
@@ -163,8 +163,8 @@ export default async function Home() {
             contacts.map((item) => (
               <div key={item.id} style={listCardStyle}>
                 <strong>
-                  {maskName(item.name)} 고객님 / {item.branch || "지점 선택"}
-                </strong>
+  {maskName(item.customer_name)} 고객님 / {item.preferred_branch || "지점 선택"}
+</strong>
 
                 <span>
                   {item.device || "기기 확인중"} · {item.model || "모델 확인중"}
@@ -174,7 +174,7 @@ export default async function Home() {
 
                 <span>연락처 : {maskPhone(item.phone)}</span>
 
-                <span>접수방식 : {item.visit_type || "상담 예정"}</span>
+                <span>접수방식 : 온라인접수</span>
               </div>
             ))
           ) : (
