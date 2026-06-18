@@ -33,7 +33,7 @@ export default async function Home() {
   .from("repair_cases")
   .select("*")
   .order("created_at", { ascending: false })
-  .limit(6);
+  .limit(8);
 
   const { data: contacts } = await supabase
     .from("online_inquiries")
