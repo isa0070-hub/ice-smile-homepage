@@ -59,8 +59,10 @@ export default function SiteHeader() {
     })
 
     alert("온라인 접수가 완료되었습니다. 확인 후 연락드리겠습니다.")
-    setIsOpen(false)
-    setForm({
+
+setIsOpen(false)
+window.location.href = "/"
+return({
       customer_name: "",
       phone: "",
       device: "",
