@@ -7,6 +7,6 @@ export default function robots() {
         },
       ],
   
-      sitemap: "https://www.ismileagain.co.kr/sitemap.xml",
+      sitemap: "https://ismileagain.co.kr/sitemap.xml",
     };
   }
