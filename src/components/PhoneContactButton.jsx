@@ -14,6 +14,10 @@ export default function PhoneContactButton({ buttonStyle }) {
           ...buttonStyle,
           border: "none",
           cursor: "pointer",
+          fontSize: buttonStyle?.fontSize || "16px",
+          fontWeight: buttonStyle?.fontWeight || "800",
+          fontFamily: "inherit",
+          lineHeight: "1.2",
         }}
       >
         전화 문의
