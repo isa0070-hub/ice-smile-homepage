@@ -5,8 +5,9 @@ import PopupNotice from "@/components/PopupNotice";
 
 export const metadata = {
   title: "아이스마일어게인 | 아이폰 아이패드 맥북 서피스 노트북 수리",
+
   description:
-    "아이스마일어게인 강변점과 선릉점 공식 홈페이지입니다. 아이폰, 아이패드, 맥북, 애플워치, 마이크로소프트 서피스, 레노버, LG그램 노트북 수리와 온라인 상담 접수가 가능합니다.",
+    "아이패드 수리, 아이폰 수리, 맥북 수리, 마이크로소프트 서피스 수리, 레노버 노트북 수리, HP 노트북 수리, 아수스 노트북 수리 전문 공식 홈페이지입니다.",
 
   keywords: [
     "아이스마일어게인",
@@ -19,13 +20,6 @@ export const metadata = {
     "LG그램수리",
     "레노버노트북수리",
   ],
-
-  verification: {
-    other: {
-      "naver-site-verification":
-        "d8186fe5792a65d3f4a9ec9db31486f432171596",
-    },
-  },
 };
 
 export default function RootLayout({ children }) {
