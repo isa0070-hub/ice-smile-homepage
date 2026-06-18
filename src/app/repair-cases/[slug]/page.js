@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import PhoneContactButton from "@/components/PhoneContactButton";
 
 export async function generateMetadata({ params }) {
   const resolvedParams = await params;
@@ -204,9 +205,7 @@ export default async function RepairCaseDetailPage({ params }) {
             💬 네이버톡톡 문의
           </a>
 
-          <a href={`tel:${phoneNumber}`} style={phoneContactButtonStyle}>
-            📞 전화문의
-          </a>
+          <PhoneContactButton buttonStyle={phoneContactButtonStyle} />
 
           <a href="/contact" style={onlineContactButtonStyle}>
             📝 온라인 수리문의
