@@ -62,19 +62,8 @@ export default function SiteHeader() {
 
 setIsOpen(false)
 window.location.href = "/"
-return({
-      customer_name: "",
-      phone: "",
-      device: "",
-      model: "",
-      symptom: "",
-      preferred_branch: "강변점",
-      contact_time: "",
-      memo: "",
-    })
-  }
-
-  return (
+}
+return (
     <>
       <header className="site-header" style={headerStyle}>
         <div style={innerStyle}>

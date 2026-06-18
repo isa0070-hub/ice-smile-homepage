@@ -1,6 +1,8 @@
 import PhoneContactButton from "@/components/PhoneContactButton";
 import { supabase } from "@/lib/supabase";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "수리전문 공식서비스센터 | 아이폰 아이패드 맥북 서피스 노트북 수리",
   description:
