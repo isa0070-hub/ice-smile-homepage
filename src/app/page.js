@@ -29,6 +29,12 @@ function maskText(text) {
 }
 
 export default async function Home() {
+  const { data: latestCases } = await supabase
+  .from("repair_cases")
+  .select("*")
+  .order("created_at", { ascending: false })
+  .limit(6);
+
   const { data: contacts } = await supabase
     .from("online_inquiries")
     .select("*")
@@ -153,6 +159,39 @@ export default async function Home() {
         </div>
       </section>
 
+      <section
+  style={{
+    ...sectionStyle,
+    paddingTop: "20px",
+  }}
+>
+  <h2 style={titleStyle}>최근 수리사례</h2>
+
+  <div style={gridStyle}>
+    {latestCases && latestCases.length > 0 ? (
+      latestCases.map((item) => (
+        <a
+          key={item.id}
+          href={`/repair-cases/${item.slug}`}
+          style={{ color: "inherit", textDecoration: "none" }}
+        >
+          <div style={cardStyle}>
+            <img
+              src={item.image_url}
+              alt={item.alt_text || item.title}
+              style={imageStyle}
+            />
+
+            <h3>{item.title}</h3>
+            <p>{item.branch}</p>
+          </div>
+        </a>
+      ))
+    ) : (
+      <p style={{ textAlign: "center" }}>등록된 수리사례가 없습니다.</p>
+    )}
+  </div>
+</section>
       <section style={{ ...sectionStyle, background: "#f8fafc" }}>
         <h2 style={titleStyle}>최근 온라인 접수 현황</h2>
 
