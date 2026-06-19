@@ -269,10 +269,12 @@ function FloatingButtons({ phoneNumber }) {
 
 const mainImageStyle = {
   width: "100%",
-  maxHeight: "460px",
-  objectFit: "cover",
+  height: "auto",
+  maxHeight: "none",
+  objectFit: "contain",
   borderRadius: "18px",
   marginBottom: "34px",
+  display: "block",
 };
 
 const infoBoxStyle = {
@@ -311,8 +313,9 @@ const detailImageCardStyle = {
 
 const detailImageStyle = {
   width: "100%",
-  maxHeight: "520px",
-  objectFit: "cover",
+  height: "auto",
+  maxHeight: "none",
+  objectFit: "contain",
   display: "block",
 };
 
