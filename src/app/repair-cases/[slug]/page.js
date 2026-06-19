@@ -118,6 +118,27 @@ export default async function RepairCaseDetailPage({ params }) {
 
       <section style={contentStyle}>{item.repair_content}</section>
 
+      {item.blog_url && (
+  <section style={blogBoxStyle}>
+    <p style={blogLabelStyle}>관련 네이버 블로그 후기</p>
+
+    <a
+      href={item.blog_url}
+      target="_blank"
+      rel="noreferrer"
+      style={blogTitleLinkStyle}
+    >
+      {item.blog_title || "네이버 블로그에서 자세히 보기"}
+    </a>
+
+    <p style={blogDomainStyle}>blog.naver.com</p>
+  </section>
+)}
+      {item.blog_url && (
+  <div style={blogButtonWrapStyle}>
+    
+  </div>
+)}
       {detailImages && detailImages.length > 0 && (
         <section style={detailImageSectionStyle}>
           <h3 style={{ fontSize: "30px", marginBottom: "24px" }}>
@@ -452,4 +473,53 @@ const floatingPhoneButtonStyle = {
 
 const floatingIconStyle = {
   fontSize: "18px",
+};
+
+const blogButtonWrapStyle = {
+  marginTop: "30px",
+  textAlign: "center",
+};
+
+const blogButtonStyle = {
+  display: "inline-block",
+  padding: "16px 28px",
+  background: "#03c75a",
+  color: "#fff",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: "900",
+  fontSize: "17px",
+};
+
+const blogBoxStyle = {
+  marginTop: "34px",
+  padding: "24px",
+  border: "1px solid #e5e7eb",
+  borderRadius: "18px",
+  background: "#ffffff",
+  boxShadow: "0 8px 20px rgba(15, 23, 42, 0.08)",
+};
+
+const blogLabelStyle = {
+  margin: "0 0 10px",
+  color: "#03c75a",
+  fontWeight: "900",
+};
+
+const blogTitleLinkStyle = {
+  display: "block",
+  color: "#111827",
+  fontSize: "28px",
+  fontWeight: "900",
+  lineHeight: 1.5,
+  textDecoration: "none",
+  padding: "0",
+  border: "none",
+  background: "transparent",
+};
+
+const blogDomainStyle = {
+  marginTop: "12px",
+  color: "#03c75a",
+  fontWeight: "800",
 };

@@ -39,6 +39,8 @@ export default function AdminRepairCasesPage() {
     seo_keyword: "",
     image_url: "",
     alt_text: "",
+    blog_url: "",
+    blog_title: "",
   });
 
   const [detailImages, setDetailImages] = useState([]);
@@ -239,6 +241,9 @@ export default function AdminRepairCasesPage() {
       seo_keyword: "",
       image_url: "",
       alt_text: "",
+    
+      blog_url: "",
+      blog_title: "",
     });
 
     setDetailImages([]);
@@ -267,6 +272,23 @@ export default function AdminRepairCasesPage() {
           placeholder="예: 선릉점 아이폰15프로 액정파손 교체 수리"
           required
         />
+<label style={labelStyle}>네이버 블로그 링크</label>
+<input
+  name="blog_url"
+  value={form.blog_url}
+  onChange={handleChange}
+  placeholder="https://blog.naver.com/..."
+  style={inputStyle}
+/>
+
+<label style={labelStyle}>블로그 제목</label>
+<input
+  name="blog_title"
+  value={form.blog_title || ""}
+  onChange={handleChange}
+  placeholder="예: 강남아이폰수리 선릉 아이스마일어게인 방문후기"
+  style={inputStyle}
+/>
 
         <label style={labelStyle}>카테고리</label>
         <select
