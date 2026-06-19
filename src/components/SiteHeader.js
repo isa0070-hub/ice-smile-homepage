@@ -93,23 +93,24 @@ return (
 </div>
 
 <a
-  href="https://pf.kakao.com/_ftxmXX/chat"
-  target="_blank"
-  rel="noreferrer"
-  className="mobile-kakao-button"
-  style={mobileKakaoButtonStyle}
->
-  카톡
-</a>
-          <button
-            type="button"
-            className="mobile-menu-button"
-            onClick={() => setIsMenuOpen(true)}
-            style={mobileMenuButtonStyle}
-          >
-            ☰
-          </button>
-        </div>
+    href="https://pf.kakao.com/_ftxmXX/chat"
+    target="_blank"
+    rel="noreferrer"
+    className="mobile-kakao-button"
+    style={mobileKakaoButtonStyle}
+  >
+    카카오
+  </a>
+
+  <button
+    type="button"
+    className="mobile-menu-button"
+    onClick={() => setIsMenuOpen(true)}
+    style={mobileMenuButtonStyle}
+  >
+    ☰
+  </button>
+</div>
       </header>
 
       {isMenuOpen && (
@@ -359,5 +360,4 @@ const mobileKakaoButtonStyle = {
   textDecoration: "none",
   fontWeight: "900",
   fontSize: "13px",
-  marginRight: "8px",
 };
