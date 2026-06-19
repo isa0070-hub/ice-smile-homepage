@@ -362,7 +362,7 @@ const relatedCardStyle = {
 const relatedImageStyle = {
   width: "100%",
   height: "140px",
-  objectFit: "cover",
+  objectFit: "contain",
   borderRadius: "14px",
   marginBottom: "12px",
 };
