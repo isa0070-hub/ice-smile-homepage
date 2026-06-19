@@ -354,10 +354,10 @@ const mobileKakaoButtonStyle = {
   display: "none",
   background: "#FEE500",
   color: "#191919",
-  padding: "11px 14px",
+  padding: "9px 12px",
   borderRadius: "999px",
   textDecoration: "none",
   fontWeight: "900",
-  fontSize: "14px",
+  fontSize: "13px",
   marginRight: "8px",
 };
