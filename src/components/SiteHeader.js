@@ -92,7 +92,8 @@ return (
   <PhoneContactButton buttonStyle={phoneButtonStyle} />
 </div>
 
-<a
+<div style={mobileHeaderActionsStyle}>
+  <a
     href="https://pf.kakao.com/_ftxmXX/chat"
     target="_blank"
     rel="noreferrer"
@@ -110,6 +111,7 @@ return (
   >
     ☰
   </button>
+</div>
 </div>
       </header>
 
@@ -204,8 +206,8 @@ const mobileMenuButtonStyle = {
   border: "none",
   background: "#1e3a8a",
   color: "#fff",
-  width: "44px",
-  height: "44px",
+  width: "42px",
+  height: "42px",
   borderRadius: "50%",
   fontSize: "22px",
   cursor: "pointer",
@@ -360,4 +362,9 @@ const mobileKakaoButtonStyle = {
   textDecoration: "none",
   fontWeight: "900",
   fontSize: "13px",
+};
+const mobileHeaderActionsStyle = {
+  display: "flex",
+  alignItems: "center",
+  gap: "4px",
 };
