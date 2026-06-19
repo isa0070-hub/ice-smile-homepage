@@ -79,10 +79,28 @@ return (
             <a style={navStyle} href="/branches">지점안내</a>
           </nav>
 
-          <div className="desktop-phone">
-            <PhoneContactButton buttonStyle={phoneButtonStyle} />
-          </div>
+          <div className="desktop-phone" style={headerButtonWrapStyle}>
+  <a
+    href="https://pf.kakao.com/_ftxmXX/chat"
+    target="_blank"
+    rel="noreferrer"
+    style={kakaoHeaderButtonStyle}
+  >
+    카카오톡 문의
+  </a>
 
+  <PhoneContactButton buttonStyle={phoneButtonStyle} />
+</div>
+
+<a
+  href="https://pf.kakao.com/_ftxmXX/chat"
+  target="_blank"
+  rel="noreferrer"
+  className="mobile-kakao-button"
+  style={mobileKakaoButtonStyle}
+>
+  카톡
+</a>
           <button
             type="button"
             className="mobile-menu-button"
@@ -316,3 +334,30 @@ const smallTextareaStyle = {
 }
 
 const submitButtonStyle = { padding: "15px", border: "none", borderRadius: "14px", backgroundColor: "#1d4ed8", color: "#fff", fontWeight: 900, fontSize: "16px", cursor: "pointer" }
+
+const headerButtonWrapStyle = {
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
+};
+
+const kakaoHeaderButtonStyle = {
+  background: "#FEE500",
+  color: "#191919",
+  padding: "10px 18px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: "900",
+};
+
+const mobileKakaoButtonStyle = {
+  display: "none",
+  background: "#FEE500",
+  color: "#191919",
+  padding: "11px 14px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: "900",
+  fontSize: "14px",
+  marginRight: "8px",
+};

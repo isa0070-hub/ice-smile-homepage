@@ -96,6 +96,15 @@ export default async function Home() {
 </a>
 
 <PhoneContactButton buttonStyle={buttonStyle} />
+
+<a
+  href="https://pf.kakao.com/_ftxmXX/chat"
+  target="_blank"
+  rel="noreferrer"
+  style={kakaoButtonStyle}
+>
+  카카오톡 문의
+</a>
         </div>
       </section>
 
@@ -416,3 +425,13 @@ const branchImageStyle = {
     background: "#f8fafc",
   };
   
+  const kakaoButtonStyle = {
+    display: "inline-block",
+    margin: "8px",
+    padding: "14px 22px",
+    background: "#FEE500",
+    color: "#191919",
+    borderRadius: "999px",
+    textDecoration: "none",
+    fontWeight: "800",
+  };
