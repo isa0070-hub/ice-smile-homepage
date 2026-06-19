@@ -211,3 +211,37 @@ form {
     justify-content: center;
   }
 }
+
+@media (max-width: 768px) {
+  .home-hero {
+    min-height: 760px !important;
+    padding: 120px 24px 90px !important;
+    background-size: cover !important;
+    background-position: center center !important;
+  }
+
+  .home-hero-title {
+    font-size: 54px !important;
+    line-height: 1.15 !important;
+  }
+
+  .home-hero-subtitle {
+    font-size: 25px !important;
+    line-height: 1.5 !important;
+  }
+
+  .home-hero-buttons {
+    display: grid !important;
+    gap: 14px !important;
+    justify-content: center !important;
+  }
+
+  .home-hero-buttons a,
+  .home-hero-buttons button {
+    width: 100% !important;
+    min-width: 290px !important;
+    max-width: 340px !important;
+    margin: 0 auto !important;
+    font-size: 18px !important;
+  }
+}
