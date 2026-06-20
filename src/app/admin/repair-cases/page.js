@@ -79,8 +79,9 @@ export default function AdminRepairCasesPage() {
       ...form,
       [name]: value,
     };
-
-    nextForm.slug = makeSlug(nextForm.title);
+    if (name === "title" && !form.slug) {
+      nextForm.slug = makeSlug(nextForm.title);
+    }
     nextForm.seo_keyword = makeSeoKeyword(nextForm);
     nextForm.alt_text = makeAltText(nextForm);
 
@@ -190,7 +191,7 @@ export default function AdminRepairCasesPage() {
 
     const finalForm = {
       ...form,
-      slug: makeSlug(form.title),
+      slug: makeSlug(form.slug || form.title),
       seo_keyword: form.seo_keyword || makeSeoKeyword(form),
       alt_text: form.alt_text || makeAltText(form),
     };
@@ -274,6 +275,21 @@ export default function AdminRepairCasesPage() {
           placeholder="예: 선릉점 아이폰15프로 액정파손 교체 수리"
           required
         />
+        <label style={labelStyle}>SEO 주소(URL)</label>
+<input
+  name="slug"
+  value={form.slug}
+  onChange={handleChange}
+  style={inputStyle}
+  placeholder="예: 아이폰15프로액정수리"
+/>
+<div style={autoBoxStyle}>
+  <strong>실제 주소</strong>
+  <p>
+    https://ismileagain.co.kr/repair-cases/
+    {form.slug || "seo-url"}
+  </p>
+</div>
 <label style={labelStyle}>네이버 블로그 링크</label>
 <input
   name="blog_url"
@@ -422,11 +438,6 @@ export default function AdminRepairCasesPage() {
           style={inputStyle}
           placeholder="대표 이미지 업로드 시 자동 입력됩니다."
         />
-
-        <div style={autoBoxStyle}>
-          <strong>자동 생성 SEO 주소</strong>
-          <p>{form.slug || "제목을 입력하면 자동 생성됩니다."}</p>
-        </div>
 
         <div style={autoBoxStyle}>
           <strong>자동 생성 대표 SEO 키워드</strong>
