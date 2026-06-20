@@ -151,6 +151,7 @@ export default function AdminRepairCasesPage() {
         uploadedImages.push({
           image_url: publicUrl,
           alt_text: makeAltText(form, imageIndex),
+          description: "",
           sort_order: imageIndex,
         });
       }
@@ -213,6 +214,7 @@ export default function AdminRepairCasesPage() {
         repair_case_id: insertedCase.id,
         image_url: image.image_url,
         alt_text: image.alt_text,
+        description: image.description || "",
         sort_order: index,
       }));
 
@@ -376,16 +378,28 @@ export default function AdminRepairCasesPage() {
                   style={galleryImageStyle}
                 />
 
-                <label style={smallLabelStyle}>사진 설명 / ALT 문구</label>
-                <textarea
-                  value={image.alt_text}
-                  onChange={(e) =>
-                    handleDetailImageTextChange(index, e.target.value)
-                  }
-                  style={imageTextAreaStyle}
-                  placeholder="사진 설명을 입력해주세요."
-                />
+<label style={smallLabelStyle}>사진 설명</label>
+<textarea
+  value={image.description || ""}
+  onChange={(e) => {
+    const nextImages = detailImages.map((img, i) =>
+      i === index ? { ...img, description: e.target.value } : img
+    );
+    setDetailImages(nextImages);
+  }}
+  style={imageTextAreaStyle}
+  placeholder="상세페이지에 표시될 사진 설명을 입력해주세요."
+/>
 
+<label style={smallLabelStyle}>ALT 문구</label>
+<textarea
+  value={image.alt_text || ""}
+  onChange={(e) =>
+    handleDetailImageTextChange(index, e.target.value)
+  }
+  style={imageTextAreaStyle}
+  placeholder="이미지 ALT 문구를 입력해주세요."
+/>
                 <button
                   type="button"
                   onClick={() => removeDetailImage(index)}
