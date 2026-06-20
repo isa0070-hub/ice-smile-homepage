@@ -44,8 +44,9 @@ export default function AdminRepairCasesPage() {
   });
 
   const [detailImages, setDetailImages] = useState([]);
-  const [message, setMessage] = useState("");
-  const [uploading, setUploading] = useState(false);
+const [message, setMessage] = useState("");
+const [uploading, setUploading] = useState(false);
+const [saving, setSaving] = useState(false);
 
   function makeSlug(value) {
     return value
@@ -188,6 +189,7 @@ export default function AdminRepairCasesPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     setMessage("");
+    setSaving(true);
 
     const finalForm = {
       ...form,
@@ -202,13 +204,14 @@ export default function AdminRepairCasesPage() {
       .select()
       .single();
 
-    if (error) {
-      console.error(error);
-      setMessage(
-        "등록 중 오류가 발생했습니다. SEO 주소 중복 또는 입력값을 확인해주세요."
-      );
-      return;
-    }
+      if (error) {
+        console.error(error);
+        setMessage(
+          "등록 중 오류가 발생했습니다. SEO 주소 중복 또는 입력값을 확인해주세요."
+        );
+        setSaving(false);
+        return;
+      }
 
     if (detailImages.length > 0) {
       const imageRows = detailImages.map((image, index) => ({
@@ -226,11 +229,16 @@ export default function AdminRepairCasesPage() {
       if (imageError) {
         console.error(imageError);
         setMessage("수리사례는 등록됐지만 상세 이미지 저장 중 오류가 발생했습니다.");
+        setSaving(false);
         return;
       }
     }
 
     setMessage("수리사례와 상세 이미지가 등록되었습니다.");
+    setSaving(false);
+    
+      setMessage("오류가 발생했습니다.");
+      setSaving(false);
 
     setForm({
       title: "",
@@ -462,9 +470,13 @@ export default function AdminRepairCasesPage() {
           required
         />
 
-        <button type="submit" style={buttonStyle}>
-          수리사례 등록하기
-        </button>
+        <button
+  type="submit"
+  style={buttonStyle}
+  disabled={saving || uploading}
+>
+  {saving ? "저장 중입니다..." : "수리사례 등록하기"}
+</button>
 
         {message && (
           <p style={{ fontWeight: "800", marginTop: "18px" }}>{message}</p>
