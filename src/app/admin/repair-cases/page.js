@@ -1,5 +1,9 @@
 "use client";
-
+import {
+  generateEnglishSlug,
+  generateSeoKeyword,
+  generateAltText,
+} from "@/lib/seoEngine";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -47,32 +51,17 @@ export default function AdminRepairCasesPage() {
 const [message, setMessage] = useState("");
 const [uploading, setUploading] = useState(false);
 const [saving, setSaving] = useState(false);
+function makeSlug(nextForm) {
+  return generateEnglishSlug(nextForm);
+}
 
-  function makeSlug(value) {
-    return value
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/[^\w가-힣-]/g, "");
-  }
+function makeSeoKeyword(nextForm) {
+  return generateSeoKeyword(nextForm);
+}
 
-  function makeSeoKeyword(nextForm) {
-    return [nextForm.branch, nextForm.device, nextForm.model, nextForm.symptom]
-      .filter(Boolean)
-      .join(" ");
-  }
-
-  function makeAltText(nextForm, index = null) {
-    const base = `${nextForm.branch || "수리전문 공식서비스센터"} ${
-      nextForm.device || "기기"
-    } ${nextForm.model || ""} ${
-      nextForm.symptom || "수리"
-    } 수리사례 이미지 ${nextForm.title || ""}`.trim();
-
-    return index === null ? base : `${base} 상세사진 ${index + 1}`;
-  }
-
+function makeAltText(nextForm, index = null) {
+  return generateAltText(nextForm, index);
+}
   function handleChange(e) {
     const { name, value } = e.target;
 
@@ -80,8 +69,8 @@ const [saving, setSaving] = useState(false);
       ...form,
       [name]: value,
     };
-    if (name === "title" && !form.slug) {
-      nextForm.slug = makeSlug(nextForm.title);
+    if (["title", "device", "model", "symptom"].includes(name)) {
+      nextForm.slug = makeSlug(nextForm);
     }
     nextForm.seo_keyword = makeSeoKeyword(nextForm);
     nextForm.alt_text = makeAltText(nextForm);
@@ -193,7 +182,7 @@ const [saving, setSaving] = useState(false);
 
     const finalForm = {
       ...form,
-      slug: makeSlug(form.slug || form.title),
+      slug: form.slug || makeSlug(form),
       seo_keyword: form.seo_keyword || makeSeoKeyword(form),
       alt_text: form.alt_text || makeAltText(form),
     };
@@ -236,9 +225,6 @@ const [saving, setSaving] = useState(false);
 
     setMessage("수리사례와 상세 이미지가 등록되었습니다.");
     setSaving(false);
-    
-      setMessage("오류가 발생했습니다.");
-      setSaving(false);
 
     setForm({
       title: "",
