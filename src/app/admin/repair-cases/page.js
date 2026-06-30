@@ -3,6 +3,9 @@ import {
   generateEnglishSlug,
   generateSeoKeyword,
   generateAltText,
+  generateGroupAltText,
+  generateImageDescription,
+  generateAltFromDescription,
 } from "@/lib/seoEngine";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
@@ -71,10 +74,22 @@ function makeAltText(nextForm, index = null) {
     };
     if (["title", "device", "model", "symptom"].includes(name)) {
       nextForm.slug = makeSlug(nextForm);
+    
+      setDetailImages((prevImages) =>
+        prevImages.map((image, index) => ({
+          ...image,
+          alt_text: generateGroupAltText(nextForm, index),
+          description:
+            image.description && image.description.trim()
+              ? image.description
+              : generateImageDescription(nextForm, index),
+        }))
+      );
     }
+    
     nextForm.seo_keyword = makeSeoKeyword(nextForm);
     nextForm.alt_text = makeAltText(nextForm);
-
+    
     setForm(nextForm);
   }
 
@@ -141,8 +156,8 @@ function makeAltText(nextForm, index = null) {
 
         uploadedImages.push({
           image_url: publicUrl,
-          alt_text: makeAltText(form, imageIndex),
-          description: "",
+          alt_text: generateGroupAltText(form, imageIndex),
+          description: generateImageDescription(form, imageIndex),
           sort_order: imageIndex,
         });
       }
@@ -158,16 +173,19 @@ function makeAltText(nextForm, index = null) {
   }
 
   function handleDetailImageTextChange(index, value) {
-    const nextImages = detailImages.map((image, i) =>
-      i === index
-        ? {
-            ...image,
-            alt_text: value,
-          }
-        : image
-    );
+    const description = e.target.value;
 
-    setDetailImages(nextImages);
+const nextImages = detailImages.map((img, i) =>
+  i === index
+    ? {
+        ...img,
+        description,
+        alt_text: generateAltFromDescription(form, description, index),
+      }
+    : img
+);
+
+setDetailImages(nextImages);
   }
 
   function removeDetailImage(index) {
