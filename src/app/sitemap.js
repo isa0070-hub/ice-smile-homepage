@@ -1,9 +1,10 @@
 import { supabase } from "@/lib/supabase";
+
 export const dynamic = "force-dynamic";
 
-export default async function sitemap() {
-  const baseUrl = "https://www.ismileagain.co.kr";
+const baseUrl = "https://www.ismileagain.co.kr";
 
+export default async function sitemap() {
   const { data: cases, error } = await supabase
     .from("repair_cases")
     .select("slug, created_at")
@@ -15,38 +16,56 @@ export default async function sitemap() {
     console.error("sitemap repair_cases error:", error);
   }
 
+  // 가장 최근 수리사례 등록일
+  // 홈과 수리사례 목록은 새 글 등록 시 실제 내용이 바뀌므로 이 날짜를 사용
+  const latestCaseDate =
+    cases?.[0]?.created_at
+      ? new Date(cases[0].created_at)
+      : undefined;
+
   const staticPages = [
     {
       url: baseUrl,
-      lastModified: new Date(),
+      ...(latestCaseDate ? { lastModified: latestCaseDate } : {}),
+      changeFrequency: "daily",
+      priority: 1,
     },
     {
       url: `${baseUrl}/repair-cases`,
-      lastModified: new Date(),
+      ...(latestCaseDate ? { lastModified: latestCaseDate } : {}),
+      changeFrequency: "daily",
+      priority: 0.9,
     },
     {
       url: `${baseUrl}/contact`,
-      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.7,
     },
     {
       url: `${baseUrl}/privacy`,
-      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 0.3,
     },
     {
       url: `${baseUrl}/terms`,
-      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 0.3,
     },
     {
       url: `${baseUrl}/notices`,
-      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.6,
     },
   ];
 
-  const repairCasePages =
-    cases?.map((item) => ({
-      url: `${baseUrl}/repair-cases/${encodeURIComponent(item.slug)}`,
-      lastModified: item.created_at ? new Date(item.created_at) : new Date(),
-    })) || [];
+  const repairCasePages = (cases || []).map((item) => ({
+    url: `${baseUrl}/repair-cases/${encodeURIComponent(item.slug)}`,
+    ...(item.created_at
+      ? { lastModified: new Date(item.created_at) }
+      : {}),
+    changeFrequency: "monthly",
+    priority: 0.8,
+  }));
 
   return [...staticPages, ...repairCasePages];
 }
