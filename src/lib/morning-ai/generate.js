@@ -4,80 +4,100 @@
  * -----------------------------------------------------------
  * 파일명 : generate.js
  *
- * 역할(Role)
- * 분석 결과를 최종 브리핑 데이터로 생성한다.
+ * 역할
+ * 분석 결과를 DB 및 화면 출력용 브리핑 구조로 변환한다.
  *
- * 책임(Responsibility)
- * - DB 저장용 데이터 구조 생성
- * - 화면 출력에 맞는 문장 정리
- * - 날짜, 제목, 요약, 상세 분석 구성
- *
- * 절대 하지 말아야 할 일
- * - 외부 데이터 직접 수집
- * - AI 분석 판단
- * - DB 저장
- *
- * 개발 원칙
- * 1. 분석은 analyze.js에서만 한다.
- * 2. generate.js는 보여줄 형태로 정리만 한다.
- * 3. 화면과 DB 구조가 바뀌면 이 파일에서 조정한다.
- * 4. 200줄을 넘기면 generate 폴더로 분리한다.
- *
- * 작성
- * 오광윤 + 똑순이
+ * 주의
+ * - 외부 데이터 수집 금지
+ * - AI 판단 금지
+ * - DB 저장 금지
  * ===========================================================
  */
 
 import { logInfo, logSuccess } from "./logger";
+import { getKoreaDateString } from "./time";
 
 export async function generateMorningBrief(analyzedData) {
   logInfo("📝 Morning Brief 생성 시작");
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getKoreaDateString();
 
   const briefing = {
     note_date: today,
-    title: "AI Morning Brief",
 
-    summary: analyzedData.aiOneLine,
+    title: `${today} AI Morning Brief`,
 
-    ai_one_line: analyzedData.aiOneLine,
-    ai_direction: analyzedData.aiDirection,
-    ai_confidence_score: analyzedData.aiConfidenceScore,
-    ai_market_mood: analyzedData.aiMarketMood,
+    summary:
+      analyzedData.aiOneLine ||
+      "오늘의 주요 흐름을 분석하고 있습니다.",
 
-    impact_top5: analyzedData.impactTop5,
+    ai_one_line:
+      analyzedData.aiOneLine ||
+      "오늘의 주요 흐름을 함께 확인해 보세요.",
 
-    ai_connection_flow: analyzedData.connectionFlow,
-    ai_reasoning_summary: analyzedData.connectionFlow,
+    ai_direction:
+      analyzedData.aiDirection ||
+      "관망",
 
-    exchange_market_analysis: analyzedData.exchangeMarketAnalysis,
+    ai_confidence_score:
+      Number(analyzedData.aiConfidenceScore) || 0,
+
+    ai_market_mood:
+      analyzedData.aiMarketMood ||
+      "⚪ 확인 중",
+
+    impact_top5: Array.isArray(analyzedData.impactTop5)
+      ? analyzedData.impactTop5
+      : [],
+
+    ai_connection_flow:
+      analyzedData.connectionFlow || "",
+
+    ai_reasoning_summary:
+      analyzedData.connectionFlow || "",
+
+    exchange_market_analysis:
+      analyzedData.exchangeMarketAnalysis || "",
 
     weather_summary:
-      "오늘 날씨는 실제 날씨 API 연결 전까지 테스트 데이터로 표시됩니다.",
+      analyzedData.weatherSummary ||
+      "날씨 데이터가 아직 연결되지 않았습니다.",
 
     news_summary:
-      "밤사이 주요 뉴스는 실제 뉴스 API 연결 전까지 테스트 데이터로 표시됩니다.",
+      analyzedData.newsSummary ||
+      "뉴스 데이터가 아직 연결되지 않았습니다.",
 
     market_summary:
-      analyzedData.exchangeMarketAnalysis,
+      analyzedData.exchangeMarketAnalysis ||
+      "시장 데이터가 아직 연결되지 않았습니다.",
 
     tech_summary:
-      "AI·IT·기술 뉴스는 이후 데이터 수집 단계에서 연결할 예정입니다.",
+      analyzedData.techSummary ||
+      "AI·IT·기술 데이터가 아직 연결되지 않았습니다.",
 
     business_point:
-      "오늘은 하나의 정보만 보지 말고 여러 지표를 함께 보며 판단하는 것이 좋습니다.",
+      analyzedData.businessPoint ||
+      "하나의 정보보다 여러 흐름을 연결해서 판단하는 것이 좋습니다.",
 
     blog_keywords:
+      analyzedData.blogKeywords ||
       "AI 브리핑, 오늘의 흐름, 시장 인사이트",
 
-    uncertainty_note: analyzedData.uncertaintyNote,
+    uncertainty_note:
+      analyzedData.uncertaintyNote ||
+      "현재 확인되지 않은 데이터가 포함될 수 있습니다.",
 
-    detailed_analysis:
-      `${analyzedData.connectionFlow}\n\n${analyzedData.exchangeMarketAnalysis}\n\n${analyzedData.uncertaintyNote}`,
+    detailed_analysis: [
+      analyzedData.connectionFlow,
+      analyzedData.exchangeMarketAnalysis,
+      analyzedData.uncertaintyNote,
+    ]
+      .filter(Boolean)
+      .join("\n\n"),
 
     content:
-      "Good Morning AI가 생성한 테스트용 브리핑입니다.",
+      analyzedData.content ||
+      "Good Morning AI가 생성한 브리핑입니다.",
 
     is_published: true,
   };

@@ -1,91 +1,322 @@
 /**
  * ===========================================================
- * Project : Good Morning AI
- * -----------------------------------------------------------
- * 파일명 : analyze.js
+ * Good Morning AI
+ * analyze.js
  *
- * 역할(Role)
- * 수집된 데이터를 분석하고, 오늘의 핵심 흐름을 판단한다.
- *
- * 책임(Responsibility)
- * - 수집 데이터 해석
- * - 중요도 판단
- * - 연결 흐름 구성
- * - 불확실성 표시
- *
- * 절대 하지 말아야 할 일
- * - 외부 데이터 직접 수집
- * - DB 저장
- * - 화면 출력
- *
- * 개발 원칙
- * 1. 빠른 결론보다 정확한 추론을 우선한다.
- * 2. 불확실하면 불확실하다고 표시한다.
- * 3. 단일 뉴스가 아니라 여러 정보를 연결해서 판단한다.
- * 4. 분석 로직이 200줄을 넘기면 analyze 폴더로 분리한다.
- *
- * 작성
- * 오광윤 + 똑순이
+ * 역할
+ * - 수집된 데이터를 분석
+ * - 연결된 실제 데이터와 미연결 데이터를 구분
+ * - 오늘의 기본 흐름 구성
  * ===========================================================
  */
 
-import { logInfo, logSuccess } from "./logger";
-
-export async function analyzeMorningData(collectedData) {
-  logInfo("🧠 Morning AI 분석 시작");
-
-  const analyzedData = {
-    analyzedAt: new Date().toISOString(),
-    source: collectedData,
-
-    aiOneLine:
-      "오늘은 단일 뉴스보다 환율, 증시, 유가 흐름을 함께 보며 전체 분위기를 판단하는 것이 좋아 보입니다.",
-
-    aiDirection: "관망",
-
-    aiConfidenceScore: 83,
-
-    aiMarketMood: "🟡 보통",
-
-    impactTop5: [
-      {
-        title: "환율",
-        score: 93,
-        reason: "국내 증시와 물가 흐름에 동시에 영향을 줄 수 있는 핵심 변수입니다.",
-      },
-      {
-        title: "미국증시",
-        score: 88,
-        reason: "밤사이 투자심리가 국내 시장에도 이어질 가능성이 있습니다.",
-      },
-      {
-        title: "국내증시",
-        score: 84,
-        reason: "외국인 수급과 환율 움직임을 함께 확인해야 합니다.",
-      },
-      {
-        title: "국제유가",
-        score: 76,
-        reason: "물가와 운송비 부담에 영향을 줄 수 있습니다.",
-      },
-      {
-        title: "날씨",
-        score: 63,
-        reason: "외부 활동과 이동 흐름에 참고할 변수입니다.",
-      },
-    ],
-
-    connectionFlow:
-      "미국증시 흐름 → 달러 움직임 → 원달러 환율 → 외국인 수급 → 국내증시 분위기 → 소비심리 순서로 연결해서 보는 것이 좋습니다.",
-
-    exchangeMarketAnalysis:
-      "환율 상승은 국내 증시에 부담 요인이 될 수 있습니다. 특히 외국인 수급이 약해질 경우 코스피와 코스닥 모두 조심스러운 흐름이 나올 수 있습니다. 다만 변동폭이 크지 않다면 단기적으로는 관망 심리가 더 강할 가능성이 있습니다.",
-
-    uncertaintyNote:
-      "현재는 실제 데이터가 연결되기 전 테스트 분석입니다. 실제 뉴스, 환율, 증시 데이터가 연결되면 판단 근거와 신뢰도가 더 정확해집니다.",
-  };
-
-  logSuccess("Morning AI 분석 완료");
-
-  return analyzedData;
-}
+import {
+    logInfo,
+    logSuccess,
+  } from "./logger";
+  
+  function hasValue(value) {
+    return (
+      value !== null &&
+      value !== undefined &&
+      value !== ""
+    );
+  }
+  
+  function getWeatherImpactScore(weather) {
+    if (!weather?.ok) {
+      return 0;
+    }
+  
+    const rainProbability =
+      Number(
+        weather?.daily
+          ?.maximumRainProbability
+      ) || 0;
+  
+    const windSpeed =
+      Number(
+        weather?.current?.windSpeed
+      ) || 0;
+  
+    let score = 55;
+  
+    if (rainProbability >= 70) {
+      score += 25;
+    } else if (rainProbability >= 40) {
+      score += 15;
+    } else if (rainProbability >= 20) {
+      score += 7;
+    }
+  
+    if (windSpeed >= 25) {
+      score += 12;
+    } else if (windSpeed >= 15) {
+      score += 6;
+    }
+  
+    return Math.min(95, score);
+  }
+  
+  function getWeatherImpactReason(weather) {
+    if (!weather?.ok) {
+      return "날씨 데이터를 불러오지 못했습니다.";
+    }
+  
+    const rainProbability =
+      Number(
+        weather?.daily
+          ?.maximumRainProbability
+      ) || 0;
+  
+    const condition =
+      weather?.current?.condition ||
+      "날씨";
+  
+    if (rainProbability >= 70) {
+      return `${condition} 상태이며 강수 가능성이 높아 이동과 외부 일정에 영향을 줄 수 있습니다.`;
+    }
+  
+    if (rainProbability >= 40) {
+      return `${condition} 상태로 외출 전 강수 여부를 한 번 더 확인하는 것이 좋습니다.`;
+    }
+  
+    return `${condition} 상태로 이동과 외부 일정을 계획할 때 참고할 수 있습니다.`;
+  }
+  
+  function buildPeriodSummary(periods) {
+    if (
+      !Array.isArray(periods) ||
+      periods.length === 0
+    ) {
+      return "";
+    }
+  
+    return periods
+      .map((period) => {
+        const pieces = [
+          period.label,
+          period.condition,
+        ];
+  
+        if (hasValue(period.temperature)) {
+          pieces.push(
+            `${period.temperature}°`
+          );
+        }
+  
+        if (
+          hasValue(
+            period.rainProbability
+          )
+        ) {
+          pieces.push(
+            `강수 ${period.rainProbability}%`
+          );
+        }
+  
+        return pieces.join(" ");
+      })
+      .join(", ");
+  }
+  
+  function buildWeatherSummary(weather) {
+    if (!weather?.ok) {
+      return (
+        "날씨 데이터를 불러오지 못했습니다. " +
+        "외출 전에 최신 기상 정보를 다시 확인해 주세요."
+      );
+    }
+  
+    const current =
+      weather.current || {};
+  
+    const daily =
+      weather.daily || {};
+  
+    const mainParts = [
+      `${weather.location} 현재 ${current.condition || "날씨 확인 중"}`,
+    ];
+  
+    if (hasValue(current.temperature)) {
+      mainParts.push(
+        `${current.temperature}°`
+      );
+    }
+  
+    if (
+      hasValue(
+        current.apparentTemperature
+      )
+    ) {
+      mainParts.push(
+        `체감 ${current.apparentTemperature}°`
+      );
+    }
+  
+    if (
+      hasValue(
+        daily.minimumTemperature
+      ) &&
+      hasValue(
+        daily.maximumTemperature
+      )
+    ) {
+      mainParts.push(
+        `오늘 최저 ${daily.minimumTemperature}°·최고 ${daily.maximumTemperature}°`
+      );
+    }
+  
+    if (
+      hasValue(
+        daily.maximumRainProbability
+      )
+    ) {
+      mainParts.push(
+        `최대 강수확률 ${daily.maximumRainProbability}%`
+      );
+    }
+  
+    if (
+      hasValue(current.windSpeed)
+    ) {
+      mainParts.push(
+        `바람 ${current.windSpeed}km/h`
+      );
+    }
+  
+    const periodSummary =
+      buildPeriodSummary(
+        weather.periods
+      );
+  
+    if (periodSummary) {
+      return `${mainParts.join(
+        ", "
+      )}. 시간대별로는 ${periodSummary}입니다.`;
+    }
+  
+    return `${mainParts.join(", ")}.`;
+  }
+  
+  function buildWeatherBusinessPoint(weather) {
+    if (!weather?.ok) {
+      return (
+        "날씨 데이터가 확인되지 않아 " +
+        "외부 이동과 방문 일정은 별도로 확인하는 것이 좋습니다."
+      );
+    }
+  
+    const rainProbability =
+      Number(
+        weather?.daily
+          ?.maximumRainProbability
+      ) || 0;
+  
+    if (rainProbability >= 60) {
+      return (
+        "비 가능성이 높아 방문 고객의 이동이 줄거나 시간대가 변경될 수 있습니다. " +
+        "전화·온라인 문의 응대를 강화하는 것이 좋습니다."
+      );
+    }
+  
+    return (
+      "날씨로 인한 이동 부담이 크지 않다면 외부 일정과 방문 흐름을 활용할 수 있습니다. " +
+      "다만 시간대별 강수 가능성은 확인하는 것이 좋습니다."
+    );
+  }
+  
+  export async function analyzeMorningData(
+    collectedData
+  ) {
+    logInfo("🧠 Morning AI 분석 시작");
+  
+    const weather =
+      collectedData?.weather;
+  
+    const weatherAvailable =
+      Boolean(weather?.ok);
+  
+    const weatherSummary =
+      buildWeatherSummary(weather);
+  
+    const weatherImpactScore =
+      getWeatherImpactScore(weather);
+  
+    const analyzedData = {
+      analyzedAt: new Date().toISOString(),
+  
+      source: collectedData,
+  
+      aiOneLine: weatherAvailable
+        ? `${weather.location}의 실제 날씨를 먼저 확인하고 이동과 일정을 조정하세요. 시장과 뉴스 데이터는 아직 연결 전입니다.`
+        : "현재 연결된 실시간 데이터가 부족하므로 확인되지 않은 흐름을 단정하지 않는 것이 좋습니다.",
+  
+      aiDirection: weatherAvailable
+        ? Number(
+              weather?.daily
+                ?.maximumRainProbability
+            ) >= 60
+          ? "이동 주의"
+          : "일정 유지"
+        : "확인 필요",
+  
+      aiConfidenceScore:
+        weatherAvailable
+          ? 68
+          : 40,
+  
+      aiMarketMood:
+        "⚪ 시장 데이터 준비 중",
+  
+      impactTop5: weatherAvailable
+        ? [
+            {
+              title: "날씨",
+              score:
+                weatherImpactScore,
+              reason:
+                getWeatherImpactReason(
+                  weather
+                ),
+            },
+          ]
+        : [],
+  
+      connectionFlow: weatherAvailable
+        ? "현재 날씨 → 이동 편의 → 방문·외출 가능성 → 오늘의 일정 운영 순서로 연결해서 보는 것이 좋습니다."
+        : "실시간 데이터가 충분히 연결된 뒤 정보 간 연결 흐름을 분석합니다.",
+  
+      exchangeMarketAnalysis:
+        "환율과 국내·미국 증시 데이터는 아직 연결되지 않았습니다. 실제 수치가 연결되기 전에는 시장 방향을 단정하지 않습니다.",
+  
+      weatherSummary,
+  
+      newsSummary:
+        "뉴스 데이터가 아직 연결되지 않았습니다.",
+  
+      techSummary:
+        "AI·IT·기술 뉴스 데이터가 아직 연결되지 않았습니다.",
+  
+      businessPoint:
+        buildWeatherBusinessPoint(
+          weather
+        ),
+  
+      blogKeywords:
+        "오늘 날씨, AI 아침 브리핑, 오늘의 흐름",
+  
+      content: weatherAvailable
+        ? `${weather.location} 실제 날씨 데이터를 반영한 Morning AI 브리핑입니다.`
+        : "날씨 데이터를 불러오지 못해 제한된 정보로 구성한 Morning AI 브리핑입니다.",
+  
+      uncertaintyNote:
+        weatherAvailable
+          ? "현재 브리핑은 실제 날씨 데이터를 반영했습니다. 환율, 증시, 뉴스, 유가 등은 아직 연결 전이므로 해당 영역은 판단 근거로 사용하지 않았습니다."
+          : "현재 실제 외부 데이터가 충분히 연결되지 않아 판단 신뢰도가 낮습니다.",
+    };
+  
+    logSuccess("Morning AI 분석 완료");
+  
+    return analyzedData;
+  }

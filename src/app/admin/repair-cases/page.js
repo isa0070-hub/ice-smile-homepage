@@ -298,7 +298,7 @@ setDetailImages(nextImages);
 <div style={autoBoxStyle}>
   <strong>실제 주소</strong>
   <p>
-    https://ismileagain.co.kr/repair-cases/
+    https://www.ismileagain.co.kr/repair-cases/
     {form.slug || "seo-url"}
   </p>
 </div>

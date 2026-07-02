@@ -1,0 +1,38 @@
+/* /morning 경로가 열렸을 때만 적용됨 */
+body:has(#morning-root) {
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background: #f4f7fb !important;
+  }
+  
+  /*
+    기존 홈페이지 헤더, 팝업, 푸터를 숨김.
+    #morning-root를 포함하고 있는 영역은 유지함.
+  */
+  body:has(#morning-root)
+    > *:not(script):not(style):not(:has(#morning-root)) {
+    display: none !important;
+  }
+  
+  /* 기존 layout.js에 설정된 padding-top: 78px 제거 */
+  body:has(#morning-root) > div:has(#morning-root) {
+    padding-top: 0 !important;
+    margin: 0 !important;
+    min-height: 100vh !important;
+  }
+  
+  /* 모닝 AI를 브라우저 전체 화면으로 고정 */
+  #morning-root {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483647;
+    width: 100%;
+    height: 100dvh;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow: auto;
+    background: #f4f7fb;
+    isolation: isolate;
+  }
