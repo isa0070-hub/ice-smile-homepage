@@ -11,16 +11,23 @@ export async function generateMetadata({ params }) {
     .eq("slug", slug)
     .single();
 
-  return {
-    title: item
-      ? `${item.title} | 수리전문 공식서비스센터`
-      : "수리사례 | 수리전문 공식서비스센터",
-    description: item
-      ? `${item.seo_keyword || item.title} 관련 수리사례입니다. ${
-          item.device || ""
-        } ${item.model || ""} ${item.symptom || ""}`
-      : "수리사례 상세페이지입니다.",
-  };
+    return {
+      title: item
+        ? `${item.title} | 수리전문 공식서비스센터`
+        : "수리사례 | 수리전문 공식서비스센터",
+    
+      description: item
+        ? `${item.seo_keyword || item.title} 관련 수리사례입니다. ${
+            item.device || ""
+          } ${item.model || ""} ${item.symptom || ""}`
+        : "수리사례 상세페이지입니다.",
+    
+      alternates: {
+        canonical: item
+          ? `/repair-cases/${item.slug}`
+          : "/repair-cases",
+      },
+    };
 }
 
 export default async function RepairCaseDetailPage({ params }) {

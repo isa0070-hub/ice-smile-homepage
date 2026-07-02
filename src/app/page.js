@@ -7,6 +7,10 @@ export const metadata = {
   title: "수리전문 공식서비스센터 | 아이폰 아이패드 맥북 서피스 노트북 수리",
   description:
     "아이폰, 아이패드, 맥북, 애플워치, 마이크로소프트 서피스, 레노버, LG그램 노트북 및 태블릿 수리 전문 서비스센터입니다.",
+
+  alternates: {
+    canonical: "/",
+  },
 };
 
 function maskName(name) {
