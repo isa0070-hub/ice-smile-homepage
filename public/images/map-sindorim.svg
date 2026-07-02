@@ -9,7 +9,7 @@
   <text x="330" y="365" text-anchor="middle" font-size="34" font-weight="900" fill="#111827">신도림역</text>
   <rect x="500" y="115" width="280" height="135" rx="18" fill="#2563eb"/>
   <text x="640" y="165" text-anchor="middle" font-size="30" font-weight="800" fill="white">신도림테크노마트</text>
-  <text x="640" y="205" text-anchor="middle" font-size="22" fill="white">9층 57번 기둥 앞</text>
+  <text x="640" y="205" text-anchor="middle" font-size="22" fill="white">9층 47번 기둥 뒷편</text>
   <path d="M365 280 C430 250, 500 220, 560 190" stroke="#f97316" stroke-width="10" fill="none" stroke-linecap="round" stroke-dasharray="18 14"/>
   <circle cx="560" cy="190" r="18" fill="#ef4444"/>
   <text x="560" y="196" text-anchor="middle" font-size="18" font-weight="800" fill="white">📍</text>

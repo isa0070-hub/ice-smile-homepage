@@ -316,7 +316,7 @@ export default async function Home() {
 </a>
     <h3>신도림점</h3>
     <p>서울특별시 구로구 새말로 97</p>
-    <p>신도림테크노마트 9층 57번 기둥 앞</p>
+    <p>신도림테크노마트 9층 47번 기둥 뒷편</p>
     <p>
       <a href="tel:02-2111-8899" style={phoneStyle}>
         📞 02-2111-8899
