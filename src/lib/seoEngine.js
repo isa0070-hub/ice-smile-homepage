@@ -1,19 +1,25 @@
 export function generateEnglishSlug(form) {
-    const source = [form.title, form.device, form.model, form.symptom]
+    const text = [
+      form.title,
+      form.device,
+      form.model,
+      form.symptom,
+    ]
       .filter(Boolean)
       .join(" ")
       .toLowerCase()
       .replace(/\s+/g, "");
   
-    const map = [
-      ["맥북프로", "macbook-pro"],
-      ["맥북에어", "macbook-air"],
-      ["맥북", "macbook"],
+    const dictionary = [
+      // ===== Device =====
       ["아이폰", "iphone"],
       ["아이패드프로", "ipad-pro"],
       ["아이패드에어", "ipad-air"],
       ["아이패드미니", "ipad-mini"],
       ["아이패드", "ipad"],
+      ["맥북프로", "macbook-pro"],
+      ["맥북에어", "macbook-air"],
+      ["맥북", "macbook"],
       ["애플워치", "apple-watch"],
       ["서피스프로", "surface-pro"],
       ["서피스랩탑", "surface-laptop"],
@@ -24,64 +30,90 @@ export function generateEnglishSlug(form) {
       ["lg그램", "lg-gram"],
       ["그램", "lg-gram"],
   
-      ["충전중표기", "charging-indicator"],
-      ["충전표시", "charging-indicator"],
-      ["충전안됨", "not-charging"],
-      ["충전불량", "charging-issue"],
-      ["전원불량", "power-issue"],
-      ["전원불", "power-issue"],
-      ["전원안됨", "no-power"],
-      ["전원켜지지않음", "no-power"],
-      ["켜지지않음", "no-power"],
-      ["부팅안됨", "boot-failure"],
+      // ===== Model =====
+      ["16프로맥스","16-pro-max"],
+      ["16프로","16-pro"],
+      ["16플러스","16-plus"],
+      ["16","16"],
   
-      ["액정파손", "broken-screen"],
-      ["액정교체", "screen-replacement"],
-      ["액정수리", "screen-repair"],
-      ["액정", "screen"],
-      ["배터리교체", "battery-replacement"],
-      ["배터리", "battery"],
-      ["후면유리", "back-glass"],
-      ["카메라렌즈", "camera-lens"],
-      ["카메라", "camera"],
-      ["터치불량", "touch-issue"],
-      ["침수세척", "water-damage-cleaning"],
-      ["침수", "water-damage"],
+      ["15프로맥스","15-pro-max"],
+      ["15프로","15-pro"],
+      ["15플러스","15-plus"],
+      ["15","15"],
   
-      ["메인보드", "logic-board"],
-      ["보드수리", "board-repair"],
-      ["키보드불량", "keyboard-issue"],
-      ["트랙패드불량", "trackpad-issue"],
-      ["발열", "overheating"],
-      ["팬소음", "fan-noise"],
-      ["스피커불량", "speaker-issue"],
-      ["마이크불량", "microphone-issue"],
-      ["와이파이불량", "wifi-issue"],
-      ["블루투스불량", "bluetooth-issue"],
-      ["페이스아이디", "face-id"],
-      ["faceid", "face-id"],
-      ["트루톤", "true-tone"],
+      ["14프로맥스","14-pro-max"],
+      ["14프로","14-pro"],
+      ["14플러스","14-plus"],
+      ["14","14"],
   
-      ["수리", "repair"],
-      ["교체", "replacement"],
+      ["13프로맥스","13-pro-max"],
+      ["13프로","13-pro"],
+      ["13미니","13-mini"],
+      ["13","13"],
+  
+      ["12.9","12-9"],
+      ["11인치","11"],
+      ["10.9","10-9"],
+  
+      // ===== Repair =====
+      ["액정파손","broken-screen"],
+      ["액정교체","screen-replacement"],
+      ["액정수리","screen-repair"],
+  
+      ["배터리교체","battery-replacement"],
+      ["배터리성능저하","battery-replacement"],
+      ["배터리스웰링","battery-replacement"],
+  
+      ["후면유리","back-glass"],
+      ["카메라렌즈","camera-lens"],
+  
+      ["충전안됨","charging"],
+      ["충전불량","charging"],
+      ["전원불량","power"],
+      ["전원안됨","power"],
+      ["부팅안됨","boot"],
+      ["침수","water-damage"],
+  
+      ["메인보드","logic-board"],
+      ["보드수리","board-repair"],
+  
+      ["터치불량","touch"],
+      ["발열","overheating"],
+      ["팬소음","fan"],
+      ["스피커불량","speaker"],
+      ["마이크불량","microphone"],
+      ["와이파이불량","wifi"],
+      ["블루투스불량","bluetooth"],
+      ["트루톤","true-tone"],
+      ["페이스아이디","face-id"],
     ];
   
-    const words = [];
+    const result = [];
   
-    map.forEach(([ko, en]) => {
-      if (source.includes(ko)) words.push(en);
-    });
+    let remain = text;
   
-    if (words.length === 0) {
-      return source
-        .replace(/[^\w\s-]/g, " ")
-        .replace(/\s+/g, "-")
-        .replace(/-+/g, "-")
-        .replace(/^-|-$/g, "")
-        .slice(0, 80);
+    for (const [ko, en] of dictionary) {
+      if (remain.includes(ko)) {
+        result.push(en);
+  
+        remain = remain.replaceAll(ko, "");
+      }
     }
   
-    return [...new Set(words)]
+    // 중복 제거
+    const unique = [...new Set(result)];
+  
+    // repair/replacement 같은 일반 단어 제거
+    const filtered = unique.filter((word) => {
+      return !(
+        word === "repair" ||
+        word === "replacement" ||
+        word === "screen" ||
+        word === "battery"
+      );
+    });
+  
+    return filtered
       .join("-")
       .replace(/-+/g, "-")
       .replace(/^-|-$/g, "")
