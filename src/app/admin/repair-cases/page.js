@@ -34,6 +34,42 @@ function AdminBackButton() {
 }
 
 export default function AdminRepairCasesPage() {
+  function normalizeSlugForAdmin(value = "") {
+    return String(value)
+      .normalize("NFKD")
+      .toLowerCase()
+      .replace(/&/g, "-and-")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 90)
+      .replace(/-[^-]*$/g, "")
+      .replace(/^-|-$/g, "");
+  }
+  
+  function makeUniqueSlugForAdmin(baseSlug, existingSlugs = []) {
+    const safeBaseSlug = normalizeSlugForAdmin(baseSlug) || "repair-case";
+  
+    const usedSlugs = new Set(
+      existingSlugs
+        .filter(Boolean)
+        .map((slug) => normalizeSlugForAdmin(slug))
+    );
+  
+    if (!usedSlugs.has(safeBaseSlug)) {
+      return safeBaseSlug;
+    }
+  
+    let number = 2;
+    let nextSlug = `${safeBaseSlug}-${number}`;
+  
+    while (usedSlugs.has(nextSlug)) {
+      number += 1;
+      nextSlug = `${safeBaseSlug}-${number}`;
+    }
+  
+    return nextSlug;
+  }
   const [form, setForm] = useState({
     title: "",
     slug: "",
@@ -197,12 +233,26 @@ setDetailImages(nextImages);
     e.preventDefault();
     setMessage("");
     setSaving(true);
+    const baseSlug = normalizeSlugForAdmin(form.slug || generateEnglishSlug(form));
 
+    const { data: slugRows, error: slugSearchError } = await supabase
+      .from("repair_cases")
+      .select("slug")
+      .ilike("slug", `${baseSlug}%`);
+    
+    if (slugSearchError) {
+      throw slugSearchError;
+    }
+    
+    const finalSlug = makeUniqueSlugForAdmin(
+      baseSlug,
+      (slugRows || []).map((row) => row.slug)
+    );
     const finalForm = {
       ...form,
-      slug: form.slug || makeSlug(form),
-      seo_keyword: form.seo_keyword || makeSeoKeyword(form),
-      alt_text: form.alt_text || makeAltText(form),
+      slug: finalSlug,
+      seo_keyword: form.seo_keyword || generateSeoKeyword(form),
+      alt_text: form.alt_text || generateAltText(form),
     };
 
     const { data: insertedCase, error } = await supabase
