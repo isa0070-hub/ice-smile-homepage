@@ -5,47 +5,53 @@ export async function generateMetadata({ params }) {
   const resolvedParams = await params;
   const slug = decodeURIComponent(resolvedParams.slug);
 
+  const baseUrl = "https://www.ismileagain.co.kr";
+
   const { data: item } = await supabase
     .from("repair_cases")
     .select("*")
     .eq("slug", slug)
     .single();
 
-    return {
-      title: item
-        ? `${item.title} | 수리전문 공식서비스센터`
-        : "수리사례 | 수리전문 공식서비스센터",
-    
-      description: item
-        ? `${item.seo_keyword || item.title} 관련 수리사례입니다. ${
-            item.device || ""
-          } ${item.model || ""} ${item.symptom || ""}`
-        : "수리사례 상세페이지입니다.",
-    
-      alternates: {
-        canonical: item
-          ? `/repair-cases/${item.slug}`
-          : "/repair-cases",
-      },
-      openGraph: {
-  title,
-  description,
-  url: canonicalUrl,
-  siteName: "아이스마일어게인",
-  locale: "ko_KR",
-  type: "article",
-  images: repairCase.image_url
-    ? [
-        {
-          url: repairCase.image_url,
-          width: 1200,
-          height: 630,
-          alt: repairCase.alt_text || repairCase.title,
-        },
-      ]
-    : [],
-},
-    };
+  const title = item
+    ? `${item.title} | 수리전문 공식서비스센터`
+    : "수리사례 | 수리전문 공식서비스센터";
+
+  const description = item
+    ? `${item.seo_keyword || item.title} 관련 수리사례입니다. ${item.device || ""} ${
+        item.model || ""
+      } ${item.symptom || ""}`.replace(/\s+/g, " ").trim()
+    : "수리사례 상세페이지입니다.";
+
+  const canonicalUrl = item
+    ? `${baseUrl}/repair-cases/${item.slug}`
+    : `${baseUrl}/repair-cases`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl,
+      siteName: "아이스마일어게인",
+      locale: "ko_KR",
+      type: "article",
+      images: item?.image_url
+        ? [
+            {
+              url: item.image_url,
+              width: 1200,
+              height: 630,
+              alt: item.alt_text || item.title || "아이스마일어게인 수리사례 이미지",
+            },
+          ]
+        : [],
+    },
+  };
 }
 
 export default async function RepairCaseDetailPage({ params }) {
