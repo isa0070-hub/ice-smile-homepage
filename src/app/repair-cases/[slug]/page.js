@@ -141,6 +141,8 @@ function makeJsonLd({ item, detailImages = [], phoneNumber }) {
           name: `아이스마일어게인 ${item.branch || ""}`.trim(),
           url: BASE_URL,
           telephone: phoneNumber,
+          priceRange: "₩₩",
+          image: imageUrls.length > 0 ? imageUrls[0] : `${BASE_URL}/favicon.ico`,
           address: {
             "@type": "PostalAddress",
             streetAddress: branchInfo.address,
