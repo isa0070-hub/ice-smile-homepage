@@ -58,6 +58,15 @@ function makeJsonLd({ cases = [], category = "전체" }) {
         name: "아이스마일어게인",
         url: BASE_URL,
         telephone: "02-3424-5295",
+        image: toAbsoluteUrl(cases?.[0]?.image_url) || `${BASE_URL}/favicon.ico`,
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "서울 광진구 광나루로56길 85 강변테크노마트 5층 B-20호",
+          addressLocality: "광진구",
+          addressRegion: "서울",
+          postalCode: "05116",
+          addressCountry: "KR",
+        },
         sameAs: [
           "https://talk.naver.com/WCH5S2X",
         ],
