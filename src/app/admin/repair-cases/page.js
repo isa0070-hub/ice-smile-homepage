@@ -478,7 +478,8 @@ export default function AdminRepairCasesPage() {
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-
+  const [registeredCaseUrl, setRegisteredCaseUrl] = useState("");
+  
   const seoReport = getSeoReadinessReport(form, detailImages);
   const imageReport = getImageQualityReport(form, detailImages);
 
@@ -636,11 +637,22 @@ export default function AdminRepairCasesPage() {
     const nextImages = detailImages.filter((_, i) => i !== index);
     setDetailImages(nextImages);
   }
-
+  async function copyRegisteredUrl() {
+    if (!registeredCaseUrl) return;
+  
+    try {
+      await navigator.clipboard.writeText(registeredCaseUrl);
+      setMessage("새 수리사례 주소가 복사되었습니다.");
+    } catch (error) {
+      console.error(error);
+      setMessage("주소 복사에 실패했습니다. 주소를 직접 선택해서 복사해주세요.");
+    }
+  }
   async function handleSubmit(e) {
     e.preventDefault();
-    setMessage("");
-    setSaving(true);
+setMessage("");
+setRegisteredCaseUrl("");
+setSaving(true);
 
     try {
       const baseSlug = normalizeSlugForAdmin(
@@ -703,7 +715,9 @@ export default function AdminRepairCasesPage() {
           return;
         }
       }
-
+      const newCaseUrl = `https://www.ismileagain.co.kr/repair-cases/${finalSlug}`;
+      setRegisteredCaseUrl(newCaseUrl);
+      
       setMessage("수리사례와 상세 이미지가 등록되었습니다.");
 
       setForm({
@@ -957,8 +971,46 @@ export default function AdminRepairCasesPage() {
         >
           {saving ? "저장 중입니다..." : "수리사례 등록하기"}
         </button>
+        {registeredCaseUrl && (
+  <div style={registeredUrlBoxStyle}>
+    <strong>새 수리사례 등록 완료</strong>
 
+    <p style={registeredUrlTextStyle}>{registeredCaseUrl}</p>
+
+    <div style={registeredButtonWrapStyle}>
+      <a
+        href={registeredCaseUrl}
+        target="_blank"
+        rel="noreferrer"
+        style={registeredOpenButtonStyle}
+      >
+        새 글 열기
+      </a>
+
+      <button
+        type="button"
+        onClick={copyRegisteredUrl}
+        style={registeredCopyButtonStyle}
+      >
+        주소 복사
+      </button>
+    </div>
+
+    <div style={searchRequestGuideStyle}>
+      <p>
+        <strong>네이버 요청용:</strong> 서치어드바이저 → www 사이트 선택 →
+        검증 → URL 검사 또는 요청 → 웹 페이지 수집에 위 주소 입력
+      </p>
+
+      <p>
+        <strong>구글 요청용:</strong> Google Search Console → www 속성 선택 →
+        URL 검사창에 위 주소 입력 → 색인 생성 요청
+      </p>
+    </div>
+  </div>
+)}
         {message && (
+          
           <p style={{ fontWeight: "800", marginTop: "18px" }}>{message}</p>
         )}
       </form>
@@ -1209,4 +1261,61 @@ const imageQualityRowTextStyle = {
   color: "#64748b",
   fontSize: "14px",
   lineHeight: 1.5,
+};
+
+const registeredUrlBoxStyle = {
+  marginTop: "22px",
+  padding: "22px",
+  borderRadius: "18px",
+  background: "#ecfdf5",
+  border: "1px solid #bbf7d0",
+  color: "#064e3b",
+};
+
+const registeredUrlTextStyle = {
+  marginTop: "10px",
+  padding: "12px",
+  borderRadius: "12px",
+  background: "#ffffff",
+  border: "1px solid #bbf7d0",
+  wordBreak: "break-all",
+  fontWeight: "800",
+};
+
+const registeredButtonWrapStyle = {
+  display: "flex",
+  gap: "10px",
+  flexWrap: "wrap",
+  marginTop: "14px",
+};
+
+const registeredOpenButtonStyle = {
+  display: "inline-block",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  background: "#16a34a",
+  color: "#ffffff",
+  textDecoration: "none",
+  fontWeight: "900",
+};
+
+const registeredCopyButtonStyle = {
+  display: "inline-block",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  background: "#111827",
+  color: "#ffffff",
+  border: "none",
+  cursor: "pointer",
+  fontWeight: "900",
+};
+
+const searchRequestGuideStyle = {
+  marginTop: "16px",
+  padding: "14px",
+  borderRadius: "14px",
+  background: "#ffffff",
+  border: "1px solid #d1fae5",
+  lineHeight: 1.7,
+  fontSize: "14px",
 };
