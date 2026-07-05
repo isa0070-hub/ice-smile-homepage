@@ -8,16 +8,19 @@ const BRANCH_INFO = {
     phone: "02-3424-5295",
     address: "서울 광진구 광나루로56길 85 강변테크노마트 5층 B-20호",
     locality: "광진구",
+    postalCode: "05116",
   },
   선릉점: {
     phone: "02-554-5295",
     address: "서울 강남구 테헤란로 406 샹제리제센터 A동 406호",
     locality: "강남구",
+    postalCode: "06192",
   },
   신도림점: {
     phone: "02-2111-8899",
     address: "서울 구로구 새말로 97 신도림테크노마트 9층 47번 기둥 뒷편",
     locality: "구로구",
+    postalCode: "08288",
   },
 };
 
@@ -148,6 +151,7 @@ function makeJsonLd({ item, detailImages = [], phoneNumber }) {
             streetAddress: branchInfo.address,
             addressLocality: branchInfo.locality,
             addressRegion: "서울",
+            postalCode: branchInfo.postalCode,
             addressCountry: "KR",
           },
         },
