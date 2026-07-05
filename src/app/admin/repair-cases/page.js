@@ -1,4 +1,5 @@
 "use client";
+
 import {
   generateEnglishSlug,
   generateSeoKeyword,
@@ -10,6 +11,321 @@ import {
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 
+function normalizeText(value = "") {
+  return String(value).replace(/\s+/g, " ").trim();
+}
+
+function compactText(value = "") {
+  return normalizeText(value).toLowerCase().replace(/[\s._/\\-]+/g, "");
+}
+
+function normalizeSlugForAdmin(value = "") {
+  const clean = String(value)
+    .normalize("NFKD")
+    .toLowerCase()
+    .replace(/&/g, "-and-")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  if (clean.length <= 90) {
+    return clean;
+  }
+
+  return clean
+    .slice(0, 90)
+    .replace(/-[^-]*$/g, "")
+    .replace(/^-|-$/g, "");
+}
+
+function makeUniqueSlugForAdmin(baseSlug, existingSlugs = []) {
+  const safeBaseSlug = normalizeSlugForAdmin(baseSlug) || "repair-case";
+
+  const usedSlugs = new Set(
+    existingSlugs
+      .filter(Boolean)
+      .map((slug) => normalizeSlugForAdmin(slug))
+  );
+
+  if (!usedSlugs.has(safeBaseSlug)) {
+    return safeBaseSlug;
+  }
+
+  let number = 2;
+  let nextSlug = `${safeBaseSlug}-${number}`;
+
+  while (usedSlugs.has(nextSlug)) {
+    number += 1;
+    nextSlug = `${safeBaseSlug}-${number}`;
+  }
+
+  return nextSlug;
+}
+
+function hasKeyword(text, keyword) {
+  const cleanKeyword = compactText(keyword);
+  if (!cleanKeyword) return true;
+
+  return compactText(text).includes(cleanKeyword);
+}
+
+function getSlugWarnings(slug = "") {
+  const cleanSlug = normalizeSlugForAdmin(slug);
+  const tokens = cleanSlug.split("-").filter(Boolean);
+
+  const repeatedAdjacent = tokens.some((token, index) => {
+    return index > 0 && token === tokens[index - 1];
+  });
+
+  const repeatedImportantWords = ["battery", "screen", "repair", "replacement"]
+    .some((word) => tokens.filter((token) => token === word).length >= 2);
+
+  return {
+    cleanSlug,
+    repeatedAdjacent,
+    repeatedImportantWords,
+    isValid: Boolean(cleanSlug) && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(cleanSlug),
+    isGoodLength: cleanSlug.length > 0 && cleanSlug.length <= 70,
+  };
+}
+
+function getSeoReadinessReport(form, detailImages) {
+  let score = 0;
+  const checks = [];
+
+  function addCheck(status, label, point, maxPoint, help = "") {
+    score += point;
+
+    checks.push({
+      status,
+      label,
+      point,
+      maxPoint,
+      help,
+    });
+  }
+
+  const titleLength = normalizeText(form.title).length;
+  if (!titleLength) {
+    addCheck("bad", "제목이 비어 있습니다.", 0, 12, "수리 기기, 모델, 증상이 드러나는 제목이 필요합니다.");
+  } else if (titleLength < 15) {
+    addCheck("warn", "제목이 조금 짧습니다.", 7, 12, "예: 아이폰15프로 배터리 성능저하 배터리교체");
+  } else if (titleLength > 80) {
+    addCheck("warn", "제목이 너무 깁니다.", 9, 12, "검색 결과에서 잘릴 수 있어 핵심 키워드 중심으로 줄이는 것이 좋습니다.");
+  } else {
+    addCheck("ok", "제목 길이가 적절합니다.", 12, 12);
+  }
+
+  const slugInfo = getSlugWarnings(form.slug);
+  if (!form.slug) {
+    addCheck("bad", "SEO 주소가 비어 있습니다.", 0, 12, "기기, 모델, 증상을 입력하면 자동 생성됩니다.");
+  } else if (!slugInfo.isValid) {
+    addCheck("bad", "SEO 주소 형식이 좋지 않습니다.", 3, 12, "영문 소문자, 숫자, 하이픈만 사용하는 것이 좋습니다.");
+  } else if (slugInfo.repeatedAdjacent || slugInfo.repeatedImportantWords) {
+    addCheck("warn", "SEO 주소에 반복 단어가 있습니다.", 7, 12, "battery-battery, repair-repair 같은 반복은 피하는 것이 좋습니다.");
+  } else if (!slugInfo.isGoodLength) {
+    addCheck("warn", "SEO 주소가 조금 깁니다.", 9, 12, "가능하면 70자 이하의 짧은 주소가 좋습니다.");
+  } else {
+    addCheck("ok", "SEO 주소가 깔끔합니다.", 12, 12);
+  }
+
+  const coreFields = [
+    ["카테고리", form.category],
+    ["지점", form.branch],
+    ["기기", form.device],
+    ["모델명", form.model],
+    ["증상", form.symptom],
+  ];
+
+  const filledCoreFields = coreFields.filter(([, value]) => normalizeText(value)).length;
+  const corePoint = filledCoreFields * 3;
+
+  if (filledCoreFields === coreFields.length) {
+    addCheck("ok", "카테고리, 지점, 기기, 모델명, 증상이 모두 입력되었습니다.", 15, 15);
+  } else {
+    const missing = coreFields
+      .filter(([, value]) => !normalizeText(value))
+      .map(([label]) => label)
+      .join(", ");
+
+    addCheck("warn", `핵심 정보 일부가 비어 있습니다: ${missing}`, corePoint, 15);
+  }
+
+  const keyword = normalizeText(form.seo_keyword);
+  if (!keyword) {
+    addCheck("bad", "대표 SEO 키워드가 비어 있습니다.", 0, 10);
+  } else {
+    const keywordTargets = [form.branch, form.device, form.model, form.symptom].filter(Boolean);
+    const matchedCount = keywordTargets.filter((target) => hasKeyword(keyword, target)).length;
+    const point = 6 + Math.round((matchedCount / Math.max(keywordTargets.length, 1)) * 4);
+
+    if (matchedCount === keywordTargets.length) {
+      addCheck("ok", "대표 SEO 키워드가 핵심 정보를 잘 포함합니다.", 10, 10);
+    } else {
+      addCheck("warn", "대표 SEO 키워드에 일부 핵심 정보가 부족합니다.", point, 10);
+    }
+  }
+
+  const contentLength = normalizeText(form.repair_content).length;
+  if (!contentLength) {
+    addCheck("bad", "수리 내용이 비어 있습니다.", 0, 18, "상세 설명은 검색 노출과 사용자 신뢰에 중요합니다.");
+  } else if (contentLength < 150) {
+    addCheck("warn", "수리 내용이 짧습니다.", 7, 18, "증상, 점검, 수리 과정, 테스트 내용을 조금 더 적어주세요.");
+  } else if (contentLength < 350) {
+    addCheck("warn", "수리 내용은 입력됐지만 조금 더 보강하면 좋습니다.", 13, 18);
+  } else {
+    addCheck("ok", "수리 내용 길이가 좋습니다.", 18, 18);
+  }
+
+  const hasMainImage = Boolean(form.image_url);
+  const mainAltLength = normalizeText(form.alt_text).length;
+
+  if (hasMainImage && mainAltLength >= 50) {
+    addCheck("ok", "대표 이미지와 대표 ALT 문구가 좋습니다.", 10, 10);
+  } else if (hasMainImage && mainAltLength > 0) {
+    addCheck("warn", "대표 이미지는 있지만 ALT 문구가 짧습니다.", 6, 10, "ALT는 최소 50자 이상을 추천합니다.");
+  } else if (hasMainImage) {
+    addCheck("warn", "대표 이미지는 있지만 ALT 문구가 비어 있습니다.", 5, 10);
+  } else {
+    addCheck("warn", "대표 이미지가 아직 없습니다.", 0, 10);
+  }
+
+  const imageReport = getImageQualityReport(form, detailImages);
+
+  if (detailImages.length >= 4) {
+    addCheck("ok", "상세 이미지가 4장 이상 등록되어 있습니다.", 5, 5);
+  } else if (detailImages.length > 0) {
+    addCheck("warn", "상세 이미지 수가 조금 적습니다.", 3, 5, "가능하면 4장 이상을 권장합니다.");
+  } else {
+    addCheck("warn", "상세 이미지가 없습니다.", 0, 5);
+  }
+
+  if (detailImages.length > 0 && imageReport.stats.descriptionMissing === 0) {
+    addCheck("ok", "상세 이미지 설명이 모두 입력되어 있습니다.", 5, 5);
+  } else if (detailImages.length > 0) {
+    addCheck("warn", "설명이 부족한 상세 이미지가 있습니다.", 3, 5);
+  } else {
+    addCheck("warn", "상세 이미지 설명을 검사할 이미지가 없습니다.", 0, 5);
+  }
+
+  if (
+    detailImages.length > 0 &&
+    imageReport.stats.altShort === 0 &&
+    imageReport.stats.duplicateAlt === 0
+  ) {
+    addCheck("ok", "상세 이미지 ALT 품질이 좋습니다.", 5, 5);
+  } else if (detailImages.length > 0) {
+    addCheck("warn", "상세 이미지 ALT 보완이 필요합니다.", 3, 5);
+  } else {
+    addCheck("warn", "상세 이미지 ALT를 검사할 이미지가 없습니다.", 0, 5);
+  }
+
+  return {
+    score: Math.min(100, Math.round(score)),
+    checks,
+  };
+}
+
+function getImageQualityReport(form, detailImages) {
+  const altCounter = new Map();
+
+  detailImages.forEach((image) => {
+    const cleanAlt = compactText(image.alt_text);
+    if (!cleanAlt) return;
+
+    altCounter.set(cleanAlt, (altCounter.get(cleanAlt) || 0) + 1);
+  });
+
+  const rows = detailImages.map((image, index) => {
+    const description = normalizeText(image.description);
+    const alt = normalizeText(image.alt_text);
+    const cleanAlt = compactText(alt);
+
+    const missingKeywords = [];
+
+    if (form.device && !hasKeyword(alt, form.device)) missingKeywords.push("기기");
+    if (form.model && !hasKeyword(alt, form.model)) missingKeywords.push("모델명");
+    if (form.symptom && !hasKeyword(alt, form.symptom)) missingKeywords.push("증상");
+
+    const isDuplicate = Boolean(cleanAlt && altCounter.get(cleanAlt) > 1);
+
+    let status = "ok";
+    const warnings = [];
+
+    if (!description) {
+      status = "bad";
+      warnings.push("사진 설명 없음");
+    } else if (description.length < 20) {
+      status = "warn";
+      warnings.push("사진 설명이 짧음");
+    }
+
+    if (!alt) {
+      status = "bad";
+      warnings.push("ALT 없음");
+    } else if (alt.length < 50) {
+      if (status !== "bad") status = "warn";
+      warnings.push("ALT 50자 미만");
+    }
+
+    if (missingKeywords.length > 0) {
+      if (status !== "bad") status = "warn";
+      warnings.push(`${missingKeywords.join(", ")} 키워드 누락`);
+    }
+
+    if (isDuplicate) {
+      if (status !== "bad") status = "warn";
+      warnings.push("중복 ALT");
+    }
+
+    return {
+      index,
+      status,
+      descriptionLength: description.length,
+      altLength: alt.length,
+      missingKeywords,
+      isDuplicate,
+      warnings,
+    };
+  });
+
+  const stats = {
+    total: detailImages.length,
+    descriptionMissing: rows.filter((row) => row.descriptionLength === 0).length,
+    descriptionShort: rows.filter(
+      (row) => row.descriptionLength > 0 && row.descriptionLength < 20
+    ).length,
+    altMissing: rows.filter((row) => row.altLength === 0).length,
+    altShort: rows.filter((row) => row.altLength > 0 && row.altLength < 50).length,
+    duplicateAlt: rows.filter((row) => row.isDuplicate).length,
+    keywordMissing: rows.filter((row) => row.missingKeywords.length > 0).length,
+  };
+
+  return {
+    rows,
+    stats,
+  };
+}
+
+function getScoreColor(score) {
+  if (score >= 90) return "#16a34a";
+  if (score >= 75) return "#2563eb";
+  if (score >= 60) return "#f59e0b";
+  return "#dc2626";
+}
+
+function getScoreLabel(score) {
+  if (score >= 90) return "좋음";
+  if (score >= 75) return "등록 가능";
+  if (score >= 60) return "보완 권장";
+  return "등록 전 확인 필요";
+}
+
+function getStatusIcon(status) {
+  if (status === "ok") return "✅";
+  if (status === "warn") return "⚠️";
+  return "❌";
+}
 
 function AdminBackButton() {
   return (
@@ -30,46 +346,118 @@ function AdminBackButton() {
         ← 관리자 메인으로 돌아가기
       </a>
     </div>
-  )
+  );
+}
+
+function SeoReadinessPanel({ report }) {
+  const color = getScoreColor(report.score);
+
+  return (
+    <section style={seoPanelStyle}>
+      <div style={seoPanelHeaderStyle}>
+        <div>
+          <p style={seoPanelLabelStyle}>검색 최적화 점검</p>
+          <h2 style={seoPanelTitleStyle}>SEO 준비 점수</h2>
+        </div>
+
+        <div style={{ ...scoreCircleStyle, borderColor: color, color }}>
+          {report.score}
+          <span style={scoreSmallTextStyle}>점</span>
+        </div>
+      </div>
+
+      <div style={scoreBarBgStyle}>
+        <div
+          style={{
+            ...scoreBarFillStyle,
+            width: `${report.score}%`,
+            background: color,
+          }}
+        />
+      </div>
+
+      <p style={{ ...scoreStatusStyle, color }}>
+        {getScoreLabel(report.score)}
+      </p>
+
+      <div style={seoCheckListStyle}>
+        {report.checks.map((check, index) => (
+          <div key={index} style={seoCheckItemStyle}>
+            <span>{getStatusIcon(check.status)}</span>
+            <div>
+              <strong>{check.label}</strong>
+              <p style={seoCheckHelpStyle}>
+                {check.point}/{check.maxPoint}점
+                {check.help ? ` · ${check.help}` : ""}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ImageQualityPanel({ report }) {
+  if (report.stats.total === 0) {
+    return (
+      <section style={imageQualityPanelStyle}>
+        <h2 style={imageQualityTitleStyle}>상세 이미지 품질 검사</h2>
+        <p style={imageQualityTextStyle}>
+          상세 이미지를 업로드하면 사진 설명, ALT 길이, 중복 ALT, 핵심 키워드
+          포함 여부를 자동으로 점검합니다.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section style={imageQualityPanelStyle}>
+      <h2 style={imageQualityTitleStyle}>상세 이미지 품질 검사</h2>
+
+      <div style={imageStatsGridStyle}>
+        <div style={imageStatCardStyle}>
+          <strong>{report.stats.total}</strong>
+          <span>총 이미지</span>
+        </div>
+        <div style={imageStatCardStyle}>
+          <strong>{report.stats.descriptionMissing}</strong>
+          <span>설명 없음</span>
+        </div>
+        <div style={imageStatCardStyle}>
+          <strong>{report.stats.altShort}</strong>
+          <span>ALT 짧음</span>
+        </div>
+        <div style={imageStatCardStyle}>
+          <strong>{report.stats.duplicateAlt}</strong>
+          <span>중복 ALT</span>
+        </div>
+        <div style={imageStatCardStyle}>
+          <strong>{report.stats.keywordMissing}</strong>
+          <span>키워드 누락</span>
+        </div>
+      </div>
+
+      <div style={imageQualityListStyle}>
+        {report.rows.map((row) => (
+          <div key={row.index} style={imageQualityRowStyle}>
+            <strong>
+              {getStatusIcon(row.status)} 사진 {row.index + 1}
+            </strong>
+            <p style={imageQualityRowTextStyle}>
+              설명 {row.descriptionLength}자 · ALT {row.altLength}자
+              {row.warnings.length > 0
+                ? ` · ${row.warnings.join(", ")}`
+                : " · 품질 좋음"}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 export default function AdminRepairCasesPage() {
-  function normalizeSlugForAdmin(value = "") {
-    return String(value)
-      .normalize("NFKD")
-      .toLowerCase()
-      .replace(/&/g, "-and-")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "")
-      .slice(0, 90)
-      .replace(/-[^-]*$/g, "")
-      .replace(/^-|-$/g, "");
-  }
-  
-  function makeUniqueSlugForAdmin(baseSlug, existingSlugs = []) {
-    const safeBaseSlug = normalizeSlugForAdmin(baseSlug) || "repair-case";
-  
-    const usedSlugs = new Set(
-      existingSlugs
-        .filter(Boolean)
-        .map((slug) => normalizeSlugForAdmin(slug))
-    );
-  
-    if (!usedSlugs.has(safeBaseSlug)) {
-      return safeBaseSlug;
-    }
-  
-    let number = 2;
-    let nextSlug = `${safeBaseSlug}-${number}`;
-  
-    while (usedSlugs.has(nextSlug)) {
-      number += 1;
-      nextSlug = `${safeBaseSlug}-${number}`;
-    }
-  
-    return nextSlug;
-  }
   const [form, setForm] = useState({
     title: "",
     slug: "",
@@ -87,20 +475,25 @@ export default function AdminRepairCasesPage() {
   });
 
   const [detailImages, setDetailImages] = useState([]);
-const [message, setMessage] = useState("");
-const [uploading, setUploading] = useState(false);
-const [saving, setSaving] = useState(false);
-function makeSlug(nextForm) {
-  return generateEnglishSlug(nextForm);
-}
+  const [message, setMessage] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-function makeSeoKeyword(nextForm) {
-  return generateSeoKeyword(nextForm);
-}
+  const seoReport = getSeoReadinessReport(form, detailImages);
+  const imageReport = getImageQualityReport(form, detailImages);
 
-function makeAltText(nextForm, index = null) {
-  return generateAltText(nextForm, index);
-}
+  function makeSlug(nextForm) {
+    return generateEnglishSlug(nextForm);
+  }
+
+  function makeSeoKeyword(nextForm) {
+    return generateSeoKeyword(nextForm);
+  }
+
+  function makeAltText(nextForm, index = null) {
+    return generateAltText(nextForm, index);
+  }
+
   function handleChange(e) {
     const { name, value } = e.target;
 
@@ -108,9 +501,10 @@ function makeAltText(nextForm, index = null) {
       ...form,
       [name]: value,
     };
+
     if (["title", "device", "model", "symptom"].includes(name)) {
       nextForm.slug = makeSlug(nextForm);
-    
+
       setDetailImages((prevImages) =>
         prevImages.map((image, index) => ({
           ...image,
@@ -122,10 +516,10 @@ function makeAltText(nextForm, index = null) {
         }))
       );
     }
-    
+
     nextForm.seo_keyword = makeSeoKeyword(nextForm);
     nextForm.alt_text = makeAltText(nextForm);
-    
+
     setForm(nextForm);
   }
 
@@ -171,9 +565,9 @@ function makeAltText(nextForm, index = null) {
     } catch (error) {
       console.error(error);
       setMessage("대표 이미지 업로드 중 오류가 발생했습니다.");
+    } finally {
+      setUploading(false);
     }
-
-    setUploading(false);
   }
 
   async function handleDetailImagesUpload(e) {
@@ -203,25 +597,39 @@ function makeAltText(nextForm, index = null) {
     } catch (error) {
       console.error(error);
       setMessage("상세 이미지 업로드 중 오류가 발생했습니다.");
+    } finally {
+      setUploading(false);
     }
-
-    setUploading(false);
   }
 
-  function handleDetailImageTextChange(index, value) {
-    const description = e.target.value;
+  function handleDetailImageDescriptionChange(index, value) {
+    const nextImages = detailImages.map((img, i) =>
+      i === index
+        ? {
+            ...img,
+            description: value,
+            alt_text:
+              img.alt_text && img.alt_text.trim()
+                ? img.alt_text
+                : generateAltFromDescription(form, value, index),
+          }
+        : img
+    );
 
-const nextImages = detailImages.map((img, i) =>
-  i === index
-    ? {
-        ...img,
-        description,
-        alt_text: generateAltFromDescription(form, description, index),
-      }
-    : img
-);
+    setDetailImages(nextImages);
+  }
 
-setDetailImages(nextImages);
+  function handleDetailImageAltChange(index, value) {
+    const nextImages = detailImages.map((img, i) =>
+      i === index
+        ? {
+            ...img,
+            alt_text: value,
+          }
+        : img
+    );
+
+    setDetailImages(nextImages);
   }
 
   function removeDetailImage(index) {
@@ -233,98 +641,108 @@ setDetailImages(nextImages);
     e.preventDefault();
     setMessage("");
     setSaving(true);
-    const baseSlug = normalizeSlugForAdmin(form.slug || generateEnglishSlug(form));
 
-    const { data: slugRows, error: slugSearchError } = await supabase
-      .from("repair_cases")
-      .select("slug")
-      .ilike("slug", `${baseSlug}%`);
-    
-    if (slugSearchError) {
-      throw slugSearchError;
-    }
-    
-    const finalSlug = makeUniqueSlugForAdmin(
-      baseSlug,
-      (slugRows || []).map((row) => row.slug)
-    );
-    const finalForm = {
-      ...form,
-      slug: finalSlug,
-      seo_keyword: form.seo_keyword || generateSeoKeyword(form),
-      alt_text: form.alt_text || generateAltText(form),
-    };
+    try {
+      const baseSlug = normalizeSlugForAdmin(
+        form.slug || generateEnglishSlug(form)
+      );
 
-    const { data: insertedCase, error } = await supabase
-      .from("repair_cases")
-      .insert([finalForm])
-      .select()
-      .single();
+      const { data: slugRows, error: slugSearchError } = await supabase
+        .from("repair_cases")
+        .select("slug")
+        .ilike("slug", `${baseSlug}%`);
+
+      if (slugSearchError) {
+        throw slugSearchError;
+      }
+
+      const finalSlug = makeUniqueSlugForAdmin(
+        baseSlug,
+        (slugRows || []).map((row) => row.slug)
+      );
+
+      const finalForm = {
+        ...form,
+        slug: finalSlug,
+        seo_keyword: form.seo_keyword || generateSeoKeyword(form),
+        alt_text: form.alt_text || generateAltText(form),
+      };
+
+      const { data: insertedCase, error } = await supabase
+        .from("repair_cases")
+        .insert([finalForm])
+        .select()
+        .single();
 
       if (error) {
         console.error(error);
         setMessage(
           "등록 중 오류가 발생했습니다. SEO 주소 중복 또는 입력값을 확인해주세요."
         );
-        setSaving(false);
         return;
       }
 
-    if (detailImages.length > 0) {
-      const imageRows = detailImages.map((image, index) => ({
-        repair_case_id: insertedCase.id,
-        image_url: image.image_url,
-        alt_text: image.alt_text,
-        description: image.description || "",
-        sort_order: index,
-      }));
+      if (detailImages.length > 0) {
+        const imageRows = detailImages.map((image, index) => ({
+          repair_case_id: insertedCase.id,
+          image_url: image.image_url,
+          alt_text: image.alt_text,
+          description: image.description || "",
+          sort_order: index,
+        }));
 
-      const { error: imageError } = await supabase
-        .from("repair_case_images")
-        .insert(imageRows);
+        const { error: imageError } = await supabase
+          .from("repair_case_images")
+          .insert(imageRows);
 
-      if (imageError) {
-        console.error(imageError);
-        setMessage("수리사례는 등록됐지만 상세 이미지 저장 중 오류가 발생했습니다.");
-        setSaving(false);
-        return;
+        if (imageError) {
+          console.error(imageError);
+          setMessage(
+            "수리사례는 등록됐지만 상세 이미지 저장 중 오류가 발생했습니다."
+          );
+          return;
+        }
       }
+
+      setMessage("수리사례와 상세 이미지가 등록되었습니다.");
+
+      setForm({
+        title: "",
+        slug: "",
+        category: "애플",
+        branch: "강변점",
+        device: "",
+        model: "",
+        symptom: "",
+        repair_content: "",
+        seo_keyword: "",
+        image_url: "",
+        alt_text: "",
+        blog_url: "",
+        blog_title: "",
+      });
+
+      setDetailImages([]);
+    } catch (error) {
+      console.error(error);
+      setMessage("등록 중 오류가 발생했습니다. 입력값 또는 네트워크 상태를 확인해주세요.");
+    } finally {
+      setSaving(false);
     }
-
-    setMessage("수리사례와 상세 이미지가 등록되었습니다.");
-    setSaving(false);
-
-    setForm({
-      title: "",
-      slug: "",
-      category: "애플",
-      branch: "강변점",
-      device: "",
-      model: "",
-      symptom: "",
-      repair_content: "",
-      seo_keyword: "",
-      image_url: "",
-      alt_text: "",
-    
-      blog_url: "",
-      blog_title: "",
-    });
-
-    setDetailImages([]);
   }
 
   return (
-    <main style={{ maxWidth: "900px", margin: "60px auto", padding: "20px" }}>
+    <main style={{ maxWidth: "1100px", margin: "60px auto", padding: "20px" }}>
       <AdminBackButton />
+
       <h1 style={{ fontSize: "38px", marginBottom: "12px" }}>
         수리사례 등록
       </h1>
 
       <p style={{ marginBottom: "26px", color: "#475569", lineHeight: 1.7 }}>
         제목, 지점, 기기, 모델명, 증상을 입력하면 SEO 주소, 대표 SEO 키워드,
-        ALT 문구가 자동으로 생성됩니다. 상세 이미지는 사진마다 설명 문구를
-        직접 수정할 수 있습니다.
+        ALT 문구가 자동으로 생성됩니다. 등록 전 SEO 준비 점수와 이미지 품질을
+        확인할 수 있습니다.
       </p>
 
       <form onSubmit={handleSubmit} style={formStyle}>
@@ -337,38 +755,41 @@ setDetailImages(nextImages);
           placeholder="예: 선릉점 아이폰15프로 액정파손 교체 수리"
           required
         />
-        <label style={labelStyle}>SEO 주소(URL)</label>
-<input
-  name="slug"
-  value={form.slug}
-  onChange={handleChange}
-  style={inputStyle}
-  placeholder="예: 아이폰15프로액정수리"
-/>
-<div style={autoBoxStyle}>
-  <strong>실제 주소</strong>
-  <p>
-    https://www.ismileagain.co.kr/repair-cases/
-    {form.slug || "seo-url"}
-  </p>
-</div>
-<label style={labelStyle}>네이버 블로그 링크</label>
-<input
-  name="blog_url"
-  value={form.blog_url}
-  onChange={handleChange}
-  placeholder="https://blog.naver.com/..."
-  style={inputStyle}
-/>
 
-<label style={labelStyle}>블로그 제목</label>
-<input
-  name="blog_title"
-  value={form.blog_title || ""}
-  onChange={handleChange}
-  placeholder="예: 강남아이폰수리 선릉 아이스마일어게인 방문후기"
-  style={inputStyle}
-/>
+        <label style={labelStyle}>SEO 주소(URL)</label>
+        <input
+          name="slug"
+          value={form.slug}
+          onChange={handleChange}
+          style={inputStyle}
+          placeholder="예: iphone-15-pro-screen"
+        />
+
+        <div style={autoBoxStyle}>
+          <strong>실제 주소</strong>
+          <p>
+            https://www.ismileagain.co.kr/repair-cases/
+            {form.slug || "seo-url"}
+          </p>
+        </div>
+
+        <label style={labelStyle}>네이버 블로그 링크</label>
+        <input
+          name="blog_url"
+          value={form.blog_url}
+          onChange={handleChange}
+          placeholder="https://blog.naver.com/..."
+          style={inputStyle}
+        />
+
+        <label style={labelStyle}>블로그 제목</label>
+        <input
+          name="blog_title"
+          value={form.blog_title || ""}
+          onChange={handleChange}
+          placeholder="예: 강남아이폰수리 선릉 아이스마일어게인 방문후기"
+          style={inputStyle}
+        />
 
         <label style={labelStyle}>카테고리</label>
         <select
@@ -379,7 +800,7 @@ setDetailImages(nextImages);
         >
           <option>애플</option>
           <option>마이크로소프트 서피스</option>
-          <option>레노버 LG 노트북 및 태블릿</option>
+          <option>노트북 및 태블릿</option>
         </select>
 
         <label style={labelStyle}>지점</label>
@@ -452,32 +873,30 @@ setDetailImages(nextImages);
               <div key={index} style={galleryItemStyle}>
                 <img
                   src={image.image_url}
-                  alt={image.alt_text}
+                  alt={image.alt_text || `상세 이미지 ${index + 1}`}
                   style={galleryImageStyle}
                 />
 
-<label style={smallLabelStyle}>사진 설명</label>
-<textarea
-  value={image.description || ""}
-  onChange={(e) => {
-    const nextImages = detailImages.map((img, i) =>
-      i === index ? { ...img, description: e.target.value } : img
-    );
-    setDetailImages(nextImages);
-  }}
-  style={imageTextAreaStyle}
-  placeholder="상세페이지에 표시될 사진 설명을 입력해주세요."
-/>
+                <label style={smallLabelStyle}>사진 설명</label>
+                <textarea
+                  value={image.description || ""}
+                  onChange={(e) =>
+                    handleDetailImageDescriptionChange(index, e.target.value)
+                  }
+                  style={imageTextAreaStyle}
+                  placeholder="상세페이지에 표시될 사진 설명을 입력해주세요."
+                />
 
-<label style={smallLabelStyle}>ALT 문구</label>
-<textarea
-  value={image.alt_text || ""}
-  onChange={(e) =>
-    handleDetailImageTextChange(index, e.target.value)
-  }
-  style={imageTextAreaStyle}
-  placeholder="이미지 ALT 문구를 입력해주세요."
-/>
+                <label style={smallLabelStyle}>ALT 문구</label>
+                <textarea
+                  value={image.alt_text || ""}
+                  onChange={(e) =>
+                    handleDetailImageAltChange(index, e.target.value)
+                  }
+                  style={imageTextAreaStyle}
+                  placeholder="이미지 ALT 문구를 입력해주세요."
+                />
+
                 <button
                   type="button"
                   onClick={() => removeDetailImage(index)}
@@ -489,6 +908,8 @@ setDetailImages(nextImages);
             ))}
           </div>
         )}
+
+        <ImageQualityPanel report={imageReport} />
 
         {uploading && <p>이미지 업로드 중...</p>}
 
@@ -524,13 +945,18 @@ setDetailImages(nextImages);
           required
         />
 
+        <SeoReadinessPanel report={seoReport} />
+
         <button
-  type="submit"
-  style={buttonStyle}
-  disabled={saving || uploading}
->
-  {saving ? "저장 중입니다..." : "수리사례 등록하기"}
-</button>
+          type="submit"
+          style={{
+            ...buttonStyle,
+            opacity: saving || uploading ? 0.65 : 1,
+          }}
+          disabled={saving || uploading}
+        >
+          {saving ? "저장 중입니다..." : "수리사례 등록하기"}
+        </button>
 
         {message && (
           <p style={{ fontWeight: "800", marginTop: "18px" }}>{message}</p>
@@ -638,4 +1064,149 @@ const buttonStyle = {
   fontSize: "17px",
   fontWeight: "900",
   cursor: "pointer",
+};
+
+const seoPanelStyle = {
+  marginTop: "22px",
+  padding: "24px",
+  borderRadius: "20px",
+  background: "#ffffff",
+  border: "1px solid #dbeafe",
+  boxShadow: "0 8px 22px rgba(15, 23, 42, 0.07)",
+};
+
+const seoPanelHeaderStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "18px",
+};
+
+const seoPanelLabelStyle = {
+  margin: "0 0 8px",
+  color: "#1e3a8a",
+  fontWeight: "900",
+  fontSize: "14px",
+};
+
+const seoPanelTitleStyle = {
+  margin: 0,
+  fontSize: "26px",
+};
+
+const scoreCircleStyle = {
+  width: "76px",
+  height: "76px",
+  border: "5px solid",
+  borderRadius: "999px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontWeight: "900",
+  fontSize: "24px",
+  flexShrink: 0,
+};
+
+const scoreSmallTextStyle = {
+  fontSize: "13px",
+  marginLeft: "2px",
+};
+
+const scoreBarBgStyle = {
+  width: "100%",
+  height: "12px",
+  background: "#e5e7eb",
+  borderRadius: "999px",
+  overflow: "hidden",
+  marginTop: "20px",
+};
+
+const scoreBarFillStyle = {
+  height: "100%",
+  borderRadius: "999px",
+};
+
+const scoreStatusStyle = {
+  margin: "12px 0 0",
+  fontWeight: "900",
+};
+
+const seoCheckListStyle = {
+  marginTop: "18px",
+  display: "grid",
+  gap: "10px",
+};
+
+const seoCheckItemStyle = {
+  display: "flex",
+  alignItems: "flex-start",
+  gap: "10px",
+  padding: "12px",
+  borderRadius: "14px",
+  background: "#f8fafc",
+  border: "1px solid #e5e7eb",
+};
+
+const seoCheckHelpStyle = {
+  margin: "5px 0 0",
+  color: "#64748b",
+  fontSize: "14px",
+  lineHeight: 1.5,
+};
+
+const imageQualityPanelStyle = {
+  marginTop: "18px",
+  padding: "20px",
+  background: "#ffffff",
+  border: "1px solid #e5e7eb",
+  borderRadius: "18px",
+};
+
+const imageQualityTitleStyle = {
+  fontSize: "22px",
+  margin: "0 0 10px",
+};
+
+const imageQualityTextStyle = {
+  margin: 0,
+  color: "#64748b",
+  lineHeight: 1.7,
+};
+
+const imageStatsGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+  gap: "10px",
+  marginTop: "14px",
+};
+
+const imageStatCardStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "4px",
+  padding: "12px",
+  borderRadius: "14px",
+  background: "#f8fafc",
+  border: "1px solid #e5e7eb",
+  color: "#334155",
+};
+
+const imageQualityListStyle = {
+  display: "grid",
+  gap: "8px",
+  marginTop: "16px",
+};
+
+const imageQualityRowStyle = {
+  padding: "12px",
+  borderRadius: "14px",
+  background: "#f8fafc",
+  border: "1px solid #e5e7eb",
+};
+
+const imageQualityRowTextStyle = {
+  margin: "6px 0 0",
+  color: "#64748b",
+  fontSize: "14px",
+  lineHeight: 1.5,
 };
