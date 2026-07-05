@@ -27,6 +27,24 @@ export async function generateMetadata({ params }) {
           ? `/repair-cases/${item.slug}`
           : "/repair-cases",
       },
+      openGraph: {
+        title,
+        description,
+        url: canonicalUrl,
+        siteName: "아이스마일어게인",
+        locale: "ko_KR",
+        type: "article",
+        images: repairCase.image_url
+          ? [
+              {
+                url: repairCase.image_url,
+                width: 1200,
+                height: 630,
+                alt: repairCase.alt_text || repairCase.title,
+              },
+            ]
+          : [],
+      },
     };
 }
 
