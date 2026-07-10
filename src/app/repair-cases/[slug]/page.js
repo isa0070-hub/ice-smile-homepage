@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import PhoneContactButton from "@/components/PhoneContactButton";
+import { notFound } from "next/navigation";
 
 const BASE_URL = "https://www.ismileagain.co.kr";
 
@@ -302,7 +303,7 @@ export default async function RepairCaseDetailPage({ params }) {
   }
 
   if (!item) {
-    return (
+    notFound (
       <main style={{ maxWidth: "900px", margin: "80px auto", padding: "24px" }}>
         <h1>수리사례를 찾을 수 없습니다.</h1>
         <FloatingButtons phoneNumber={phoneNumber} />
