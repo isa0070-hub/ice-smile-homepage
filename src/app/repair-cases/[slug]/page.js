@@ -303,12 +303,7 @@ export default async function RepairCaseDetailPage({ params }) {
   }
 
   if (!item) {
-    notFound (
-      <main style={{ maxWidth: "900px", margin: "80px auto", padding: "24px" }}>
-        <h1>수리사례를 찾을 수 없습니다.</h1>
-        <FloatingButtons phoneNumber={phoneNumber} />
-      </main>
-    );
+    notFound ();
   }
 
   const nextViews = (item.views || 0) + 1;
@@ -326,13 +321,14 @@ export default async function RepairCaseDetailPage({ params }) {
     .eq("repair_case_id", item.id)
     .order("sort_order", { ascending: true });
 
-  const relatedCases = await getRelatedCases(item);
-
-  const jsonLd = makeJsonLd({
-    item,
-    detailImages: detailImages || [],
-    phoneNumber,
-  });
+    const relatedCases = await getRelatedCases(item);
+    const branchInfo = getBranchInfo(item.branch);
+    
+    const jsonLd = makeJsonLd({
+      item,
+      detailImages: detailImages || [],
+      phoneNumber,
+    });
 
   return (
     <main style={{ maxWidth: "900px", margin: "80px auto", padding: "24px" }}>
@@ -381,26 +377,79 @@ export default async function RepairCaseDetailPage({ params }) {
         />
       )}
 
-      <section style={infoBoxStyle}>
-        <p>
-          <strong>기기 :</strong> {item.device}
-        </p>
-        <p>
-          <strong>모델명 :</strong> {item.model}
-        </p>
-        <p>
-          <strong>증상 :</strong> {item.symptom}
-        </p>
-        <p>
-          <strong>지점 :</strong> {item.branch}
-        </p>
-        <p>
-          <strong>연락처 :</strong>{" "}
-          <a href={`tel:${phoneNumber}`} style={phoneLinkStyle}>
-            {phoneNumber}
-          </a>
-        </p>
-      </section>
+<section style={infoBoxStyle} aria-label="수리사례 핵심 요약">
+  <p style={summaryLabelTopStyle}>수리사례 핵심 요약</p>
+
+  <h2 style={summaryTitleStyle}>
+    {item.branch} {item.device} {item.model} 수리 정보
+  </h2>
+
+  <p style={summaryIntroStyle}>
+    {item.title} 사례를 방문 전 빠르게 확인할 수 있도록 기기, 증상,
+    수리 지점, 상담 연락처를 한눈에 정리했습니다.
+  </p>
+
+  <div style={summaryGridStyle}>
+    <div style={summaryItemStyle}>
+      <span style={summaryLabelStyle}>수리 지점</span>
+      <strong style={summaryValueStyle}>{item.branch}</strong>
+    </div>
+
+    <div style={summaryItemStyle}>
+      <span style={summaryLabelStyle}>지점 주소</span>
+      <strong style={summaryValueStyle}>{branchInfo.address}</strong>
+    </div>
+
+    <div style={summaryItemStyle}>
+      <span style={summaryLabelStyle}>기기</span>
+      <strong style={summaryValueStyle}>{item.device || "수리 기기"}</strong>
+    </div>
+
+    <div style={summaryItemStyle}>
+      <span style={summaryLabelStyle}>모델명</span>
+      <strong style={summaryValueStyle}>{item.model || "모델 확인 필요"}</strong>
+    </div>
+
+    <div style={summaryItemStyle}>
+      <span style={summaryLabelStyle}>고장 증상</span>
+      <strong style={summaryValueStyle}>{item.symptom || "증상 점검 필요"}</strong>
+    </div>
+
+    <div style={summaryItemStyle}>
+      <span style={summaryLabelStyle}>수리 키워드</span>
+      <strong style={summaryValueStyle}>
+        {item.seo_keyword || item.category || "기기 수리"}
+      </strong>
+    </div>
+
+    <div style={summaryItemStyle}>
+      <span style={summaryLabelStyle}>상담 전화</span>
+      <a href={`tel:${phoneNumber}`} style={phoneLinkStyle}>
+        {phoneNumber}
+      </a>
+    </div>
+
+    <div style={summaryItemStyle}>
+      <span style={summaryLabelStyle}>상담 방법</span>
+      <strong style={summaryValueStyle}>전화 · 네이버톡톡 · 온라인 문의</strong>
+    </div>
+  </div>
+
+  <div style={summaryActionBoxStyle}>
+    <a
+      href="https://talk.naver.com/WCH5S2X"
+      target="_blank"
+      rel="noreferrer"
+      style={summaryTalkButtonStyle}
+    >
+      네이버톡톡 문의
+    </a>
+
+    <a href={`tel:${phoneNumber}`} style={summaryPhoneButtonStyle}>
+      전화 상담
+    </a>
+  </div>
+</section>
 
       <section style={contentStyle}>{item.repair_content}</section>
 
@@ -600,11 +649,93 @@ const mainImageStyle = {
 };
 
 const infoBoxStyle = {
-  background: "#f8fafc",
-  border: "1px solid #e5e7eb",
-  borderRadius: "18px",
-  padding: "24px",
+  background: "linear-gradient(135deg, #f8fafc, #eef6ff)",
+  border: "1px solid #dbeafe",
+  borderRadius: "24px",
+  padding: "30px",
   lineHeight: 1.8,
+  marginBottom: "34px",
+  boxShadow: "0 10px 28px rgba(15, 23, 42, 0.08)",
+};
+
+const summaryLabelTopStyle = {
+  display: "inline-block",
+  margin: "0 0 10px",
+  padding: "6px 12px",
+  borderRadius: "999px",
+  background: "#dbeafe",
+  color: "#1e3a8a",
+  fontSize: "14px",
+  fontWeight: "900",
+};
+
+const summaryTitleStyle = {
+  fontSize: "28px",
+  lineHeight: 1.4,
+  margin: "0 0 10px",
+  color: "#0f172a",
+};
+
+const summaryIntroStyle = {
+  fontSize: "16px",
+  lineHeight: 1.7,
+  color: "#475569",
+  margin: "0 0 22px",
+};
+
+const summaryGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gap: "14px",
+};
+
+const summaryItemStyle = {
+  background: "#ffffff",
+  border: "1px solid #e5e7eb",
+  borderRadius: "16px",
+  padding: "16px",
+};
+
+const summaryLabelStyle = {
+  display: "block",
+  marginBottom: "6px",
+  color: "#64748b",
+  fontSize: "14px",
+  fontWeight: "800",
+};
+
+const summaryValueStyle = {
+  display: "block",
+  color: "#0f172a",
+  fontSize: "16px",
+  lineHeight: 1.6,
+};
+
+const summaryActionBoxStyle = {
+  display: "flex",
+  gap: "10px",
+  flexWrap: "wrap",
+  marginTop: "22px",
+};
+
+const summaryTalkButtonStyle = {
+  display: "inline-block",
+  padding: "13px 18px",
+  background: "#03c75a",
+  color: "white",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: "900",
+};
+
+const summaryPhoneButtonStyle = {
+  display: "inline-block",
+  padding: "13px 18px",
+  background: "#1e3a8a",
+  color: "white",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: "900",
 };
 
 const phoneLinkStyle = {
