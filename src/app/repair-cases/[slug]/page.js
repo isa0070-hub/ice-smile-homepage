@@ -38,20 +38,92 @@ function toAbsoluteUrl(url) {
   return `${BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 
-function makeDescription(item) {
-  if (!item) return "수리사례 상세페이지입니다.";
-
-  return `${item.seo_keyword || item.title} 관련 수리사례입니다. ${
-    item.device || ""
-  } ${item.model || ""} ${item.symptom || ""}`
+function cleanText(value) {
+  return String(value || "")
     .replace(/\s+/g, " ")
     .trim();
 }
 
+function limitText(value, maxLength) {
+  const text = cleanText(value);
+
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  return `${text.slice(0, maxLength - 1)}…`;
+}
+
+function getBranchSearchLabel(branch) {
+  if (branch === "강변점") return "강변";
+  if (branch === "선릉점") return "선릉";
+  if (branch === "신도림점") return "신도림";
+
+  return cleanText(branch || "서울");
+}
+
+function getBranchIntro(branch) {
+  if (branch === "강변점") {
+    return "강변역 1번 출구 인근 아이스마일어게인 강변점";
+  }
+
+  if (branch === "선릉점") {
+    return "선릉역 1번 출구 인근 아이스마일어게인 선릉점";
+  }
+
+  if (branch === "신도림점") {
+    return "신도림테크노마트 9층 아이스마일어게인 신도림점";
+  }
+
+  return "아이스마일어게인";
+}
+
+function makeMetaKeyword(item) {
+  const keyword = cleanText(item?.seo_keyword);
+  const symptom = cleanText(item?.symptom);
+  const device = cleanText(item?.device);
+  const model = cleanText(item?.model);
+
+  if (keyword) return keyword;
+  if (symptom) return symptom;
+  if (device || model) return cleanText(`${device} ${model} 수리`);
+
+  return "기기 수리";
+}
+
+function makeDeviceModelText(item) {
+  return cleanText(`${item?.device || ""} ${item?.model || ""}`);
+}
+
+function makeDescription(item) {
+  if (!item) {
+    return "아이스마일어게인 수리사례 상세페이지입니다. 아이폰, 아이패드, 맥북, 서피스, 레노버 수리 사례를 확인해보세요.";
+  }
+
+  const branchIntro = getBranchIntro(item.branch);
+  const deviceModel = makeDeviceModelText(item);
+  const keyword = makeMetaKeyword(item);
+  const symptom = cleanText(item.symptom);
+
+  const description = `${branchIntro}에서 진행한 ${deviceModel || keyword} 수리사례입니다. ${
+    symptom ? `${symptom} 증상 점검 후 ` : ""
+  }${keyword} 상담과 수리 가능 여부, 예상 소요 시간, 방문 및 택배 접수 방법을 안내해드립니다.`;
+
+  return limitText(description, 155);
+}
+
 function makeTitle(item) {
-  return item
-    ? `${item.title} | 수리전문 공식서비스센터`
-    : "수리사례 | 수리전문 공식서비스센터";
+  if (!item) {
+    return "수리사례 | 아이스마일어게인 수리전문 공식서비스센터";
+  }
+
+  const branchLabel = getBranchSearchLabel(item.branch);
+  const deviceModel = makeDeviceModelText(item);
+  const keyword = makeMetaKeyword(item);
+
+  const title = `${branchLabel} ${deviceModel || item.device || ""} ${keyword} 수리사례 | 아이스마일어게인 ${item.branch || ""}`;
+
+  return limitText(title, 65);
 }
 
 function makeCanonicalUrl(item) {
