@@ -131,7 +131,42 @@ function makeCanonicalUrl(item) {
     ? `${BASE_URL}/repair-cases/${item.slug}`
     : `${BASE_URL}/repair-cases`;
 }
+function makeFaqItems(item, phoneNumber) {
+  const deviceModel = `${item?.device || "기기"} ${item?.model || ""}`
+    .replace(/\s+/g, " ")
+    .trim();
 
+  const branch = item?.branch || "아이스마일어게인";
+  const symptom = item?.symptom || "고장 증상";
+  const keyword = item?.seo_keyword || item?.category || "수리";
+
+  return [
+    {
+      question: `${deviceModel} ${symptom} 수리 가능 여부는 어떻게 확인하나요?`,
+      answer: `${branch}에 방문 전 ${phoneNumber} 또는 네이버톡톡으로 기기 모델명과 증상 사진을 보내주시면 ${keyword} 가능 여부, 예상 비용, 소요 시간을 안내해드립니다.`,
+    },
+    {
+      question: "수리 시간은 얼마나 걸리나요?",
+      answer:
+        "수리 시간은 기종, 고장 증상, 부품 재고, 내부 손상 정도에 따라 달라질 수 있습니다. 방문 전 문의 주시면 현재 접수 상황을 기준으로 예상 시간을 안내해드립니다.",
+    },
+    {
+      question: "수리하면 데이터는 그대로 유지되나요?",
+      answer:
+        "대부분의 액정, 배터리, 카메라, 충전단자 등 부품 교체 수리는 데이터 삭제 없이 진행됩니다. 다만 침수, 메인보드 손상, 전원불량처럼 내부 손상이 큰 경우에는 점검 결과에 따라 안내드립니다.",
+    },
+    {
+      question: "택배 수리도 가능한가요?",
+      answer:
+        "방문이 어려운 경우 택배 접수도 가능합니다. 고객님이 선불로 발송해주시면 매장 도착 후 점검과 수리를 진행하고, 수리 완료 후에는 매장에서 고객님께 다시 발송해드립니다.",
+    },
+    {
+      question: "방문 전에 예약이 필요한가요?",
+      answer:
+        "예약 없이 방문도 가능하지만, 부품 재고와 대기 시간을 줄이려면 전화 또는 네이버톡톡으로 먼저 문의 후 방문하시는 것을 권장드립니다.",
+    },
+  ];
+}
 function makeJsonLd({ item, detailImages = [], phoneNumber }) {
   if (!item) return null;
 
@@ -146,6 +181,7 @@ function makeJsonLd({ item, detailImages = [], phoneNumber }) {
   ]
     .filter(Boolean)
     .map(toAbsoluteUrl);
+    const faqItems = makeFaqItems(item, phoneNumber);
 
   return {
     "@context": "https://schema.org",
@@ -228,6 +264,18 @@ function makeJsonLd({ item, detailImages = [], phoneNumber }) {
             addressCountry: "KR",
           },
         },
+      },
+      {
+        "@type": "FAQPage",
+        "@id": `${canonicalUrl}#faq`,
+        mainEntity: faqItems.map((faq) => ({
+          "@type": "Question",
+          name: faq.question,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: faq.answer,
+          },
+        })),
       },
     ],
   };
@@ -401,6 +449,7 @@ export default async function RepairCaseDetailPage({ params }) {
       detailImages: detailImages || [],
       phoneNumber,
     });
+    const faqItems = makeFaqItems(item, phoneNumber);
 
   return (
     <main style={{ maxWidth: "900px", margin: "80px auto", padding: "24px" }}>
@@ -628,6 +677,22 @@ export default async function RepairCaseDetailPage({ params }) {
         <h3 style={{ fontSize: "26px", marginBottom: "12px" }}>
           수리 상담 및 접수
         </h3>
+      <section style={faqBoxStyle} id="repair-case-faq">
+        <p style={faqLabelStyle}>자주 묻는 질문</p>
+
+        <h3 style={faqTitleStyle}>
+          {item.device} {item.model} 수리 전 확인할 내용
+        </h3>
+
+        <div style={faqListStyle}>
+          {faqItems.map((faq, index) => (
+            <div key={index} style={faqItemStyle}>
+              <h4 style={faqQuestionStyle}>Q. {faq.question}</h4>
+              <p style={faqAnswerStyle}>A. {faq.answer}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
         <p style={{ fontSize: "17px", lineHeight: 1.8, color: "#475569" }}>
           방문 전 문의 주시면 수리 가능 여부, 예상 비용, 소요 시간,
@@ -1059,4 +1124,57 @@ const blogDomainStyle = {
   marginTop: "12px",
   color: "#03c75a",
   fontWeight: "800",
+};
+
+const faqBoxStyle = {
+  marginTop: "60px",
+  padding: "34px",
+  borderRadius: "22px",
+  background: "#ffffff",
+  border: "1px solid #e5e7eb",
+  boxShadow: "0 8px 22px rgba(15, 23, 42, 0.08)",
+};
+
+const faqLabelStyle = {
+  display: "inline-block",
+  margin: "0 0 12px",
+  padding: "6px 12px",
+  borderRadius: "999px",
+  background: "#eff6ff",
+  color: "#1e3a8a",
+  fontSize: "14px",
+  fontWeight: "900",
+};
+
+const faqTitleStyle = {
+  fontSize: "28px",
+  lineHeight: 1.4,
+  margin: "0 0 22px",
+  color: "#0f172a",
+};
+
+const faqListStyle = {
+  display: "grid",
+  gap: "14px",
+};
+
+const faqItemStyle = {
+  padding: "20px",
+  borderRadius: "18px",
+  background: "#f8fafc",
+  border: "1px solid #e5e7eb",
+};
+
+const faqQuestionStyle = {
+  margin: "0 0 10px",
+  fontSize: "18px",
+  lineHeight: 1.6,
+  color: "#111827",
+};
+
+const faqAnswerStyle = {
+  margin: 0,
+  fontSize: "16px",
+  lineHeight: 1.8,
+  color: "#475569",
 };
