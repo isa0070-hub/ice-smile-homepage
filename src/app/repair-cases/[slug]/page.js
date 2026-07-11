@@ -54,6 +54,28 @@ function limitText(value, maxLength) {
   return `${text.slice(0, maxLength - 1)}…`;
 }
 
+function escapeRegExp(value) {
+  return cleanText(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function removeTextParts(text, parts = []) {
+  let result = cleanText(text);
+
+  parts
+    .map(cleanText)
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length)
+    .forEach((part) => {
+      result = result.replace(new RegExp(escapeRegExp(part), "gi"), " ");
+    });
+
+  return cleanText(
+    result
+      .replace(/[|｜·ㆍ,/]+/g, " ")
+      .replace(/\s+/g, " ")
+  );
+}
+
 function getBranchSearchLabel(branch) {
   if (branch === "강변점") return "강변";
   if (branch === "선릉점") return "선릉";
@@ -78,21 +100,102 @@ function getBranchIntro(branch) {
   return "아이스마일어게인";
 }
 
-function makeMetaKeyword(item) {
-  const keyword = cleanText(item?.seo_keyword);
-  const symptom = cleanText(item?.symptom);
+function makeDeviceModelText(item) {
   const device = cleanText(item?.device);
   const model = cleanText(item?.model);
 
-  if (keyword) return keyword;
-  if (symptom) return symptom;
-  if (device || model) return cleanText(`${device} ${model} 수리`);
+  if (!device && !model) return "기기";
+  if (!device) return model;
+  if (!model) return device;
 
-  return "기기 수리";
+  const normalizedDevice = device.replace(/\s+/g, "");
+  const normalizedModel = model.replace(/\s+/g, "");
+
+  if (normalizedModel.includes(normalizedDevice)) {
+    return model;
+  }
+
+  return cleanText(`${device} ${model}`);
 }
 
-function makeDeviceModelText(item) {
-  return cleanText(`${item?.device || ""} ${item?.model || ""}`);
+function findRepairAction(item) {
+  const source = cleanText(
+    `${item?.title || ""} ${item?.seo_keyword || ""} ${item?.symptom || ""}`
+  );
+
+  const actions = [
+    "액정교체",
+    "액정수리",
+    "디스플레이교체",
+    "디스플레이수리",
+    "유리교체",
+    "배터리교체",
+    "후면유리교체",
+    "카메라렌즈교체",
+    "카메라교체",
+    "충전단자교체",
+    "메인보드수리",
+    "보드수리",
+    "침수수리",
+    "전원불량수리",
+    "키보드교체",
+    "화면줄수리",
+  ];
+
+  return actions.find((action) => source.includes(action)) || "";
+}
+
+function makeMetaKeyword(item) {
+  const branchLabel = getBranchSearchLabel(item?.branch);
+  const device = cleanText(item?.device);
+  const model = cleanText(item?.model);
+  const symptom = cleanText(item?.symptom);
+  const action = findRepairAction(item);
+
+  const cleanedSeoKeyword = removeTextParts(item?.seo_keyword, [
+    item?.branch,
+    branchLabel,
+    "강변점",
+    "강변역",
+    "강변",
+    "선릉점",
+    "선릉역",
+    "선릉",
+    "신도림점",
+    "신도림역",
+    "신도림",
+    device,
+    model,
+    "아이스마일어게인",
+    "수리사례",
+    "관련",
+  ]);
+
+  const keywordParts = [];
+
+  if (symptom) {
+    keywordParts.push(symptom);
+  }
+
+  if (action && !symptom.includes(action)) {
+    keywordParts.push(action);
+  }
+
+  const combinedKeyword = cleanText(keywordParts.join(" "));
+
+  if (combinedKeyword) {
+    return combinedKeyword;
+  }
+
+  if (cleanedSeoKeyword) {
+    return cleanedSeoKeyword;
+  }
+
+  if (item?.category) {
+    return `${item.category} 수리`;
+  }
+
+  return "기기 수리";
 }
 
 function makeDescription(item) {
@@ -105,9 +208,10 @@ function makeDescription(item) {
   const keyword = makeMetaKeyword(item);
   const symptom = cleanText(item.symptom);
 
-  const description = `${branchIntro}에서 진행한 ${deviceModel || keyword} 수리사례입니다. ${
-    symptom ? `${symptom} 증상 점검 후 ` : ""
-  }${keyword} 상담과 수리 가능 여부, 예상 소요 시간, 방문 및 택배 접수 방법을 안내해드립니다.`;
+  const symptomText =
+    symptom && !keyword.includes(symptom) ? `${symptom} 증상 점검 후 ` : "";
+
+  const description = `${branchIntro}에서 진행한 ${deviceModel} ${keyword} 사례입니다. ${symptomText}방문 전 수리 가능 여부, 예상 비용, 소요 시간, 방문 및 택배 접수 방법을 안내해드립니다.`;
 
   return limitText(description, 155);
 }
@@ -121,7 +225,7 @@ function makeTitle(item) {
   const deviceModel = makeDeviceModelText(item);
   const keyword = makeMetaKeyword(item);
 
-  const title = `${branchLabel} ${deviceModel || item.device || ""} ${keyword} 수리사례 | 아이스마일어게인 ${item.branch || ""}`;
+  const title = `${branchLabel} ${deviceModel} ${keyword} 수리사례 | 아이스마일어게인 ${item.branch || ""}`;
 
   return limitText(title, 65);
 }
