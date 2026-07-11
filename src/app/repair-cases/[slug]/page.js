@@ -527,7 +527,7 @@ export default async function RepairCaseDetailPage({ params }) {
   }
 
   if (!item) {
-    notFound ();
+    notFound();
   }
 
   const nextViews = (item.views || 0) + 1;
