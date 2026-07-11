@@ -672,12 +672,7 @@ export default async function RepairCaseDetailPage({ params }) {
           </div>
         </section>
       )}
-
-      <section style={contactBoxStyle}>
-        <h3 style={{ fontSize: "26px", marginBottom: "12px" }}>
-          수리 상담 및 접수
-        </h3>
-      <section style={faqBoxStyle} id="repair-case-faq">
+<section style={faqBoxStyle} id="repair-case-faq">
         <p style={faqLabelStyle}>자주 묻는 질문</p>
 
         <h3 style={faqTitleStyle}>
@@ -693,6 +688,11 @@ export default async function RepairCaseDetailPage({ params }) {
           ))}
         </div>
       </section>
+
+      <section style={contactBoxStyle}>
+        <h3 style={{ fontSize: "26px", marginBottom: "12px" }}>
+          수리 상담 및 접수
+        </h3>
 
         <p style={{ fontSize: "17px", lineHeight: 1.8, color: "#475569" }}>
           방문 전 문의 주시면 수리 가능 여부, 예상 비용, 소요 시간,
