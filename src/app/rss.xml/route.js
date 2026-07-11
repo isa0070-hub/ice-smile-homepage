@@ -49,17 +49,20 @@ function makeDescription(item) {
   const model = cleanText(item.model);
   const symptom = cleanText(item.symptom);
   const keyword = cleanText(item.seo_keyword);
+  const repairContent = cleanText(item.repair_content);
 
-  const summary = `${branch} ${device} ${model} ${symptom} ${keyword} 수리사례입니다. 방문 전 수리 가능 여부, 예상 비용, 소요 시간, 택배 접수 방법을 확인해보세요.`;
+  const summary = cleanText(
+    `${branch} ${device} ${model} ${symptom} ${keyword} 수리사례입니다. 방문 전 수리 가능 여부, 예상 비용, 소요 시간, 택배 접수 방법을 확인해보세요.`
+  );
 
-  return limitText(summary || item.repair_content || item.title, 200);
+  return limitText(summary || repairContent || item.title, 200);
 }
 
 export async function GET() {
   const { data: cases, error } = await supabase
     .from("repair_cases")
     .select(
-      "title, slug, branch, category, device, model, symptom, seo_keyword, repair_content, created_at, updated_at"
+      "title, slug, branch, category, device, model, symptom, seo_keyword, repair_content, created_at"
     )
     .order("created_at", { ascending: false })
     .limit(30);
@@ -72,7 +75,7 @@ export async function GET() {
     .filter((item) => item?.title && item?.slug)
     .map((item) => {
       const url = makeCaseUrl(item);
-      const pubDate = toRssDate(item.updated_at || item.created_at);
+      const pubDate = toRssDate(item.created_at);
 
       return `
         <item>
