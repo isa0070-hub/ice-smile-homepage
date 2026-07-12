@@ -100,6 +100,28 @@ function getBranchIntro(branch) {
   return "아이스마일어게인";
 }
 
+function getBranchVisitGuide(branch) {
+  if (branch === "강변점") {
+    return "강변역 인근 강변테크노마트 5층 B-20호 아이스마일어게인 강변점으로 방문하시면 됩니다.";
+  }
+
+  if (branch === "선릉점") {
+    return "선릉역 1번 출구 인근 샹제리제센터 A동 406호 아이스마일어게인 선릉점으로 방문하시면 됩니다.";
+  }
+
+  if (branch === "신도림점") {
+    return "신도림테크노마트 9층 47번 기둥 뒷편 아이스마일어게인 신도림점으로 방문하시면 됩니다.";
+  }
+
+  return "방문 전 상담 후 가까운 아이스마일어게인 지점으로 안내드립니다.";
+}
+
+function makeConsultTitle(item) {
+  const deviceModel = makeDeviceModelText(item);
+  const keyword = makeMetaKeyword(item);
+
+  return `${deviceModel} ${keyword} 방문 전 상담 안내`;
+}
 function makeDeviceModelText(item) {
   const device = cleanText(item?.device);
   const model = cleanText(item?.model);
@@ -278,6 +300,8 @@ function makeJsonLd({ item, detailImages = [], phoneNumber }) {
   const title = makeTitle(item);
   const description = makeDescription(item);
   const branchInfo = getBranchInfo(item.branch);
+  const branchVisitGuide = getBranchVisitGuide(item.branch);
+  const consultTitle = makeConsultTitle(item);
 
   const imageUrls = [
     item.image_url,
@@ -792,6 +816,76 @@ export default async function RepairCaseDetailPage({ params }) {
           ))}
         </div>
       </section>
+<section style={conversionBoxStyle} aria-label="방문 전 수리 상담 안내">
+  <p style={conversionBadgeStyle}>방문 전 상담 안내</p>
+
+  <h3 style={conversionTitleStyle}>{consultTitle}</h3>
+
+  <p style={conversionLeadStyle}>
+    수리사례를 확인하신 뒤 방문 전 문의를 남겨주시면 기기 모델명,
+    고장 증상, 부품 재고, 예상 수리 시간과 비용을 더 빠르게 안내해드립니다.
+    {` ${branchVisitGuide}`}
+  </p>
+
+  <div style={conversionGridStyle}>
+    <div style={conversionCardStyle}>
+      <h4 style={conversionCardTitleStyle}>1. 방문 전 준비</h4>
+      <p style={conversionCardTextStyle}>
+        기기 모델명, 고장 증상, 파손 사진, 침수 여부를 알려주시면 상담이
+        빨라집니다. 모델명을 모르는 경우 기기 사진만 보내주셔도 확인을
+        도와드립니다.
+      </p>
+    </div>
+
+    <div style={conversionCardStyle}>
+      <h4 style={conversionCardTitleStyle}>2. 수리 가능 여부 확인</h4>
+      <p style={conversionCardTextStyle}>
+        액정 파손, 배터리 성능저하, 충전불량, 전원불량, 침수, 메인보드
+        고장은 기기 상태에 따라 수리 가능 여부와 비용이 달라질 수 있습니다.
+      </p>
+    </div>
+
+    <div style={conversionCardStyle}>
+      <h4 style={conversionCardTitleStyle}>3. 택배 접수 가능</h4>
+      <p style={conversionCardTextStyle}>
+        방문이 어려운 경우 택배 접수도 가능합니다. 고객님 선불 발송 후
+        매장 도착 기준으로 점검하고, 수리 완료 후 다시 발송해드립니다.
+      </p>
+    </div>
+
+    <div style={conversionCardStyle}>
+      <h4 style={conversionCardTitleStyle}>4. 수리 후 확인</h4>
+      <p style={conversionCardTextStyle}>
+        수리 후 화면, 충전, 터치, 카메라, 배터리, 전원 반응 등 기본 기능을
+        확인하고 고객님께 안내드립니다.
+      </p>
+    </div>
+  </div>
+
+  <div style={conversionButtonWrapStyle}>
+    <a
+      href="https://talk.naver.com/WCH5S2X"
+      target="_blank"
+      rel="noreferrer"
+      style={conversionTalkButtonStyle}
+    >
+      증상 사진 톡톡 보내기
+    </a>
+
+    <a href={`tel:${phoneNumber}`} style={conversionPhoneButtonStyle}>
+      {phoneNumber} 전화 상담
+    </a>
+
+    <a href="/contact" style={conversionContactButtonStyle}>
+      온라인 수리문의
+    </a>
+  </div>
+
+  <p style={conversionNoticeStyle}>
+    ※ 정확한 비용과 수리 시간은 기기 상태, 부품 재고, 침수 여부,
+    내부 손상 정도를 확인한 뒤 안내됩니다.
+  </p>
+</section>
 
       <section style={contactBoxStyle}>
         <h3 style={{ fontSize: "26px", marginBottom: "12px" }}>
@@ -1281,4 +1375,113 @@ const faqAnswerStyle = {
   fontSize: "16px",
   lineHeight: 1.8,
   color: "#475569",
+};
+
+const conversionBoxStyle = {
+  marginTop: "60px",
+  padding: "36px",
+  borderRadius: "24px",
+  background: "linear-gradient(135deg, #0f172a, #1e3a8a)",
+  color: "#ffffff",
+  boxShadow: "0 14px 34px rgba(15, 23, 42, 0.22)",
+};
+
+const conversionBadgeStyle = {
+  display: "inline-block",
+  margin: "0 0 12px",
+  padding: "6px 12px",
+  borderRadius: "999px",
+  background: "rgba(255, 255, 255, 0.14)",
+  color: "#bfdbfe",
+  fontSize: "14px",
+  fontWeight: "900",
+};
+
+const conversionTitleStyle = {
+  fontSize: "30px",
+  lineHeight: 1.4,
+  margin: "0 0 14px",
+  color: "#ffffff",
+};
+
+const conversionLeadStyle = {
+  fontSize: "17px",
+  lineHeight: 1.9,
+  color: "#dbeafe",
+  margin: "0 0 26px",
+};
+
+const conversionGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gap: "14px",
+};
+
+const conversionCardStyle = {
+  padding: "20px",
+  borderRadius: "18px",
+  background: "rgba(255, 255, 255, 0.1)",
+  border: "1px solid rgba(255, 255, 255, 0.16)",
+};
+
+const conversionCardTitleStyle = {
+  margin: "0 0 10px",
+  color: "#ffffff",
+  fontSize: "18px",
+  lineHeight: 1.5,
+};
+
+const conversionCardTextStyle = {
+  margin: 0,
+  color: "#dbeafe",
+  fontSize: "15px",
+  lineHeight: 1.8,
+};
+
+const conversionButtonWrapStyle = {
+  display: "flex",
+  gap: "10px",
+  flexWrap: "wrap",
+  marginTop: "28px",
+};
+
+const conversionTalkButtonStyle = {
+  display: "inline-block",
+  padding: "14px 20px",
+  borderRadius: "999px",
+  background: "#03c75a",
+  color: "#ffffff",
+  textDecoration: "none",
+  fontWeight: "900",
+};
+
+const conversionPhoneButtonStyle = {
+  display: "inline-block",
+  padding: "14px 20px",
+  borderRadius: "999px",
+  background: "#ffffff",
+  color: "#1e3a8a",
+  textDecoration: "none",
+  fontWeight: "900",
+};
+
+const conversionContactButtonStyle = {
+  display: "inline-block",
+  padding: "14px 20px",
+  borderRadius: "999px",
+  background: "#111827",
+  color: "#ffffff",
+  border: "1px solid rgba(255, 255, 255, 0.18)",
+  textDecoration: "none",
+  fontWeight: "900",
+};
+
+const conversionNoticeStyle = {
+  margin: "22px 0 0",
+  padding: "14px 16px",
+  borderRadius: "16px",
+  background: "rgba(255, 255, 255, 0.1)",
+  color: "#dbeafe",
+  fontSize: "14px",
+  lineHeight: 1.7,
 };
