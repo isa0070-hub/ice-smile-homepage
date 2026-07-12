@@ -300,8 +300,6 @@ function makeJsonLd({ item, detailImages = [], phoneNumber }) {
   const title = makeTitle(item);
   const description = makeDescription(item);
   const branchInfo = getBranchInfo(item.branch);
-  const branchVisitGuide = getBranchVisitGuide(item.branch);
-  const consultTitle = makeConsultTitle(item);
 
   const imageUrls = [
     item.image_url,
@@ -571,7 +569,9 @@ export default async function RepairCaseDetailPage({ params }) {
 
     const relatedCases = await getRelatedCases(item);
     const branchInfo = getBranchInfo(item.branch);
-    
+    const branchVisitGuide = getBranchVisitGuide(item.branch);
+const consultTitle = makeConsultTitle(item);
+
     const jsonLd = makeJsonLd({
       item,
       detailImages: detailImages || [],
