@@ -10,6 +10,12 @@ import {
 } from "@/lib/seoEngine";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+const SITE_URL = "https://www.ismileagain.co.kr";
+const NAVER_SEARCH_ADVISOR_URL =
+  "https://searchadvisor.naver.com/console/site/request/crawl?site=https%3A%2F%2Fwww.ismileagain.co.kr";
+const GOOGLE_SEARCH_CONSOLE_URL = "https://search.google.com/search-console";
+const SITEMAP_URL = "https://www.ismileagain.co.kr/sitemap.xml";
+const RSS_URL = "https://www.ismileagain.co.kr/rss.xml";
 
 function normalizeText(value = "") {
   return String(value).replace(/\s+/g, " ").trim();
@@ -997,16 +1003,57 @@ setSaving(true);
     </div>
 
     <div style={searchRequestGuideStyle}>
-      <p>
-        <strong>네이버 요청용:</strong> 서치어드바이저 → www 사이트 선택 →
-        검증 → URL 검사 또는 요청 → 웹 페이지 수집에 위 주소 입력
-      </p>
+  <p style={searchRequestTitleStyle}>등록 후 SEO 제출 체크리스트</p>
 
-      <p>
-        <strong>구글 요청용:</strong> Google Search Console → www 속성 선택 →
-        URL 검사창에 위 주소 입력 → 색인 생성 요청
-      </p>
-    </div>
+  <ul style={submitChecklistStyle}>
+    <li>새 글 열기로 상세페이지가 정상 표시되는지 확인</li>
+    <li>주소 복사 후 네이버 웹페이지 수집 요청</li>
+    <li>구글 Search Console에서 URL 검사 후 색인 생성 요청</li>
+    <li>sitemap.xml과 rss.xml에 새 글이 반영되는지 확인</li>
+  </ul>
+
+  <div style={submitButtonWrapStyle}>
+    <a
+      href={NAVER_SEARCH_ADVISOR_URL}
+      target="_blank"
+      rel="noreferrer"
+      style={naverSubmitButtonStyle}
+    >
+      네이버 수집 요청
+    </a>
+
+    <a
+      href={GOOGLE_SEARCH_CONSOLE_URL}
+      target="_blank"
+      rel="noreferrer"
+      style={googleSubmitButtonStyle}
+    >
+      구글 색인 요청
+    </a>
+
+    <a
+      href={SITEMAP_URL}
+      target="_blank"
+      rel="noreferrer"
+      style={sitemapButtonStyle}
+    >
+      sitemap 확인
+    </a>
+
+    <a
+      href={RSS_URL}
+      target="_blank"
+      rel="noreferrer"
+      style={rssButtonStyle}
+    >
+      RSS 확인
+    </a>
+  </div>
+
+  <p style={searchRequestSmallTextStyle}>
+    네이버와 구글에는 위 새 글 주소를 복사해서 입력하면 됩니다.
+  </p>
+</div>
   </div>
 )}
         {message && (
@@ -1318,4 +1365,76 @@ const searchRequestGuideStyle = {
   border: "1px solid #d1fae5",
   lineHeight: 1.7,
   fontSize: "14px",
+};
+
+const searchRequestTitleStyle = {
+  margin: "0 0 10px",
+  fontWeight: "900",
+  color: "#064e3b",
+};
+
+const submitChecklistStyle = {
+  margin: "0 0 14px 18px",
+  padding: 0,
+  lineHeight: 1.8,
+  color: "#334155",
+  fontSize: "14px",
+};
+
+const submitButtonWrapStyle = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: "8px",
+  marginTop: "12px",
+};
+
+const naverSubmitButtonStyle = {
+  display: "inline-block",
+  padding: "11px 14px",
+  borderRadius: "999px",
+  background: "#03c75a",
+  color: "#ffffff",
+  textDecoration: "none",
+  fontWeight: "900",
+  fontSize: "14px",
+};
+
+const googleSubmitButtonStyle = {
+  display: "inline-block",
+  padding: "11px 14px",
+  borderRadius: "999px",
+  background: "#2563eb",
+  color: "#ffffff",
+  textDecoration: "none",
+  fontWeight: "900",
+  fontSize: "14px",
+};
+
+const sitemapButtonStyle = {
+  display: "inline-block",
+  padding: "11px 14px",
+  borderRadius: "999px",
+  background: "#111827",
+  color: "#ffffff",
+  textDecoration: "none",
+  fontWeight: "900",
+  fontSize: "14px",
+};
+
+const rssButtonStyle = {
+  display: "inline-block",
+  padding: "11px 14px",
+  borderRadius: "999px",
+  background: "#475569",
+  color: "#ffffff",
+  textDecoration: "none",
+  fontWeight: "900",
+  fontSize: "14px",
+};
+
+const searchRequestSmallTextStyle = {
+  margin: "14px 0 0",
+  color: "#64748b",
+  fontSize: "13px",
+  lineHeight: 1.6,
 };
