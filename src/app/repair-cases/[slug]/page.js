@@ -863,56 +863,27 @@ const consultTitle = makeConsultTitle(item);
   </div>
 
   <div style={conversionButtonWrapStyle}>
-    <a
-      href="https://talk.naver.com/WCH5S2X"
-      target="_blank"
-      rel="noreferrer"
-      style={conversionTalkButtonStyle}
-    >
-      증상 사진 톡톡 보내기
-    </a>
+  <a
+    href="https://talk.naver.com/WCH5S2X"
+    target="_blank"
+    rel="noreferrer"
+    style={talkContactButtonStyle}
+  >
+    💬 네이버톡톡 문의
+  </a>
 
-    <a href={`tel:${phoneNumber}`} style={conversionPhoneButtonStyle}>
-      {phoneNumber} 전화 상담
-    </a>
+  <PhoneContactButton buttonStyle={phoneContactButtonStyle} />
 
-    <a href="/contact" style={conversionContactButtonStyle}>
-      온라인 수리문의
-    </a>
-  </div>
+  <a href="/contact" style={onlineContactButtonStyle}>
+    📝 온라인 수리문의
+  </a>
+</div>
 
   <p style={conversionNoticeStyle}>
     ※ 정확한 비용과 수리 시간은 기기 상태, 부품 재고, 침수 여부,
     내부 손상 정도를 확인한 뒤 안내됩니다.
   </p>
 </section>
-
-      <section style={contactBoxStyle}>
-        <h3 style={{ fontSize: "26px", marginBottom: "12px" }}>
-          수리 상담 및 접수
-        </h3>
-
-        <p style={{ fontSize: "17px", lineHeight: 1.8, color: "#475569" }}>
-          방문 전 문의 주시면 수리 가능 여부, 예상 비용, 소요 시간,
-          방문 또는 택배 접수 방법을 빠르게 안내해드립니다.
-        </p>
-
-        <div style={{ marginTop: "22px" }}>
-          <a
-            href="https://talk.naver.com/WCH5S2X"
-            target="_blank"
-            style={talkContactButtonStyle}
-          >
-            💬 네이버톡톡 문의
-          </a>
-
-          <PhoneContactButton buttonStyle={phoneContactButtonStyle} />
-
-          <a href="/contact" style={onlineContactButtonStyle}>
-            📝 온라인 수리문의
-          </a>
-        </div>
-      </section>
 
       <div style={{ marginTop: "50px" }}>
         <a href="/repair-cases" style={backButtonStyle}>
@@ -1192,18 +1163,10 @@ const relatedMetaStyle = {
   lineHeight: 1.6,
 };
 
-const contactBoxStyle = {
-  marginTop: "60px",
-  padding: "36px",
-  borderRadius: "22px",
-  background: "linear-gradient(135deg, #f8fafc, #eef6ff)",
-  border: "1px solid #dbeafe",
-  textAlign: "center",
-};
-
 const talkContactButtonStyle = {
   display: "inline-block",
-  margin: "6px",
+  minWidth: "190px",
+textAlign: "center",
   padding: "14px 20px",
   background: "#03c75a",
   color: "white",
@@ -1214,7 +1177,8 @@ const talkContactButtonStyle = {
 
 const phoneContactButtonStyle = {
   display: "inline-block",
-  margin: "6px",
+  minWidth: "190px",
+  textAlign: "center",
   padding: "14px 20px",
   background: "#1e3a8a",
   color: "white",
@@ -1225,7 +1189,8 @@ const phoneContactButtonStyle = {
 
 const onlineContactButtonStyle = {
   display: "inline-block",
-  margin: "6px",
+  minWidth: "190px",
+textAlign: "center",
   padding: "14px 20px",
   background: "#111827",
   color: "white",
@@ -1440,40 +1405,12 @@ const conversionCardTextStyle = {
 
 const conversionButtonWrapStyle = {
   display: "flex",
-  gap: "10px",
+  justifyContent: "center",
+  alignItems: "center",
+  gap: "22px",
   flexWrap: "wrap",
-  marginTop: "28px",
-};
-
-const conversionTalkButtonStyle = {
-  display: "inline-block",
-  padding: "14px 20px",
-  borderRadius: "999px",
-  background: "#03c75a",
-  color: "#ffffff",
-  textDecoration: "none",
-  fontWeight: "900",
-};
-
-const conversionPhoneButtonStyle = {
-  display: "inline-block",
-  padding: "14px 20px",
-  borderRadius: "999px",
-  background: "#ffffff",
-  color: "#1e3a8a",
-  textDecoration: "none",
-  fontWeight: "900",
-};
-
-const conversionContactButtonStyle = {
-  display: "inline-block",
-  padding: "14px 20px",
-  borderRadius: "999px",
-  background: "#111827",
-  color: "#ffffff",
-  border: "1px solid rgba(255, 255, 255, 0.18)",
-  textDecoration: "none",
-  fontWeight: "900",
+  marginTop: "34px",
+  width: "100%",
 };
 
 const conversionNoticeStyle = {
