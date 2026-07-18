@@ -56,7 +56,16 @@ export default async function BranchesPage() {
           지점안내
         </p>
 
-        <h1 style={styles.title}>아이스마일어게인 지점안내</h1>
+        <h1 className="branches-main-title" style={styles.title}>
+  <span className="branches-main-title-desktop">
+    아이스마일어게인 지점안내
+  </span>
+
+  <span className="branches-main-title-mobile">
+    <span>아이스마일어게인</span>
+    <span>지점안내</span>
+  </span>
+</h1>
 
         <p style={styles.subtitle}>
           강변점·선릉점·신도림점의 약도, 주소, 연락처와 방문 정보를

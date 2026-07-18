@@ -163,20 +163,30 @@ export default async function BranchDetailPage({ params }) {
           {seo.shortName}
         </p>
 
-        <h1 style={styles.title}>{seo.name}</h1>
+        <h1 className="branch-detail-title" style={styles.title}>
+  <span className="branch-detail-title-desktop">
+    {seo.name}
+  </span>
+
+  <span className="branch-detail-title-mobile">
+    <span>아이스마일어게인</span>
+    <span>{seo.shortName}</span>
+  </span>
+</h1>
 
         <p style={styles.subtitle}>{seo.description}</p>
       </section>
 
       <section style={styles.content}>
         <article className="branch-card" style={styles.card}>
-          <div style={styles.mapBox}>
+        <div className="branch-detail-map-box" style={styles.mapBox}>
             {branch.map_image ? (
               <img
-                src={branch.map_image}
-                alt={`${seo.name} 위치 약도`}
-                style={styles.mapImage}
-              />
+              className="branch-detail-map-image"
+              src={branch.map_image}
+              alt={`${seo.name} 위치 약도`}
+              style={styles.mapImage}
+            />
             ) : (
               <div style={styles.noImage}>지점 약도 준비 중</div>
             )}

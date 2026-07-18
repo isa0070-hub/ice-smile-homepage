@@ -78,7 +78,7 @@ export default async function Home() {
 
   <span className="home-hero-title-mobile">
     <span>수리전문 공식</span>
-    <span>서비스센터</span>
+    <span>서비스 센터</span>
   </span>
 </h1>
 

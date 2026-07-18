@@ -807,3 +807,67 @@ form {
     text-align: center !important;
   }
 }
+
+/* 지점 페이지 제목: PC */
+.branches-main-title-desktop,
+.branch-detail-title-desktop {
+  display: inline;
+}
+
+.branches-main-title-mobile,
+.branch-detail-title-mobile {
+  display: none;
+}
+
+/* 지점 페이지 모바일 정돈 */
+@media (max-width: 768px) {
+  .branches-main-title,
+  .branch-detail-title {
+    width: 100%;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    font-size: clamp(36px, 10vw, 42px) !important;
+    line-height: 1.22 !important;
+    letter-spacing: -1.5px;
+    text-align: center !important;
+    word-break: keep-all;
+  }
+
+  .branches-main-title-desktop,
+  .branch-detail-title-desktop {
+    display: none;
+  }
+
+  .branches-main-title-mobile,
+  .branch-detail-title-mobile {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .branches-main-title-mobile span,
+  .branch-detail-title-mobile span {
+    display: block;
+    width: 100%;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  /* 지점 상세 약도의 불필요한 하단 여백 축소 */
+  .branch-card .branch-detail-map-box {
+    min-height: 0 !important;
+    height: 250px !important;
+    overflow: hidden !important;
+  }
+
+  .branch-card .branch-detail-map-image {
+    display: block !important;
+    width: 100% !important;
+    height: 250px !important;
+    object-fit: cover !important;
+    object-position: top center !important;
+  }
+}
