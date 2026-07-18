@@ -736,3 +736,74 @@ form {
     text-align: center !important;
   }
 }
+
+/* 메인 제목: PC에서는 한 줄 */
+.home-hero-title-desktop {
+  display: inline;
+}
+
+.home-hero-title-mobile {
+  display: none;
+}
+
+/* 메인 첫 화면 모바일 정돈 */
+@media (max-width: 768px) {
+  .home-hero-title {
+    width: 100%;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    font-size: clamp(42px, 11vw, 50px) !important;
+    line-height: 1.16 !important;
+    letter-spacing: -2px;
+    text-align: center !important;
+    word-break: keep-all;
+  }
+
+  .home-hero-title-desktop {
+    display: none;
+  }
+
+  .home-hero-title-mobile {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .home-hero-title-mobile span {
+    display: block;
+    width: 100%;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .home-hero-buttons {
+    display: flex !important;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .home-hero-buttons a,
+  .home-hero-buttons button {
+    width: min(100%, 440px) !important;
+    box-sizing: border-box;
+    text-align: center;
+  }
+}
+/* 지점안내 버튼은 PC에서 숨김 */
+.mobile-only-branch-button {
+  display: none !important;
+}
+
+/* 모바일에서만 지점안내 버튼 표시 */
+@media (max-width: 768px) {
+  .mobile-only-branch-button {
+    display: inline-block !important;
+    width: min(100%, 440px) !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
+  }
+}
