@@ -155,8 +155,20 @@ export default async function RepairServicePage({ params }) {
   ))}
 </h1>
 
-    <p style={styles.heroDescription}>
+<p
+  className="repair-service-description-desktop"
+  style={styles.heroDescription}
+>
   {service.heroDescription || service.description}
+</p>
+
+<p
+  className="repair-service-description-mobile"
+  style={styles.heroDescription}
+>
+  {service.mobileHeroDescription ||
+    service.heroDescription ||
+    service.description}
 </p>
   </div>
 </section>

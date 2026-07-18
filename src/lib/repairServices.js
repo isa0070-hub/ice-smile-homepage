@@ -12,7 +12,8 @@ export const repairServices = {
   
       description:
         "아이폰 액정과 배터리, 아이패드 액정과 배터리, 맥북 침수·전원불량, 애플워치 액정\n수리 안내와 실제 사례를 확인하세요.",
-  
+        mobileHeroDescription:
+        "아이폰·아이패드·맥북·애플워치\n액정·배터리·침수·전원불량 수리 안내",
       // \n 위치에서 제목이 자연스럽게 두 줄로 표시됨
       heading: "아이폰·아이패드·맥북\n애플워치 수리",
   
@@ -60,7 +61,8 @@ export const repairServices = {
   
       description:
         "서피스 프로, 서피스 랩탑, 서피스 북, 서피스 고, 랩탑 스튜디오의 액정 파손과 배터리 스웰링\n수리 안내와 실제 사례를 확인하세요.",
-  
+        mobileHeroDescription:
+        "서피스 프로·랩탑·북·고\n액정 파손·배터리 스웰링 수리 안내",
       heading: "서피스 프로·랩탑·북·고\n전문 수리",
   
       intro:
@@ -107,7 +109,8 @@ export const repairServices = {
   
       description:
         "레노버, LG그램, 삼성 노트북과 태블릿의 액정 파손, 배터리, 충전불량, 침수, 전원불량\n수리 안내와 실제 사례를 확인하세요.",
-  
+        mobileHeroDescription:
+        "레노버·LG그램·삼성 노트북·태블릿\n액정·배터리·침수·전원불량 수리 안내",
       heading: "레노버·LG그램·삼성\n노트북·태블릿 수리",
   
       intro:
