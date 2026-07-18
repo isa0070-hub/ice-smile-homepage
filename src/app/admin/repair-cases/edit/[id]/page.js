@@ -70,21 +70,40 @@ export default function EditRepairCasePage() {
 
   function handleChange(e) {
     const { name, value } = e.target;
-
+  
     const nextForm = {
       ...form,
       [name]: value,
     };
-
-    if (name === "title") {
-      nextForm.slug = makeSlug(value);
+  
+    // 제목·기기·모델·증상·수리내용이 바뀔 때
+    // 전체 폼 정보를 이용해 SEO 주소를 다시 생성
+    if (
+      [
+        "title",
+        "device",
+        "model",
+        "symptom",
+        "repair_content",
+      ].includes(name)
+    ) {
+      nextForm.slug = makeSlug(nextForm);
     }
-
-    if (["title", "branch", "device", "model", "symptom"].includes(name)) {
+  
+    // SEO 키워드와 대표 ALT 문구도 최신 입력값으로 다시 생성
+    if (
+      [
+        "title",
+        "branch",
+        "device",
+        "model",
+        "symptom",
+      ].includes(name)
+    ) {
       nextForm.seo_keyword = makeSeoKeyword(nextForm);
       nextForm.alt_text = makeAltText(nextForm);
     }
-
+  
     setForm(nextForm);
   }
 
