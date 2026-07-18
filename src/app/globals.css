@@ -856,18 +856,22 @@ form {
     white-space: nowrap;
   }
 
-  /* 지점 상세 약도의 불필요한 하단 여백 축소 */
+  /* 개별 지점 약도: 모바일에서 전체 이미지가 잘리지 않도록 표시 */
+@media (max-width: 768px) {
   .branch-card .branch-detail-map-box {
     min-height: 0 !important;
-    height: 250px !important;
+    height: auto !important;
     overflow: hidden !important;
+    background: #f8fafc !important;
   }
 
   .branch-card .branch-detail-map-image {
     display: block !important;
     width: 100% !important;
-    height: 250px !important;
-    object-fit: cover !important;
-    object-position: top center !important;
+    height: auto !important;
+    max-height: none !important;
+    object-fit: contain !important;
+    object-position: center !important;
   }
+}
 }
