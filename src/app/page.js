@@ -133,10 +133,10 @@ export default async function Home() {
         <h2 style={titleStyle}>수리 가능 품목</h2>
 
         <div style={gridStyle}>
-          <a
-            href="/repair-cases?category=애플"
-            style={{ color: "inherit", textDecoration: "none" }}
-          >
+        <a
+  href="/repair-services/apple"
+  style={{ color: "inherit", textDecoration: "none" }}
+>
             <div style={cardStyle}>
               <img
                 src="/images/apple-repair.jpg"
@@ -152,9 +152,9 @@ export default async function Home() {
           </a>
 
           <a
-            href="/repair-cases?category=마이크로소프트%20서피스"
-            style={{ color: "inherit", textDecoration: "none" }}
-          >
+  href="/repair-services/surface"
+  style={{ color: "inherit", textDecoration: "none" }}
+>
             <div style={cardStyle}>
               <img
                 src="/images/microsoft-surface.jpg"
@@ -170,9 +170,9 @@ export default async function Home() {
           </a>
 
           <a
-            href="/repair-cases?category=노트북%20및%20태블릿"
-            style={{ color: "inherit", textDecoration: "none" }}
-          >
+  href="/repair-services/notebook-tablet"
+  style={{ color: "inherit", textDecoration: "none" }}
+>
             <div style={cardStyle}>
               <img
                 src="/images/notebook-tablet.jpg"

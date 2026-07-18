@@ -875,3 +875,29 @@ form {
   }
 }
 }
+/* 16순위: 수리품목 독립 페이지 모바일 정돈 */
+@media (max-width: 768px) {
+  .repair-service-page {
+    padding-top: 24px !important;
+    padding-bottom: 55px !important;
+  }
+
+  .repair-service-hero {
+    width: calc(100% - 28px) !important;
+    min-height: 320px !important;
+    margin: 0 auto !important;
+    border-radius: 20px !important;
+  }
+
+  .repair-service-hero h1 {
+    font-size: clamp(32px, 9vw, 40px) !important;
+    line-height: 1.2 !important;
+    letter-spacing: -1.2px !important;
+    text-align: center !important;
+  }
+
+  .repair-service-hero p {
+    max-width: 100% !important;
+    text-align: center !important;
+  }
+}

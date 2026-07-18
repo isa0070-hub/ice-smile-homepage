@@ -57,6 +57,23 @@ export default async function sitemap() {
       changeFrequency: "monthly",
       priority: 0.85,
     },
+    
+    // 16순위: 수리품목별 독립 검색 페이지
+    {
+      url: `${baseUrl}/repair-services/apple`,
+      changeFrequency: "monthly",
+      priority: 0.85,
+    },
+    {
+      url: `${baseUrl}/repair-services/surface`,
+      changeFrequency: "monthly",
+      priority: 0.85,
+    },
+    {
+      url: `${baseUrl}/repair-services/notebook-tablet`,
+      changeFrequency: "monthly",
+      priority: 0.85,
+    },
 
     {
       url: `${baseUrl}/contact`,
