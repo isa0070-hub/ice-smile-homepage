@@ -707,3 +707,32 @@ form {
     opacity: .18;
   }
 }
+
+/* 15순위: 지점 페이지 모바일 최적화 */
+@media (max-width: 768px) {
+  .branch-card {
+    grid-template-columns: 1fr !important;
+    gap: 18px !important;
+    padding: 18px !important;
+    border-radius: 20px !important;
+  }
+
+  .branch-card img {
+    width: 100% !important;
+    height: auto !important;
+    object-fit: contain !important;
+  }
+
+  .branch-buttons {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  .branch-buttons a {
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
+  }
+}

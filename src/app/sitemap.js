@@ -18,10 +18,9 @@ export default async function sitemap() {
 
   // 가장 최근 수리사례 등록일
   // 홈과 수리사례 목록은 새 글 등록 시 실제 내용이 바뀌므로 이 날짜를 사용
-  const latestCaseDate =
-    cases?.[0]?.created_at
-      ? new Date(cases[0].created_at)
-      : undefined;
+  const latestCaseDate = cases?.[0]?.created_at
+    ? new Date(cases[0].created_at)
+    : undefined;
 
   const staticPages = [
     {
@@ -36,10 +35,38 @@ export default async function sitemap() {
       changeFrequency: "daily",
       priority: 0.9,
     },
+
+    // 15순위: 지점안내 검색 페이지
+    {
+      url: `${baseUrl}/branches`,
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/branches/gangbyeon`,
+      changeFrequency: "monthly",
+      priority: 0.85,
+    },
+    {
+      url: `${baseUrl}/branches/seolleung`,
+      changeFrequency: "monthly",
+      priority: 0.85,
+    },
+    {
+      url: `${baseUrl}/branches/sindorim`,
+      changeFrequency: "monthly",
+      priority: 0.85,
+    },
+
     {
       url: `${baseUrl}/contact`,
       changeFrequency: "monthly",
       priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/notices`,
+      changeFrequency: "weekly",
+      priority: 0.6,
     },
     {
       url: `${baseUrl}/privacy`,
@@ -50,11 +77,6 @@ export default async function sitemap() {
       url: `${baseUrl}/terms`,
       changeFrequency: "yearly",
       priority: 0.3,
-    },
-    {
-      url: `${baseUrl}/notices`,
-      changeFrequency: "weekly",
-      priority: 0.6,
     },
   ];
 
