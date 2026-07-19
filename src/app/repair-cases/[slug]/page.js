@@ -140,28 +140,114 @@ function makeDeviceModelText(item) {
   return cleanText(`${device} ${model}`);
 }
 
+function normalizeComparable(value = "") {
+  return cleanText(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9가-힣]/g, "");
+}
+
+function dedupeAdjacentTerms(value = "") {
+  let text = cleanText(value);
+
+  // 띄어쓰기 형태가 다른 연속 중복까지 정리하기 위해 최대 4회 반복
+  for (let pass = 0; pass < 4; pass += 1) {
+    const tokens = text.split(/\s+/).filter(Boolean);
+    const result = [];
+
+    for (const token of tokens) {
+      const current = normalizeComparable(token);
+      const previousToken = result[result.length - 1] || "";
+      const previous = normalizeComparable(previousToken);
+
+      if (!current) continue;
+
+      if (!previous) {
+        result.push(token);
+        continue;
+      }
+
+      if (current === previous) {
+        continue;
+      }
+
+      if (current.includes(previous)) {
+        result[result.length - 1] = token;
+        continue;
+      }
+
+      if (previous.includes(current)) {
+        continue;
+      }
+
+      result.push(token);
+    }
+
+    const nextText = cleanText(result.join(" "));
+
+    if (nextText === text) {
+      return nextText;
+    }
+
+    text = nextText;
+  }
+
+  return text;
+}
+
+function makeDisplayTitle(item) {
+  let title = cleanText(item?.title);
+  const device = cleanText(item?.device);
+  const model = cleanText(item?.model);
+
+  // 모델명에 기기명이 포함됐는데 제목에 둘이 연속되면 한 번만 표시
+  // 예: 아이패드 아이패드9세대 → 아이패드9세대
+  if (
+    title &&
+    device &&
+    model &&
+    normalizeComparable(model).includes(normalizeComparable(device))
+  ) {
+    title = title.replace(
+      new RegExp(
+        `${escapeRegExp(device)}\\s*${escapeRegExp(model)}`,
+        "gi"
+      ),
+      model
+    );
+  }
+
+  title = dedupeAdjacentTerms(title);
+
+  if (title) {
+    return title;
+  }
+
+  return cleanText(
+    `${makeDeviceModelText(item)} ${makeMetaKeyword(item)} 수리사례`
+  );
+}
 function findRepairAction(item) {
   const source = cleanText(
     `${item?.title || ""} ${item?.seo_keyword || ""} ${item?.symptom || ""}`
   );
 
   const actions = [
-    "액정교체",
-    "액정수리",
-    "디스플레이교체",
-    "디스플레이수리",
-    "유리교체",
-    "배터리교체",
     "후면유리교체",
     "카메라렌즈교체",
-    "카메라교체",
-    "충전단자교체",
     "메인보드수리",
-    "보드수리",
-    "침수수리",
     "전원불량수리",
+    "디스플레이교체",
+    "디스플레이수리",
+    "액정교체",
+    "액정수리",
+    "배터리교체",
+    "충전단자교체",
     "키보드교체",
     "화면줄수리",
+    "유리교체",
+    "카메라교체",
+    "보드수리",
+    "침수수리",
   ];
 
   return actions.find((action) => source.includes(action)) || "";
@@ -171,8 +257,11 @@ function makeMetaKeyword(item) {
   const branchLabel = getBranchSearchLabel(item?.branch);
   const device = cleanText(item?.device);
   const model = cleanText(item?.model);
-  const symptom = cleanText(item?.symptom);
+  const rawSymptom = cleanText(item?.symptom);
   const action = findRepairAction(item);
+
+  // 증상에 기기명이나 모델명이 들어간 경우 제거
+  const symptom = removeTextParts(rawSymptom, [device, model]);
 
   const cleanedSeoKeyword = removeTextParts(item?.seo_keyword, [
     item?.branch,
@@ -199,22 +288,35 @@ function makeMetaKeyword(item) {
     keywordParts.push(symptom);
   }
 
-  if (action && !symptom.includes(action)) {
+  const normalizedSymptom = normalizeComparable(symptom);
+  const normalizedAction = normalizeComparable(action);
+
+  if (
+    action &&
+    !normalizedSymptom.includes(normalizedAction)
+  ) {
     keywordParts.push(action);
   }
 
-  const combinedKeyword = cleanText(keywordParts.join(" "));
+  const combinedKeyword = dedupeAdjacentTerms(
+    keywordParts.join(" ")
+  );
 
   if (combinedKeyword) {
     return combinedKeyword;
   }
 
-  if (cleanedSeoKeyword) {
-    return cleanedSeoKeyword;
+  const fallbackKeyword =
+    dedupeAdjacentTerms(cleanedSeoKeyword);
+
+  if (fallbackKeyword) {
+    return fallbackKeyword;
   }
 
   if (item?.category) {
-    return `${item.category} 수리`;
+    return dedupeAdjacentTerms(
+      `${item.category} 수리`
+    );
   }
 
   return "기기 수리";
@@ -247,7 +349,9 @@ function makeTitle(item) {
   const deviceModel = makeDeviceModelText(item);
   const keyword = makeMetaKeyword(item);
 
-  const title = `${branchLabel} ${deviceModel} ${keyword} 수리사례 | 아이스마일어게인 ${item.branch || ""}`;
+  const title = dedupeAdjacentTerms(
+    `${branchLabel} ${deviceModel} ${keyword} 수리사례 | 아이스마일어게인 ${item.branch || ""}`
+  );
 
   return limitText(title, 65);
 }
@@ -258,48 +362,38 @@ function makeCanonicalUrl(item) {
     : `${BASE_URL}/repair-cases`;
 }
 function makeFaqItems(item, phoneNumber) {
-  const deviceModel = `${item?.device || "기기"} ${item?.model || ""}`
-    .replace(/\s+/g, " ")
-    .trim();
-
+  const deviceModel = makeDeviceModelText(item);
   const branch = item?.branch || "아이스마일어게인";
-  const symptom = item?.symptom || "고장 증상";
-  const keyword = item?.seo_keyword || item?.category || "수리";
+  const symptom = cleanText(item?.symptom) || "고장 증상";
+  const keyword = makeMetaKeyword(item);
+  const visitGuide = getBranchVisitGuide(item?.branch);
 
   return [
     {
-      question: `${deviceModel} ${symptom} 수리 가능 여부는 어떻게 확인하나요?`,
-      answer: `${branch}에 방문 전 ${phoneNumber} 또는 네이버톡톡으로 기기 모델명과 증상 사진을 보내주시면 ${keyword} 가능 여부, 예상 비용, 소요 시간을 안내해드립니다.`,
+      question: `${deviceModel} ${keyword} 가능 여부는 어떻게 확인하나요?`,
+      answer: `${branch} 방문 전 ${phoneNumber} 또는 네이버톡톡으로 모델명과 증상 사진을 보내주시면 ${keyword} 가능 여부와 예상 비용, 소요 시간을 확인해드립니다.`,
     },
     {
-      question: "수리 시간은 얼마나 걸리나요?",
+      question: `${deviceModel} 수리 시간과 데이터 유지 여부는 어떻게 확인하나요?`,
       answer:
-        "수리 시간은 기종, 고장 증상, 부품 재고, 내부 손상 정도에 따라 달라질 수 있습니다. 방문 전 문의 주시면 현재 접수 상황을 기준으로 예상 시간을 안내해드립니다.",
+        "수리 시간은 부품 재고와 내부 손상 정도에 따라 달라집니다. 액정, 배터리, 카메라 등 일반 부품 교체는 대부분 데이터 삭제 없이 진행되지만, 침수나 메인보드 손상은 점검 결과에 따라 안내드립니다.",
     },
     {
-      question: "수리하면 데이터는 그대로 유지되나요?",
-      answer:
-        "대부분의 액정, 배터리, 카메라, 충전단자 등 부품 교체 수리는 데이터 삭제 없이 진행됩니다. 다만 침수, 메인보드 손상, 전원불량처럼 내부 손상이 큰 경우에는 점검 결과에 따라 안내드립니다.",
-    },
-    {
-      question: "택배 수리도 가능한가요?",
-      answer:
-        "방문이 어려운 경우 택배 접수도 가능합니다. 고객님이 선불로 발송해주시면 매장 도착 후 점검과 수리를 진행하고, 수리 완료 후에는 매장에서 고객님께 다시 발송해드립니다.",
-    },
-    {
-      question: "방문 전에 예약이 필요한가요?",
-      answer:
-        "예약 없이 방문도 가능하지만, 부품 재고와 대기 시간을 줄이려면 전화 또는 네이버톡톡으로 먼저 문의 후 방문하시는 것을 권장드립니다.",
+      question: `${branch} 방문과 택배 접수는 어떻게 진행하나요?`,
+      answer: `${visitGuide} 방문이 어려운 경우 고객님이 선불로 발송해주시면 도착 후 점검하고, 수리 완료 후 매장에서 다시 발송해드립니다.`,
     },
   ];
 }
+
 function makeJsonLd({ item, detailImages = [], phoneNumber }) {
   if (!item) return null;
 
   const canonicalUrl = makeCanonicalUrl(item);
-  const title = makeTitle(item);
-  const description = makeDescription(item);
-  const branchInfo = getBranchInfo(item.branch);
+const description = makeDescription(item);
+const branchInfo = getBranchInfo(item.branch);
+const displayTitle = makeDisplayTitle(item);
+const deviceModel = makeDeviceModelText(item);
+const displayKeyword = makeMetaKeyword(item);
 
   const imageUrls = [
     item.image_url,
@@ -331,7 +425,7 @@ function makeJsonLd({ item, detailImages = [], phoneNumber }) {
           {
             "@type": "ListItem",
             position: 3,
-            name: item.title,
+            name: displayTitle,
             item: canonicalUrl,
           },
         ],
@@ -339,7 +433,7 @@ function makeJsonLd({ item, detailImages = [], phoneNumber }) {
       {
         "@type": "Article",
         "@id": `${canonicalUrl}#article`,
-        headline: item.title,
+        headline: displayTitle,
         description,
         image: imageUrls.length > 0 ? imageUrls : undefined,
         datePublished: item.created_at,
@@ -355,21 +449,13 @@ function makeJsonLd({ item, detailImages = [], phoneNumber }) {
           name: "아이스마일어게인",
           url: BASE_URL,
         },
-        about: `${item.device || ""} ${item.model || ""} ${
-          item.symptom || ""
-        }`
-          .replace(/\s+/g, " ")
-          .trim(),
+        about: cleanText(`${deviceModel} ${displayKeyword}`),
       },
       {
         "@type": "Service",
         "@id": `${canonicalUrl}#service`,
-        name: `${item.device || ""} ${item.model || ""} ${
-          item.symptom || "수리"
-        }`
-          .replace(/\s+/g, " ")
-          .trim(),
-        serviceType: item.symptom || `${item.device || "기기"} 수리`,
+        name: cleanText(`${deviceModel} ${displayKeyword}`),
+serviceType: displayKeyword,
         areaServed: {
           "@type": "Country",
           name: "대한민국",
@@ -491,6 +577,13 @@ export async function generateMetadata({ params }) {
   const description = makeDescription(item);
   const canonicalUrl = makeCanonicalUrl(item);
   const imageUrl = toAbsoluteUrl(item?.image_url);
+  const displayTitle = item
+  ? makeDisplayTitle(item)
+  : "아이스마일어게인 수리사례";
+
+const socialImageAlt = item?.alt_text
+  ? dedupeAdjacentTerms(item.alt_text)
+  : displayTitle;
 
   return {
     title,
@@ -511,10 +604,7 @@ export async function generateMetadata({ params }) {
               url: imageUrl,
               width: 1200,
               height: 630,
-              alt:
-                item?.alt_text ||
-                item?.title ||
-                "아이스마일어게인 수리사례 이미지",
+              alt: socialImageAlt,
             },
           ]
         : [],
@@ -578,6 +668,9 @@ const consultTitle = makeConsultTitle(item);
       phoneNumber,
     });
     const faqItems = makeFaqItems(item, phoneNumber);
+    const displayTitle = makeDisplayTitle(item);
+    const deviceModel = makeDeviceModelText(item);
+    const displayKeyword = makeMetaKeyword(item);
 
   return (
     <main style={{ maxWidth: "900px", margin: "80px auto", padding: "24px" }}>
@@ -599,7 +692,7 @@ const consultTitle = makeConsultTitle(item);
           수리사례
         </a>
         <span style={breadcrumbSeparatorStyle}>›</span>
-        <span style={breadcrumbCurrentStyle}>{item.title}</span>
+        <span style={breadcrumbCurrentStyle}>{displayTitle}</span>
       </nav>
 
       <p style={{ color: "#1e3a8a", fontWeight: "800" }}>
@@ -607,11 +700,11 @@ const consultTitle = makeConsultTitle(item);
       </p>
 
       <h1 style={{ fontSize: "42px", lineHeight: 1.3, marginBottom: "20px" }}>
-        {item.title}
+      {displayTitle}
       </h1>
 
       <p style={{ fontSize: "18px", color: "#475569", marginBottom: "12px" }}>
-        대표 키워드 : {item.seo_keyword}
+      대표 키워드 : {displayKeyword}
       </p>
 
       <p style={{ color: "#64748b", fontWeight: "700", marginBottom: "30px" }}>
@@ -621,7 +714,7 @@ const consultTitle = makeConsultTitle(item);
       {item.image_url && (
         <img
           src={item.image_url}
-          alt={item.alt_text || item.title}
+          alt={item.alt_text || displayTitle}
           style={mainImageStyle}
         />
       )}
@@ -630,13 +723,13 @@ const consultTitle = makeConsultTitle(item);
   <p style={summaryLabelTopStyle}>수리사례 핵심 요약</p>
 
   <h2 style={summaryTitleStyle}>
-    {item.branch} {item.device} {item.model} 수리 정보
-  </h2>
+  {item.branch} {deviceModel} 수리 정보
+</h2>
 
-  <p style={summaryIntroStyle}>
-    {item.title} 사례를 방문 전 빠르게 확인할 수 있도록 기기, 증상,
-    수리 지점, 상담 연락처를 한눈에 정리했습니다.
-  </p>
+<p style={summaryIntroStyle}>
+  {displayTitle} 사례의 기기, 증상, 수리 지점과 상담 연락처를
+  방문 전에 빠르게 확인할 수 있도록 정리했습니다.
+</p>
 
   <div style={summaryGridStyle}>
     <div style={summaryItemStyle}>
@@ -667,7 +760,7 @@ const consultTitle = makeConsultTitle(item);
     <div style={summaryItemStyle}>
       <span style={summaryLabelStyle}>수리 키워드</span>
       <strong style={summaryValueStyle}>
-        {item.seo_keyword || item.category || "기기 수리"}
+        {displayKeyword || "기기 수리"}
       </strong>
     </div>
 
@@ -733,7 +826,7 @@ const consultTitle = makeConsultTitle(item);
                   alt={
                     image.alt_text ||
                     image.description ||
-                    `${item.title} 상세 이미지 ${index + 1}`
+                    `${displayTitle} 상세 이미지 ${index + 1}`
                   }
                   style={detailImageStyle}
                 />
@@ -773,7 +866,7 @@ const consultTitle = makeConsultTitle(item);
                 {related.image_url ? (
                   <img
                     src={related.image_url}
-                    alt={related.alt_text || related.title}
+                    alt={related.alt_text || makeDisplayTitle(related)}
                     style={relatedImageStyle}
                   />
                 ) : (
@@ -789,12 +882,12 @@ const consultTitle = makeConsultTitle(item);
                 </p>
 
                 <h4 style={{ fontSize: "18px", lineHeight: 1.5 }}>
-                  {related.title}
+                {makeDisplayTitle(related)}
                 </h4>
 
                 <p style={relatedMetaStyle}>
-                  {related.device} {related.model} {related.symptom}
-                </p>
+  {makeDeviceModelText(related)} · {makeMetaKeyword(related)}
+</p>
               </a>
             ))}
           </div>
@@ -804,8 +897,8 @@ const consultTitle = makeConsultTitle(item);
         <p style={faqLabelStyle}>자주 묻는 질문</p>
 
         <h3 style={faqTitleStyle}>
-          {item.device} {item.model} 수리 전 확인할 내용
-        </h3>
+  {deviceModel} 수리 전 확인할 내용
+</h3>
 
         <div style={faqListStyle}>
           {faqItems.map((faq, index) => (
