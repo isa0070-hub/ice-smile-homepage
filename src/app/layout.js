@@ -83,7 +83,7 @@ export default function RootLayout({ children }) {
 
             <p>
               신도림점 : 서울 구로구 새말로 97 신도림테크노마트
-              9층 57번 기둥 / 02-2111-8899
+              9층 57-1번 기둥 / 02-2111-8899
             </p>
 
             <p>
