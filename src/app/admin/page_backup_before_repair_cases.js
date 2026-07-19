@@ -98,7 +98,7 @@ function BranchManager() {
     {
       name: "신도림점",
       phone: "02-2111-8899",
-      address: "서울특별시 구로구 새말로 97 신도림테크노마트 9층 47번 기둥 뒷편",
+      address: "서울특별시 구로구 새말로 97 신도림테크노마트 9층 57-1번 기둥",
       map: "/images/map-sindorim.svg",
     },
   ]
