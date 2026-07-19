@@ -52,7 +52,25 @@ function cleanText(value = "") {
 function normalize(value = "") {
   return cleanText(value).toLowerCase();
 }
-
+function getRequiredRuntimeEnv(name) {
+    const value = Reflect.get(process.env, name);
+  
+    if (!value) {
+      const relatedKeys = Object.keys(process.env).filter(
+        (key) =>
+          key.startsWith("GA4_") ||
+          key.startsWith("GOOGLE_ANALYTICS_")
+      );
+  
+      throw new Error(
+        `${name} 환경변수가 없습니다. 감지된 관련 변수: ${
+          relatedKeys.join(", ") || "없음"
+        }`
+      );
+    }
+  
+    return String(value).trim();
+  }
 function getPeriodConfig(periodKey = "7d") {
   return PERIOD_CONFIG[periodKey] || PERIOD_CONFIG["7d"];
 }
@@ -62,14 +80,9 @@ function getAnalyticsClient() {
     return analyticsClient;
   }
 
-  const encodedCredentials =
-    process.env.GOOGLE_ANALYTICS_CREDENTIALS_BASE64;
-
-  if (!encodedCredentials) {
-    throw new Error(
-      "GOOGLE_ANALYTICS_CREDENTIALS_BASE64 환경변수가 없습니다."
-    );
-  }
+  const encodedCredentials = getRequiredRuntimeEnv(
+    "GOOGLE_ANALYTICS_CREDENTIALS_BASE64"
+  );
 
   let credentials;
 
@@ -230,13 +243,9 @@ async function makeTopRepairCases(sessionMap) {
 export async function getSearchTrafficSummary(
   periodKey = "7d"
 ) {
-  const propertyId = process.env.GA4_PROPERTY_ID;
-
-  if (!propertyId) {
-    throw new Error(
-      "GA4_PROPERTY_ID 환경변수가 없습니다."
-    );
-  }
+    const propertyId = getRequiredRuntimeEnv(
+        "GA4_PROPERTY_ID"
+      );
 
   const period = getPeriodConfig(periodKey);
   const client = getAnalyticsClient();
