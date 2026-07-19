@@ -2,6 +2,7 @@ import "./globals.css";
 import SiteHeader from "@/components/SiteHeader";
 import HomeNoticePopup from "@/components/HomeNoticePopup";
 import PopupNotice from "@/components/PopupNotice";
+import GoogleAnalyticsTracker from "@/components/GoogleAnalyticsTracker";
 
 export const metadata = {
   metadataBase: new URL("https://www.ismileagain.co.kr"),
@@ -133,9 +134,11 @@ export default function RootLayout({ children }) {
               </a>
             </p>
           </div>
-        </footer>
-      </body>
-    </html>
+          </footer>
+
+<GoogleAnalyticsTracker />
+</body>
+</html>
   );
 }
 
