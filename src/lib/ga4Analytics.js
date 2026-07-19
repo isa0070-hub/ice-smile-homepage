@@ -157,6 +157,33 @@ function classifyPortal(source = "") {
   return "other";
 }
 
+function classifyPaidPortal({
+    source = "",
+    channel = "",
+    campaign = "",
+  }) {
+    const normalizedSource = normalize(source);
+    const normalizedCampaign = normalize(campaign);
+  
+    // UTM 캠페인이 powerlink로 확인되는 경우만 파워링크
+    if (
+      normalizedSource.includes("naver") &&
+      normalizedCampaign.includes("powerlink")
+    ) {
+      return "naver";
+    }
+  
+    // Google의 검색광고로 확실히 분류된 경우
+    if (
+      normalizedSource.includes("google") &&
+      channel === "Paid Search"
+    ) {
+      return "google";
+    }
+  
+    return "other";
+  }
+
 function normalizeLandingPath(value = "") {
   const path = cleanText(value);
 
@@ -267,19 +294,22 @@ export async function getSearchTrafficSummary(
     ],
 
     dimensions: [
-      {
-        name: "sessionDefaultChannelGroup",
-      },
-      {
-        name: "sessionSource",
-      },
-      {
-        name: "sessionMedium",
-      },
-      {
-        name: "landingPagePlusQueryString",
-      },
-    ],
+  {
+    name: "sessionDefaultChannelGroup",
+  },
+  {
+    name: "sessionSource",
+  },
+  {
+    name: "sessionMedium",
+  },
+  {
+    name: "sessionCampaignName",
+  },
+  {
+    name: "landingPagePlusQueryString",
+  },
+],
 
     metrics: [
       {
@@ -323,11 +353,14 @@ export async function getSearchTrafficSummary(
     const source =
       row.dimensionValues?.[1]?.value || "";
 
-    const medium =
+      const medium =
       row.dimensionValues?.[2]?.value || "";
-
+    
+    const campaign =
+      row.dimensionValues?.[3]?.value || "";
+    
     const landingPath = normalizeLandingPath(
-      row.dimensionValues?.[3]?.value || ""
+      row.dimensionValues?.[4]?.value || ""
     );
 
     const sessions = Number(
@@ -338,11 +371,11 @@ export async function getSearchTrafficSummary(
       continue;
     }
 
-    const portal = classifyPortal(source);
+    const organicPortal = classifyPortal(source);
 
     if (isOrganicTraffic(channel, medium)) {
       organic.total += sessions;
-      organic[portal] += sessions;
+      organic[organicPortal] += sessions;
 
       if (isRepairCasePath(landingPath)) {
         addSessions(
@@ -356,8 +389,14 @@ export async function getSearchTrafficSummary(
     }
 
     if (isPaidTraffic(channel, medium)) {
-      paid.total += sessions;
-      paid[portal] += sessions;
+        const paidPortal = classifyPaidPortal({
+          source,
+          channel,
+          campaign,
+        });
+      
+        paid.total += sessions;
+        paid[paidPortal] += sessions;
 
       if (isRepairCasePath(landingPath)) {
         addSessions(
