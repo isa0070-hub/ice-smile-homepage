@@ -52,24 +52,33 @@ function cleanText(value = "") {
 function normalize(value = "") {
   return cleanText(value).toLowerCase();
 }
-function getRequiredRuntimeEnv(name) {
-    const value = Reflect.get(process.env, name);
+function getGa4PropertyId() {
+    const value = process.env.GA4_PROPERTY_ID;
   
-    if (!value) {
-      const relatedKeys = Object.keys(process.env).filter(
-        (key) =>
-          key.startsWith("GA4_") ||
-          key.startsWith("GOOGLE_ANALYTICS_")
-      );
-  
+    if (!value || !value.trim()) {
       throw new Error(
-        `${name} 환경변수가 없습니다. 감지된 관련 변수: ${
-          relatedKeys.join(", ") || "없음"
+        `GA4_PROPERTY_ID 값을 읽지 못했습니다. 현재 길이: ${
+          String(value || "").length
         }`
       );
     }
   
-    return String(value).trim();
+    return value.trim();
+  }
+  
+  function getGa4CredentialsBase64() {
+    const value =
+      process.env.GOOGLE_ANALYTICS_CREDENTIALS_BASE64;
+  
+    if (!value || !value.trim()) {
+      throw new Error(
+        `GOOGLE_ANALYTICS_CREDENTIALS_BASE64 값을 읽지 못했습니다. 현재 길이: ${
+          String(value || "").length
+        }`
+      );
+    }
+  
+    return value.trim();
   }
 function getPeriodConfig(periodKey = "7d") {
   return PERIOD_CONFIG[periodKey] || PERIOD_CONFIG["7d"];
@@ -80,9 +89,8 @@ function getAnalyticsClient() {
     return analyticsClient;
   }
 
-  const encodedCredentials = getRequiredRuntimeEnv(
-    "GOOGLE_ANALYTICS_CREDENTIALS_BASE64"
-  );
+  const encodedCredentials =
+  getGa4CredentialsBase64();
 
   let credentials;
 
@@ -243,9 +251,7 @@ async function makeTopRepairCases(sessionMap) {
 export async function getSearchTrafficSummary(
   periodKey = "7d"
 ) {
-    const propertyId = getRequiredRuntimeEnv(
-        "GA4_PROPERTY_ID"
-      );
+    const propertyId = getGa4PropertyId();
 
   const period = getPeriodConfig(periodKey);
   const client = getAnalyticsClient();
