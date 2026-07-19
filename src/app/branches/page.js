@@ -57,14 +57,9 @@ export default async function BranchesPage() {
         </p>
 
         <h1 className="branches-main-title" style={styles.title}>
-  <span className="branches-main-title-desktop">
-    아이스마일어게인 지점안내
-  </span>
-
-  <span className="branches-main-title-mobile">
-    <span>아이스마일어게인</span>
-    <span>지점안내</span>
-  </span>
+  아이스마일어게인
+  <br className="seo-mobile-title-break" aria-hidden="true" />
+  <span className="seo-mobile-title-line">지점안내</span>
 </h1>
 
         <p style={styles.subtitle}>

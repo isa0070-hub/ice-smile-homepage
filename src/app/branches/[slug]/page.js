@@ -164,16 +164,10 @@ export default async function BranchDetailPage({ params }) {
         </p>
 
         <h1 className="branch-detail-title" style={styles.title}>
-  <span className="branch-detail-title-desktop">
-    {seo.name}
-  </span>
-
-  <span className="branch-detail-title-mobile">
-    <span>아이스마일어게인</span>
-    <span>{seo.shortName}</span>
-  </span>
+  아이스마일어게인
+  <br className="seo-mobile-title-break" aria-hidden="true" />
+  <span className="seo-mobile-title-line">{seo.shortName}</span>
 </h1>
-
         <p style={styles.subtitle}>{seo.description}</p>
       </section>
 

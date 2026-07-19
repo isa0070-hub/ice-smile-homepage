@@ -72,14 +72,9 @@ export default async function Home() {
     textShadow: "0 4px 20px rgba(0,0,0,0.6)",
   }}
 >
-  <span className="home-hero-title-desktop">
-    수리전문 공식서비스센터
-  </span>
-
-  <span className="home-hero-title-mobile">
-    <span>수리전문 공식</span>
-    <span>서비스 센터</span>
-  </span>
+  수리전문 공식
+  <br className="seo-mobile-title-break" aria-hidden="true" />
+  <span className="seo-mobile-title-line">서비스 센터</span>
 </h1>
 
         <p
