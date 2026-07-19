@@ -159,7 +159,10 @@ function dedupeAdjacentTerms(value = "") {
       const previousToken = result[result.length - 1] || "";
       const previous = normalizeComparable(previousToken);
 
-      if (!current) continue;
+      if (!current) {
+        result.push(token);
+        continue;
+      }
 
       if (!previous) {
         result.push(token);
@@ -226,8 +229,14 @@ function makeDisplayTitle(item) {
     `${makeDeviceModelText(item)} ${makeMetaKeyword(item)} 수리사례`
   );
 }
+function makeSafeAltText(value, fallback) {
+  const source = cleanText(value) || cleanText(fallback);
+
+  return dedupeAdjacentTerms(source);
+}
+
 function findRepairAction(item) {
-  const source = cleanText(
+  const source = normalizeComparable(
     `${item?.title || ""} ${item?.seo_keyword || ""} ${item?.symptom || ""}`
   );
 
@@ -250,7 +259,11 @@ function findRepairAction(item) {
     "침수수리",
   ];
 
-  return actions.find((action) => source.includes(action)) || "";
+  return (
+    actions.find((action) =>
+      source.includes(normalizeComparable(action))
+    ) || ""
+  );
 }
 
 function makeMetaKeyword(item) {
@@ -330,10 +343,16 @@ function makeDescription(item) {
   const branchIntro = getBranchIntro(item.branch);
   const deviceModel = makeDeviceModelText(item);
   const keyword = makeMetaKeyword(item);
-  const symptom = cleanText(item.symptom);
-
+  const symptom = removeTextParts(item.symptom, [
+    item.device,
+    item.model,
+  ]);
+  
   const symptomText =
-    symptom && !keyword.includes(symptom) ? `${symptom} 증상 점검 후 ` : "";
+    symptom &&
+    !normalizeComparable(keyword).includes(normalizeComparable(symptom))
+      ? `${symptom} 증상 점검 후 `
+      : "";
 
   const description = `${branchIntro}에서 진행한 ${deviceModel} ${keyword} 사례입니다. ${symptomText}방문 전 수리 가능 여부, 예상 비용, 소요 시간, 방문 및 택배 접수 방법을 안내해드립니다.`;
 
@@ -364,7 +383,6 @@ function makeCanonicalUrl(item) {
 function makeFaqItems(item, phoneNumber) {
   const deviceModel = makeDeviceModelText(item);
   const branch = item?.branch || "아이스마일어게인";
-  const symptom = cleanText(item?.symptom) || "고장 증상";
   const keyword = makeMetaKeyword(item);
   const visitGuide = getBranchVisitGuide(item?.branch);
 
@@ -581,9 +599,10 @@ export async function generateMetadata({ params }) {
   ? makeDisplayTitle(item)
   : "아이스마일어게인 수리사례";
 
-const socialImageAlt = item?.alt_text
-  ? dedupeAdjacentTerms(item.alt_text)
-  : displayTitle;
+  const socialImageAlt = makeSafeAltText(
+    item?.alt_text,
+    displayTitle
+  );
 
   return {
     title,
@@ -714,7 +733,7 @@ const consultTitle = makeConsultTitle(item);
       {item.image_url && (
         <img
           src={item.image_url}
-          alt={item.alt_text || displayTitle}
+          alt={makeSafeAltText(item.alt_text, displayTitle)}
           style={mainImageStyle}
         />
       )}
@@ -823,11 +842,10 @@ const consultTitle = makeConsultTitle(item);
               {image.image_url && (
                 <img
                   src={image.image_url}
-                  alt={
-                    image.alt_text ||
-                    image.description ||
+                  alt={makeSafeAltText(
+                    image.alt_text || image.description,
                     `${displayTitle} 상세 이미지 ${index + 1}`
-                  }
+                  )}
                   style={detailImageStyle}
                 />
               )}
@@ -866,7 +884,10 @@ const consultTitle = makeConsultTitle(item);
                 {related.image_url ? (
                   <img
                     src={related.image_url}
-                    alt={related.alt_text || makeDisplayTitle(related)}
+                    alt={makeSafeAltText(
+                      related.alt_text,
+                      makeDisplayTitle(related)
+                    )}
                     style={relatedImageStyle}
                   />
                 ) : (
