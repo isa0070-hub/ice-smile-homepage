@@ -22,7 +22,9 @@ function normalizeText(value = "") {
 }
 
 function compactText(value = "") {
-  return normalizeText(value).toLowerCase().replace(/[\s._/\\-]+/g, "");
+  return normalizeText(value)
+    .toLowerCase()
+    .replace(/[\s._/\\-]+/g, "");
 }
 
 function normalizeSlugForAdmin(value = "") {
@@ -48,9 +50,7 @@ function makeUniqueSlugForAdmin(baseSlug, existingSlugs = []) {
   const safeBaseSlug = normalizeSlugForAdmin(baseSlug) || "repair-case";
 
   const usedSlugs = new Set(
-    existingSlugs
-      .filter(Boolean)
-      .map((slug) => normalizeSlugForAdmin(slug))
+    existingSlugs.filter(Boolean).map((slug) => normalizeSlugForAdmin(slug)),
   );
 
   if (!usedSlugs.has(safeBaseSlug)) {
@@ -83,8 +83,12 @@ function getSlugWarnings(slug = "") {
     return index > 0 && token === tokens[index - 1];
   });
 
-  const repeatedImportantWords = ["battery", "screen", "repair", "replacement"]
-    .some((word) => tokens.filter((token) => token === word).length >= 2);
+  const repeatedImportantWords = [
+    "battery",
+    "screen",
+    "repair",
+    "replacement",
+  ].some((word) => tokens.filter((token) => token === word).length >= 2);
 
   return {
     cleanSlug,
@@ -95,7 +99,12 @@ function getSlugWarnings(slug = "") {
   };
 }
 
-function getSeoReadinessReport(form, detailImages) {
+function getSeoReadinessReport(
+  form,
+  detailImages,
+  contentSections = [],
+  closingContent = "",
+) {
   let score = 0;
   const checks = [];
 
@@ -113,24 +122,66 @@ function getSeoReadinessReport(form, detailImages) {
 
   const titleLength = normalizeText(form.title).length;
   if (!titleLength) {
-    addCheck("bad", "제목이 비어 있습니다.", 0, 12, "수리 기기, 모델, 증상이 드러나는 제목이 필요합니다.");
+    addCheck(
+      "bad",
+      "제목이 비어 있습니다.",
+      0,
+      12,
+      "수리 기기, 모델, 증상이 드러나는 제목이 필요합니다.",
+    );
   } else if (titleLength < 15) {
-    addCheck("warn", "제목이 조금 짧습니다.", 7, 12, "예: 아이폰15프로 배터리 성능저하 배터리교체");
+    addCheck(
+      "warn",
+      "제목이 조금 짧습니다.",
+      7,
+      12,
+      "예: 아이폰15프로 배터리 성능저하 배터리교체",
+    );
   } else if (titleLength > 80) {
-    addCheck("warn", "제목이 너무 깁니다.", 9, 12, "검색 결과에서 잘릴 수 있어 핵심 키워드 중심으로 줄이는 것이 좋습니다.");
+    addCheck(
+      "warn",
+      "제목이 너무 깁니다.",
+      9,
+      12,
+      "검색 결과에서 잘릴 수 있어 핵심 키워드 중심으로 줄이는 것이 좋습니다.",
+    );
   } else {
     addCheck("ok", "제목 길이가 적절합니다.", 12, 12);
   }
 
   const slugInfo = getSlugWarnings(form.slug);
   if (!form.slug) {
-    addCheck("bad", "SEO 주소가 비어 있습니다.", 0, 12, "기기, 모델, 증상을 입력하면 자동 생성됩니다.");
+    addCheck(
+      "bad",
+      "SEO 주소가 비어 있습니다.",
+      0,
+      12,
+      "기기, 모델, 증상을 입력하면 자동 생성됩니다.",
+    );
   } else if (!slugInfo.isValid) {
-    addCheck("bad", "SEO 주소 형식이 좋지 않습니다.", 3, 12, "영문 소문자, 숫자, 하이픈만 사용하는 것이 좋습니다.");
+    addCheck(
+      "bad",
+      "SEO 주소 형식이 좋지 않습니다.",
+      3,
+      12,
+      "영문 소문자, 숫자, 하이픈만 사용하는 것이 좋습니다.",
+    );
   } else if (slugInfo.repeatedAdjacent || slugInfo.repeatedImportantWords) {
-    addCheck("warn", "SEO 주소에 반복 단어가 있습니다.", 7, 12, "battery-battery, repair-repair 같은 반복은 피하는 것이 좋습니다.");
+    addCheck(
+      "warn",
+      "SEO 주소에 반복 단어가 있습니다.",
+      7,
+      12,
+      "battery-battery, repair-repair 같은 반복은 피하는 것이 좋습니다.",
+    );
   } else if (!slugInfo.isGoodLength) {
-    addCheck("warn", "SEO 주소가 조금 깁니다.", 9, 12, "가능하면 70자 이하의 짧은 주소가 좋습니다.");
+    addCheck(
+      "warn",
+      "SEO 주소가 조금 깁니다.",
+      9,
+      12,
+      "가능하면 70자 이하의 짧은 주소가 좋습니다.",
+    );
   } else {
     addCheck("ok", "SEO 주소가 깔끔합니다.", 12, 12);
   }
@@ -143,42 +194,90 @@ function getSeoReadinessReport(form, detailImages) {
     ["증상", form.symptom],
   ];
 
-  const filledCoreFields = coreFields.filter(([, value]) => normalizeText(value)).length;
+  const filledCoreFields = coreFields.filter(([, value]) =>
+    normalizeText(value),
+  ).length;
   const corePoint = filledCoreFields * 3;
 
   if (filledCoreFields === coreFields.length) {
-    addCheck("ok", "카테고리, 지점, 기기, 모델명, 증상이 모두 입력되었습니다.", 15, 15);
+    addCheck(
+      "ok",
+      "카테고리, 지점, 기기, 모델명, 증상이 모두 입력되었습니다.",
+      15,
+      15,
+    );
   } else {
     const missing = coreFields
       .filter(([, value]) => !normalizeText(value))
       .map(([label]) => label)
       .join(", ");
 
-    addCheck("warn", `핵심 정보 일부가 비어 있습니다: ${missing}`, corePoint, 15);
+    addCheck(
+      "warn",
+      `핵심 정보 일부가 비어 있습니다: ${missing}`,
+      corePoint,
+      15,
+    );
   }
 
   const keyword = normalizeText(form.seo_keyword);
   if (!keyword) {
     addCheck("bad", "대표 SEO 키워드가 비어 있습니다.", 0, 10);
   } else {
-    const keywordTargets = [form.branch, form.device, form.model, form.symptom].filter(Boolean);
-    const matchedCount = keywordTargets.filter((target) => hasKeyword(keyword, target)).length;
-    const point = 6 + Math.round((matchedCount / Math.max(keywordTargets.length, 1)) * 4);
+    const keywordTargets = [
+      form.branch,
+      form.device,
+      form.model,
+      form.symptom,
+    ].filter(Boolean);
+    const matchedCount = keywordTargets.filter((target) =>
+      hasKeyword(keyword, target),
+    ).length;
+    const point =
+      6 + Math.round((matchedCount / Math.max(keywordTargets.length, 1)) * 4);
 
     if (matchedCount === keywordTargets.length) {
       addCheck("ok", "대표 SEO 키워드가 핵심 정보를 잘 포함합니다.", 10, 10);
     } else {
-      addCheck("warn", "대표 SEO 키워드에 일부 핵심 정보가 부족합니다.", point, 10);
+      addCheck(
+        "warn",
+        "대표 SEO 키워드에 일부 핵심 정보가 부족합니다.",
+        point,
+        10,
+      );
     }
   }
 
-  const contentLength = normalizeText(form.repair_content).length;
+  const sectionContent = contentSections
+    .map((section) => `${section?.title || ""} ${section?.content || ""}`)
+    .join(" ");
+
+  const contentLength = normalizeText(
+    `${form.repair_content || ""} ${sectionContent} ${closingContent || ""}`,
+  ).length;
   if (!contentLength) {
-    addCheck("bad", "수리 내용이 비어 있습니다.", 0, 18, "상세 설명은 검색 노출과 사용자 신뢰에 중요합니다.");
+    addCheck(
+      "bad",
+      "수리 내용이 비어 있습니다.",
+      0,
+      18,
+      "상세 설명은 검색 노출과 사용자 신뢰에 중요합니다.",
+    );
   } else if (contentLength < 150) {
-    addCheck("warn", "수리 내용이 짧습니다.", 7, 18, "증상, 점검, 수리 과정, 테스트 내용을 조금 더 적어주세요.");
+    addCheck(
+      "warn",
+      "수리 내용이 짧습니다.",
+      7,
+      18,
+      "증상, 점검, 수리 과정, 테스트 내용을 조금 더 적어주세요.",
+    );
   } else if (contentLength < 350) {
-    addCheck("warn", "수리 내용은 입력됐지만 조금 더 보강하면 좋습니다.", 13, 18);
+    addCheck(
+      "warn",
+      "수리 내용은 입력됐지만 조금 더 보강하면 좋습니다.",
+      13,
+      18,
+    );
   } else {
     addCheck("ok", "수리 내용 길이가 좋습니다.", 18, 18);
   }
@@ -189,7 +288,13 @@ function getSeoReadinessReport(form, detailImages) {
   if (hasMainImage && mainAltLength >= 50) {
     addCheck("ok", "대표 이미지와 대표 ALT 문구가 좋습니다.", 10, 10);
   } else if (hasMainImage && mainAltLength > 0) {
-    addCheck("warn", "대표 이미지는 있지만 ALT 문구가 짧습니다.", 6, 10, "ALT는 최소 50자 이상을 추천합니다.");
+    addCheck(
+      "warn",
+      "대표 이미지는 있지만 ALT 문구가 짧습니다.",
+      6,
+      10,
+      "ALT는 최소 50자 이상을 추천합니다.",
+    );
   } else if (hasMainImage) {
     addCheck("warn", "대표 이미지는 있지만 ALT 문구가 비어 있습니다.", 5, 10);
   } else {
@@ -201,7 +306,13 @@ function getSeoReadinessReport(form, detailImages) {
   if (detailImages.length >= 4) {
     addCheck("ok", "상세 이미지가 4장 이상 등록되어 있습니다.", 5, 5);
   } else if (detailImages.length > 0) {
-    addCheck("warn", "상세 이미지 수가 조금 적습니다.", 3, 5, "가능하면 4장 이상을 권장합니다.");
+    addCheck(
+      "warn",
+      "상세 이미지 수가 조금 적습니다.",
+      3,
+      5,
+      "가능하면 4장 이상을 권장합니다.",
+    );
   } else {
     addCheck("warn", "상세 이미지가 없습니다.", 0, 5);
   }
@@ -249,9 +360,12 @@ function getImageQualityReport(form, detailImages) {
 
     const missingKeywords = [];
 
-    if (form.device && !hasKeyword(alt, form.device)) missingKeywords.push("기기");
-    if (form.model && !hasKeyword(alt, form.model)) missingKeywords.push("모델명");
-    if (form.symptom && !hasKeyword(alt, form.symptom)) missingKeywords.push("증상");
+    if (form.device && !hasKeyword(alt, form.device))
+      missingKeywords.push("기기");
+    if (form.model && !hasKeyword(alt, form.model))
+      missingKeywords.push("모델명");
+    if (form.symptom && !hasKeyword(alt, form.symptom))
+      missingKeywords.push("증상");
 
     const isDuplicate = Boolean(cleanAlt && altCounter.get(cleanAlt) > 1);
 
@@ -297,12 +411,14 @@ function getImageQualityReport(form, detailImages) {
 
   const stats = {
     total: detailImages.length,
-    descriptionMissing: rows.filter((row) => row.descriptionLength === 0).length,
+    descriptionMissing: rows.filter((row) => row.descriptionLength === 0)
+      .length,
     descriptionShort: rows.filter(
-      (row) => row.descriptionLength > 0 && row.descriptionLength < 20
+      (row) => row.descriptionLength > 0 && row.descriptionLength < 20,
     ).length,
     altMissing: rows.filter((row) => row.altLength === 0).length,
-    altShort: rows.filter((row) => row.altLength > 0 && row.altLength < 50).length,
+    altShort: rows.filter((row) => row.altLength > 0 && row.altLength < 50)
+      .length,
     duplicateAlt: rows.filter((row) => row.isDuplicate).length,
     keywordMissing: rows.filter((row) => row.missingKeywords.length > 0).length,
   };
@@ -331,6 +447,72 @@ function getStatusIcon(status) {
   if (status === "ok") return "✅";
   if (status === "warn") return "⚠️";
   return "❌";
+}
+
+const IMAGES_PER_CONTENT_SECTION = 3;
+
+function getDefaultContentSectionTitle(index, totalCount = 1) {
+  if (totalCount <= 1) {
+    return "수리 초기부터 마무리까지";
+  }
+
+  if (index === 0) {
+    return "수리 초기와 상태 확인";
+  }
+
+  if (index === totalCount - 1) {
+    return "수리 마무리와 기능 테스트";
+  }
+
+  if (index === 1) {
+    return "수리 중·후기 과정";
+  }
+
+  return `수리 진행 과정 ${index}`;
+}
+
+function buildContentSections(images = [], previousSections = []) {
+  const sectionCount = Math.ceil(images.length / IMAGES_PER_CONTENT_SECTION);
+
+  return Array.from({ length: sectionCount }, (_, index) => {
+    const previous = previousSections[index] || {};
+    const imageStart = index * IMAGES_PER_CONTENT_SECTION + 1;
+    const imageEnd = Math.min(
+      (index + 1) * IMAGES_PER_CONTENT_SECTION,
+      images.length,
+    );
+
+    return {
+      title:
+        previous.title || getDefaultContentSectionTitle(index, sectionCount),
+      content: previous.content || "",
+      image_start: imageStart,
+      image_end: imageEnd,
+    };
+  });
+}
+
+function getImageGroupSummary(imageCount = 0) {
+  if (imageCount <= 0) {
+    return "상세 이미지 없음";
+  }
+
+  const groups = [];
+
+  for (let start = 0; start < imageCount; start += IMAGES_PER_CONTENT_SECTION) {
+    groups.push(Math.min(IMAGES_PER_CONTENT_SECTION, imageCount - start));
+  }
+
+  return groups.join(" + ");
+}
+
+function getContentSectionThumbGridStyle(imageCount = 0) {
+  const safeCount = Math.max(1, Math.min(imageCount, 3));
+
+  return {
+    ...contentSectionThumbGridStyle,
+    gridTemplateColumns: `repeat(${safeCount}, minmax(0, 1fr))`,
+  };
 }
 
 function AdminBackButton() {
@@ -481,12 +663,22 @@ export default function AdminRepairCasesPage() {
   });
 
   const [detailImages, setDetailImages] = useState([]);
+  const [contentSections, setContentSections] = useState([]);
+  const [closingSection, setClosingSection] = useState({
+    title: "마무리 및 지점안내",
+    content: "",
+  });
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [registeredCaseUrl, setRegisteredCaseUrl] = useState("");
-  
-  const seoReport = getSeoReadinessReport(form, detailImages);
+
+  const seoReport = getSeoReadinessReport(
+    form,
+    detailImages,
+    contentSections,
+    closingSection.content,
+  );
   const imageReport = getImageQualityReport(form, detailImages);
 
   function makeSlug(nextForm) {
@@ -520,7 +712,7 @@ export default function AdminRepairCasesPage() {
             image.description && image.description.trim()
               ? image.description
               : generateImageDescription(nextForm, index),
-        }))
+        })),
       );
     }
 
@@ -599,7 +791,18 @@ export default function AdminRepairCasesPage() {
         });
       }
 
-      setDetailImages([...detailImages, ...uploadedImages]);
+      const nextImages = [...detailImages, ...uploadedImages].map(
+        (image, index) => ({
+          ...image,
+          sort_order: index,
+        }),
+      );
+
+      setDetailImages(nextImages);
+      setContentSections((previousSections) =>
+        buildContentSections(nextImages, previousSections),
+      );
+
       setMessage(`${files.length}장 상세 이미지 업로드 완료`);
     } catch (error) {
       console.error(error);
@@ -620,7 +823,7 @@ export default function AdminRepairCasesPage() {
                 ? img.alt_text
                 : generateAltFromDescription(form, value, index),
           }
-        : img
+        : img,
     );
 
     setDetailImages(nextImages);
@@ -633,36 +836,99 @@ export default function AdminRepairCasesPage() {
             ...img,
             alt_text: value,
           }
-        : img
+        : img,
     );
 
     setDetailImages(nextImages);
   }
 
   function removeDetailImage(index) {
-    const nextImages = detailImages.filter((_, i) => i !== index);
+    const nextImages = detailImages
+      .filter((_, i) => i !== index)
+      .map((image, nextIndex) => ({
+        ...image,
+        sort_order: nextIndex,
+      }));
+
     setDetailImages(nextImages);
+    setContentSections((previousSections) =>
+      buildContentSections(nextImages, previousSections),
+    );
   }
+
+  function handleContentSectionChange(index, field, value) {
+    setContentSections((previousSections) =>
+      previousSections.map((section, sectionIndex) =>
+        sectionIndex === index
+          ? {
+              ...section,
+              [field]: value,
+            }
+          : section,
+      ),
+    );
+  }
+
   async function copyRegisteredUrl() {
     if (!registeredCaseUrl) return;
-  
+
     try {
       await navigator.clipboard.writeText(registeredCaseUrl);
       setMessage("새 수리사례 주소가 복사되었습니다.");
     } catch (error) {
       console.error(error);
-      setMessage("주소 복사에 실패했습니다. 주소를 직접 선택해서 복사해주세요.");
+      setMessage(
+        "주소 복사에 실패했습니다. 주소를 직접 선택해서 복사해주세요.",
+      );
     }
   }
   async function handleSubmit(e) {
     e.preventDefault();
-setMessage("");
-setRegisteredCaseUrl("");
-setSaving(true);
+    setMessage("");
+    setRegisteredCaseUrl("");
+    setSaving(true);
+
+    const normalizedContentSections = contentSections.map((section, index) => ({
+      title:
+        normalizeText(section.title) ||
+        getDefaultContentSectionTitle(index, contentSections.length),
+      content: String(section.content || "").trim(),
+      image_start: Number(section.image_start),
+      image_end: Number(section.image_end),
+    }));
+
+    const normalizedClosingSection = {
+      type: "closing",
+      title: normalizeText(closingSection.title) || "마무리 및 지점안내",
+      content: String(closingSection.content || "").trim(),
+      image_start: null,
+      image_end: null,
+    };
+
+    const incompleteSection =
+      detailImages.length > 0 &&
+      normalizedContentSections.some((section) => !section.content);
+
+    if (incompleteSection) {
+      setMessage("각 사진 묶음의 설명글을 모두 입력해주세요.");
+      setSaving(false);
+      return;
+    }
+
+    if (!normalizedClosingSection.content) {
+      setMessage("마무리 및 지점안내 내용을 입력해주세요.");
+      setSaving(false);
+      return;
+    }
+
+    const contentSectionsForSave = [
+      ...normalizedContentSections,
+      normalizedClosingSection,
+    ];
 
     try {
       const baseSlug = normalizeSlugForAdmin(
-        form.slug || generateEnglishSlug(form)
+        form.slug || generateEnglishSlug(form),
       );
 
       const { data: slugRows, error: slugSearchError } = await supabase
@@ -676,7 +942,7 @@ setSaving(true);
 
       const finalSlug = makeUniqueSlugForAdmin(
         baseSlug,
-        (slugRows || []).map((row) => row.slug)
+        (slugRows || []).map((row) => row.slug),
       );
 
       const finalForm = {
@@ -684,6 +950,8 @@ setSaving(true);
         slug: finalSlug,
         seo_keyword: form.seo_keyword || generateSeoKeyword(form),
         alt_text: form.alt_text || generateAltText(form),
+        content_sections:
+          contentSectionsForSave.length > 0 ? contentSectionsForSave : null,
       };
 
       const { data: insertedCase, error } = await supabase
@@ -695,7 +963,7 @@ setSaving(true);
       if (error) {
         console.error(error);
         setMessage(
-          "등록 중 오류가 발생했습니다. SEO 주소 중복 또는 입력값을 확인해주세요."
+          "등록 중 오류가 발생했습니다. SEO 주소 중복 또는 입력값을 확인해주세요.",
         );
         return;
       }
@@ -716,14 +984,14 @@ setSaving(true);
         if (imageError) {
           console.error(imageError);
           setMessage(
-            "수리사례는 등록됐지만 상세 이미지 저장 중 오류가 발생했습니다."
+            "수리사례는 등록됐지만 상세 이미지 저장 중 오류가 발생했습니다.",
           );
           return;
         }
       }
       const newCaseUrl = `https://www.ismileagain.co.kr/repair-cases/${finalSlug}`;
       setRegisteredCaseUrl(newCaseUrl);
-      
+
       setMessage("수리사례와 상세 이미지가 등록되었습니다.");
 
       setForm({
@@ -743,9 +1011,16 @@ setSaving(true);
       });
 
       setDetailImages([]);
+      setContentSections([]);
+      setClosingSection({
+        title: "마무리 및 지점안내",
+        content: "",
+      });
     } catch (error) {
       console.error(error);
-      setMessage("등록 중 오류가 발생했습니다. 입력값 또는 네트워크 상태를 확인해주세요.");
+      setMessage(
+        "등록 중 오류가 발생했습니다. 입력값 또는 네트워크 상태를 확인해주세요.",
+      );
     } finally {
       setSaving(false);
     }
@@ -755,14 +1030,12 @@ setSaving(true);
     <main style={{ maxWidth: "1100px", margin: "60px auto", padding: "20px" }}>
       <AdminBackButton />
 
-      <h1 style={{ fontSize: "38px", marginBottom: "12px" }}>
-        수리사례 등록
-      </h1>
+      <h1 style={{ fontSize: "38px", marginBottom: "12px" }}>수리사례 등록</h1>
 
       <p style={{ marginBottom: "26px", color: "#475569", lineHeight: 1.7 }}>
-        제목, 지점, 기기, 모델명, 증상을 입력하면 SEO 주소, 대표 SEO 키워드,
-        ALT 문구가 자동으로 생성됩니다. 등록 전 SEO 준비 점수와 이미지 품질을
-        확인할 수 있습니다.
+        제목, 지점, 기기, 모델명, 증상을 입력하면 SEO 주소, 대표 SEO 키워드, ALT
+        문구가 자동으로 생성됩니다. 등록 전 SEO 준비 점수와 이미지 품질을 확인할
+        수 있습니다.
       </p>
 
       <form onSubmit={handleSubmit} style={formStyle}>
@@ -862,6 +1135,23 @@ setSaving(true);
           placeholder="예: 액정파손, 배터리 소모 빠름, 전원불량"
         />
 
+        <label style={labelStyle}>① 본문 도입</label>
+        <textarea
+          name="repair_content"
+          value={form.repair_content}
+          onChange={handleChange}
+          style={introTextAreaStyle}
+          placeholder="고객 증상, 입고 상태, 전체 점검 내용과 수리 결과를 먼저 작성해주세요. 이 글이 고객 화면에서 사진 묶음보다 먼저 표시됩니다."
+          required
+        />
+
+        <div style={writingOrderGuideStyle}>
+          <strong>고객 화면 표시 순서</strong>
+          <p>
+            본문 도입 → 수리 초기·진행·마무리 설명과 사진 → 마무리 및 지점안내
+          </p>
+        </div>
+
         <label style={labelStyle}>대표 이미지 업로드</label>
         <input
           type="file"
@@ -929,6 +1219,190 @@ setSaving(true);
           </div>
         )}
 
+        <section style={contentSectionEditorStyle}>
+            <div style={contentSectionHeaderStyle}>
+              <div>
+                <p style={contentSectionLabelStyle}>본문·사진 교차 배치</p>
+
+                <h2 style={contentSectionTitleStyle}>
+                  ② 수리 과정 설명·사진 작성
+                </h2>
+              </div>
+
+              <div style={contentSectionSummaryStyle}>
+                전체 {detailImages.length}장 · {contentSections.length}개 사진
+                묶음 · {getImageGroupSummary(detailImages.length)}
+              </div>
+            </div>
+
+            <p style={contentSectionGuideStyle}>
+              사진은 3장씩 자동으로 묶입니다. 마지막 묶음이 1장이면 전체 폭,
+              2장이면 절반씩, 3장이면 3칸을 모두 사용해 빈 공간 없이 표시됩니다.
+            </p>
+
+            {detailImages.length === 0 ? (
+              <div style={contentSectionEmptyStyle}>
+                <strong>상세사진을 먼저 업로드해주세요.</strong>
+                <p>
+                  사진을 올리면 이 자리에서 3장씩 자동으로 묶이고, 각 묶음의
+                  소제목과 설명글을 작성할 수 있습니다.
+                </p>
+              </div>
+            ) : (
+              <div style={contentSectionListStyle}>
+                {contentSections.map((section, sectionIndex) => {
+                const sectionImages = detailImages.slice(
+                  section.image_start - 1,
+                  section.image_end,
+                );
+
+                return (
+                  <div
+                    key={`content-section-${sectionIndex}`}
+                    style={contentSectionCardStyle}
+                  >
+                    <div style={contentSectionCardHeaderStyle}>
+                      <strong>
+                        사진 {section.image_start}
+                        {section.image_end > section.image_start
+                          ? `~${section.image_end}`
+                          : ""}{" "}
+                        묶음
+                      </strong>
+
+                      <span>{sectionImages.length}장</span>
+                    </div>
+
+                    <div
+                      style={getContentSectionThumbGridStyle(
+                        sectionImages.length,
+                      )}
+                    >
+                      {sectionImages.map((image, imageIndex) => {
+                        const absoluteIndex = section.image_start + imageIndex;
+
+                        return (
+                          <div
+                            key={`${image.image_url}-${absoluteIndex}`}
+                            style={contentSectionThumbItemStyle}
+                          >
+                            <img
+                              src={image.image_url}
+                              alt={image.alt_text || `사진 ${absoluteIndex}`}
+                              style={contentSectionThumbStyle}
+                            />
+
+                            <span style={contentSectionThumbNumberStyle}>
+                              사진 {absoluteIndex}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <label style={smallLabelStyle}>소제목</label>
+
+                    <input
+                      value={section.title || ""}
+                      onFocus={(e) => {
+                        const defaultTitle = getDefaultContentSectionTitle(
+                          sectionIndex,
+                          contentSections.length,
+                        );
+
+                        if (e.target.value === defaultTitle) {
+                          handleContentSectionChange(sectionIndex, "title", "");
+                        }
+                      }}
+                      onChange={(e) =>
+                        handleContentSectionChange(
+                          sectionIndex,
+                          "title",
+                          e.target.value,
+                        )
+                      }
+                      style={contentSectionTitleInputStyle}
+                      placeholder="예: 수리 초기와 상태 확인"
+                    />
+
+                    <label style={smallLabelStyle}>사진 묶음 설명글</label>
+
+                    <textarea
+                      value={section.content || ""}
+                      onChange={(e) =>
+                        handleContentSectionChange(
+                          sectionIndex,
+                          "content",
+                          e.target.value,
+                        )
+                      }
+                      style={contentSectionTextAreaStyle}
+                      placeholder="이 사진들에서 진행 중인 작업을 자연스럽게 설명해주세요. 고객 화면에는 소제목, 설명글, 사진 순서로 표시됩니다."
+                    />
+
+                    <p style={contentSectionCountStyle}>
+                      설명글 {normalizeText(section.content).length}자
+                    </p>
+                  </div>
+                );
+                })}
+              </div>
+            )}
+          </section>
+
+        <section style={closingEditorStyle}>
+          <p style={contentSectionLabelStyle}>글의 마지막 단계</p>
+
+          <h2 style={contentSectionTitleStyle}>③ 마무리 및 지점안내</h2>
+
+          <p style={closingEditorGuideStyle}>
+            수리 완료 후 당부사항, 품질보증 안내, 방문·택배 접수 방법, 해당 지점
+            위치와 전화번호, 톡톡 문의 안내 등을 자연스럽게 작성해주세요. 고객
+            화면에서는 모든 수리 과정 사진 뒤에 표시됩니다.
+          </p>
+
+          <label style={smallLabelStyle}>마무리 소제목</label>
+
+          <input
+            value={closingSection.title}
+            onFocus={(e) => {
+              if (e.target.value === "마무리 및 지점안내") {
+                setClosingSection((previous) => ({
+                  ...previous,
+                  title: "",
+                }));
+              }
+            }}
+            onChange={(e) =>
+              setClosingSection((previous) => ({
+                ...previous,
+                title: e.target.value,
+              }))
+            }
+            style={closingTitleInputStyle}
+            placeholder="예: 수리 완료 및 강변점 방문·택배 안내"
+          />
+
+          <label style={smallLabelStyle}>마무리·지점안내 내용</label>
+
+          <textarea
+            value={closingSection.content}
+            onChange={(e) =>
+              setClosingSection((previous) => ({
+                ...previous,
+                content: e.target.value,
+              }))
+            }
+            style={closingTextAreaStyle}
+            placeholder="수리 후 사용 시 주의사항, 보증 안내, 지점 위치와 연락처, 택배 접수, 전화 또는 톡톡 문의 내용을 작성해주세요."
+            required
+          />
+
+          <p style={contentSectionCountStyle}>
+            마무리 글 {normalizeText(closingSection.content).length}자
+          </p>
+        </section>
+
         <ImageQualityPanel report={imageReport} />
 
         {uploading && <p>이미지 업로드 중...</p>}
@@ -955,16 +1429,6 @@ setSaving(true);
           <p>{form.alt_text || "이미지 설명이 자동 생성됩니다."}</p>
         </div>
 
-        <label style={labelStyle}>수리 내용</label>
-        <textarea
-          name="repair_content"
-          value={form.repair_content}
-          onChange={handleChange}
-          style={{ ...inputStyle, minHeight: "240px" }}
-          placeholder="수리 과정, 증상, 작업 내용, 고객 안내 내용을 자세히 입력해주세요."
-          required
-        />
-
         <SeoReadinessPanel report={seoReport} />
 
         <button
@@ -978,86 +1442,85 @@ setSaving(true);
           {saving ? "저장 중입니다..." : "수리사례 등록하기"}
         </button>
         {registeredCaseUrl && (
-  <div style={registeredUrlBoxStyle}>
-    <strong>새 수리사례 등록 완료</strong>
+          <div style={registeredUrlBoxStyle}>
+            <strong>새 수리사례 등록 완료</strong>
 
-    <p style={registeredUrlTextStyle}>{registeredCaseUrl}</p>
+            <p style={registeredUrlTextStyle}>{registeredCaseUrl}</p>
 
-    <div style={registeredButtonWrapStyle}>
-      <a
-        href={registeredCaseUrl}
-        target="_blank"
-        rel="noreferrer"
-        style={registeredOpenButtonStyle}
-      >
-        새 글 열기
-      </a>
+            <div style={registeredButtonWrapStyle}>
+              <a
+                href={registeredCaseUrl}
+                target="_blank"
+                rel="noreferrer"
+                style={registeredOpenButtonStyle}
+              >
+                새 글 열기
+              </a>
 
-      <button
-        type="button"
-        onClick={copyRegisteredUrl}
-        style={registeredCopyButtonStyle}
-      >
-        주소 복사
-      </button>
-    </div>
+              <button
+                type="button"
+                onClick={copyRegisteredUrl}
+                style={registeredCopyButtonStyle}
+              >
+                주소 복사
+              </button>
+            </div>
 
-    <div style={searchRequestGuideStyle}>
-  <p style={searchRequestTitleStyle}>등록 후 SEO 제출 체크리스트</p>
+            <div style={searchRequestGuideStyle}>
+              <p style={searchRequestTitleStyle}>등록 후 SEO 제출 체크리스트</p>
 
-  <ul style={submitChecklistStyle}>
-    <li>새 글 열기로 상세페이지가 정상 표시되는지 확인</li>
-    <li>주소 복사 후 네이버 웹페이지 수집 요청</li>
-    <li>구글 Search Console에서 URL 검사 후 색인 생성 요청</li>
-    <li>sitemap.xml과 rss.xml에 새 글이 반영되는지 확인</li>
-  </ul>
+              <ul style={submitChecklistStyle}>
+                <li>새 글 열기로 상세페이지가 정상 표시되는지 확인</li>
+                <li>주소 복사 후 네이버 웹페이지 수집 요청</li>
+                <li>구글 Search Console에서 URL 검사 후 색인 생성 요청</li>
+                <li>sitemap.xml과 rss.xml에 새 글이 반영되는지 확인</li>
+              </ul>
 
-  <div style={submitButtonWrapStyle}>
-    <a
-      href={NAVER_SEARCH_ADVISOR_URL}
-      target="_blank"
-      rel="noreferrer"
-      style={naverSubmitButtonStyle}
-    >
-      네이버 수집 요청
-    </a>
+              <div style={submitButtonWrapStyle}>
+                <a
+                  href={NAVER_SEARCH_ADVISOR_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={naverSubmitButtonStyle}
+                >
+                  네이버 수집 요청
+                </a>
 
-    <a
-      href={GOOGLE_SEARCH_CONSOLE_URL}
-      target="_blank"
-      rel="noreferrer"
-      style={googleSubmitButtonStyle}
-    >
-      구글 색인 요청
-    </a>
+                <a
+                  href={GOOGLE_SEARCH_CONSOLE_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={googleSubmitButtonStyle}
+                >
+                  구글 색인 요청
+                </a>
 
-    <a
-      href={SITEMAP_URL}
-      target="_blank"
-      rel="noreferrer"
-      style={sitemapButtonStyle}
-    >
-      sitemap 확인
-    </a>
+                <a
+                  href={SITEMAP_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={sitemapButtonStyle}
+                >
+                  sitemap 확인
+                </a>
 
-    <a
-      href={RSS_URL}
-      target="_blank"
-      rel="noreferrer"
-      style={rssButtonStyle}
-    >
-      RSS 확인
-    </a>
-  </div>
+                <a
+                  href={RSS_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={rssButtonStyle}
+                >
+                  RSS 확인
+                </a>
+              </div>
 
-  <p style={searchRequestSmallTextStyle}>
-    네이버와 구글에는 위 새 글 주소를 복사해서 입력하면 됩니다.
-  </p>
-</div>
-  </div>
-)}
+              <p style={searchRequestSmallTextStyle}>
+                네이버와 구글에는 위 새 글 주소를 복사해서 입력하면 됩니다.
+              </p>
+            </div>
+          </div>
+        )}
         {message && (
-          
           <p style={{ fontWeight: "800", marginTop: "18px" }}>{message}</p>
         )}
       </form>
@@ -1092,6 +1555,16 @@ const inputStyle = {
   borderRadius: "10px",
   border: "1px solid #cbd5e1",
   fontSize: "16px",
+};
+
+const writingOrderGuideStyle = {
+  marginBottom: "8px",
+  padding: "15px 16px",
+  borderRadius: "14px",
+  background: "#eff6ff",
+  border: "1px solid #bfdbfe",
+  color: "#1e3a8a",
+  lineHeight: 1.7,
 };
 
 const autoBoxStyle = {
@@ -1151,6 +1624,181 @@ const removeButtonStyle = {
   padding: "9px",
   cursor: "pointer",
   fontWeight: "800",
+};
+
+const contentSectionEditorStyle = {
+  marginTop: "18px",
+  padding: "22px",
+  borderRadius: "20px",
+  background: "#eef6ff",
+  border: "1px solid #bfdbfe",
+};
+
+const contentSectionHeaderStyle = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: "16px",
+  flexWrap: "wrap",
+};
+
+const contentSectionLabelStyle = {
+  margin: "0 0 7px",
+  color: "#1e3a8a",
+  fontSize: "14px",
+  fontWeight: "900",
+};
+
+const contentSectionTitleStyle = {
+  margin: 0,
+  fontSize: "25px",
+};
+
+const contentSectionSummaryStyle = {
+  padding: "9px 13px",
+  borderRadius: "999px",
+  background: "#ffffff",
+  border: "1px solid #93c5fd",
+  color: "#1e3a8a",
+  fontSize: "14px",
+  fontWeight: "900",
+};
+
+const contentSectionGuideStyle = {
+  margin: "14px 0 20px",
+  color: "#475569",
+  lineHeight: 1.7,
+};
+
+const contentSectionEmptyStyle = {
+  padding: "24px",
+  borderRadius: "16px",
+  background: "#f8fafc",
+  border: "1px dashed #94a3b8",
+  color: "#475569",
+  lineHeight: 1.7,
+};
+
+const contentSectionListStyle = {
+  display: "grid",
+  gap: "18px",
+};
+
+const contentSectionCardStyle = {
+  padding: "26px",
+  borderRadius: "18px",
+  background: "#ffffff",
+  border: "1px solid #dbeafe",
+  boxShadow: "0 8px 20px rgba(15, 23, 42, 0.06)",
+};
+
+const contentSectionCardHeaderStyle = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: "12px",
+  marginBottom: "14px",
+  color: "#1e3a8a",
+};
+
+const contentSectionThumbGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+  gap: "10px",
+  marginBottom: "16px",
+};
+
+const contentSectionThumbItemStyle = {
+  position: "relative",
+  overflow: "hidden",
+  borderRadius: "14px",
+  background: "#f8fafc",
+  border: "1px solid #e5e7eb",
+};
+
+const contentSectionThumbStyle = {
+  width: "100%",
+  height: "120px",
+  objectFit: "cover",
+  display: "block",
+};
+
+const contentSectionThumbNumberStyle = {
+  display: "block",
+  padding: "7px 9px",
+  color: "#475569",
+  fontSize: "12px",
+  fontWeight: "900",
+  textAlign: "center",
+};
+
+const contentSectionTextAreaStyle = {
+  ...inputStyle,
+  width: "100%",
+  minHeight: "230px",
+  resize: "vertical",
+  fontSize: "17px",
+  lineHeight: 1.8,
+  boxSizing: "border-box",
+};
+
+const introTextAreaStyle = {
+  ...inputStyle,
+  width: "100%",
+  minHeight: "280px",
+  resize: "vertical",
+  fontSize: "17px",
+  lineHeight: 1.8,
+  boxSizing: "border-box",
+};
+
+const contentSectionTitleInputStyle = {
+  ...inputStyle,
+  width: "100%",
+  minHeight: "58px",
+  fontSize: "18px",
+  fontWeight: "800",
+  boxSizing: "border-box",
+};
+
+const contentSectionCountStyle = {
+  margin: "8px 0 0",
+  color: "#64748b",
+  fontSize: "13px",
+  textAlign: "right",
+};
+
+const closingEditorStyle = {
+  marginTop: "18px",
+  padding: "24px",
+  borderRadius: "20px",
+  background: "#fff7ed",
+  border: "1px solid #fed7aa",
+};
+
+const closingEditorGuideStyle = {
+  margin: "14px 0 18px",
+  color: "#475569",
+  lineHeight: 1.8,
+};
+
+const closingTextAreaStyle = {
+  ...inputStyle,
+  width: "100%",
+  minHeight: "320px",
+  resize: "vertical",
+  fontSize: "17px",
+  lineHeight: 1.8,
+  boxSizing: "border-box",
+};
+
+const closingTitleInputStyle = {
+  ...inputStyle,
+  width: "100%",
+  minHeight: "58px",
+  fontSize: "18px",
+  fontWeight: "800",
+  boxSizing: "border-box",
 };
 
 const buttonStyle = {
