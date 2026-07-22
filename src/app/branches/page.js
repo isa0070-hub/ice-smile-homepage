@@ -6,20 +6,21 @@ export const dynamic = "force-dynamic"
 export const metadata = {
   title: {
     absolute:
-      "아이스마일어게인 지점안내 | 강변·선릉·신도림 수리센터",
+      "강변·선릉·신도림 아이폰·아이패드 수리센터 | 지점안내",
   },
 
   description:
-    "아이스마일어게인 강변점, 선릉점, 신도림점의 주소와 전화번호, 약도, 방문 안내를 확인하세요. 아이폰·아이패드·맥북·서피스·노트북 수리를 진행합니다.",
+    "강변·선릉·신도림 아이폰·아이패드 수리센터 위치와 전화번호를 확인하세요. 맥북·서피스·노트북 수리, 네이버지도와 방문 안내를 제공합니다.",
 
   alternates: {
     canonical: "https://www.ismileagain.co.kr/branches",
   },
 
   openGraph: {
-    title: "아이스마일어게인 지점안내",
+    title:
+      "강변·선릉·신도림 아이폰·아이패드 수리센터 | 지점안내",
     description:
-      "강변점·선릉점·신도림점의 위치, 연락처와 방문 안내를 확인하세요.",
+      "강변점·선릉점·신도림점의 주소, 전화번호, 네이버지도와 방문 안내를 확인하세요.",
     url: "https://www.ismileagain.co.kr/branches",
     siteName: "아이스마일어게인",
     locale: "ko_KR",
@@ -57,15 +58,19 @@ export default async function BranchesPage() {
         </p>
 
         <h1 className="branches-main-title" style={styles.title}>
-  아이스마일어게인
+  강변·선릉·신도림
   <br className="seo-mobile-title-break" aria-hidden="true" />
-  <span className="seo-mobile-title-line">지점안내</span>
+  {" "}
+  <span className="seo-mobile-title-line">
+    아이폰·아이패드 수리센터
+  </span>
 </h1>
 
-        <p style={styles.subtitle}>
-          강변점·선릉점·신도림점의 약도, 주소, 연락처와 방문 정보를
-          확인하실 수 있습니다.
-        </p>
+<p style={styles.subtitle}>
+  아이폰·아이패드·맥북·서피스·노트북 수리가 가능한
+  강변점·선릉점·신도림점의 주소, 전화번호, 약도와 방문 안내를
+  확인하세요.
+</p>
       </section>
 
       <section style={styles.list}>
