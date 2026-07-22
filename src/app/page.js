@@ -1,5 +1,6 @@
 import PhoneContactButton from "@/components/PhoneContactButton";
 import { supabase } from "@/lib/supabase";
+import Image from "next/image";
 
 export const dynamic = "force-dynamic";
 
@@ -32,10 +33,34 @@ function maskText(text) {
   return text.slice(0, 8) + "...";
 }
 
+function OptimizedImage({
+  src,
+  alt,
+  height = 220,
+  sizes = "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw",
+}) {
+  if (!src) {
+    return <div style={{ ...imageFrameStyle, height }}>이미지 없음</div>;
+  }
+
+  return (
+    <div style={{ ...imageFrameStyle, height }}>
+      <Image
+        src={src}
+        alt={alt || "아이스마일어게인 수리 이미지"}
+        fill
+        sizes={sizes}
+        quality={72}
+        style={optimizedImageStyle}
+      />
+    </div>
+  );
+}
+
 export default async function Home() {
   const { data: latestCases } = await supabase
   .from("repair_cases")
-  .select("*")
+  .select("id, slug, image_url, alt_text, title, branch")
   .order("created_at", { ascending: false })
   .limit(8);
 
@@ -48,7 +73,18 @@ export default async function Home() {
   return (
     <main style={{ fontFamily: "Arial, sans-serif", color: "#111827" }}>
       <section className="home-hero" style={heroSectionStyle}>
-        
+        <Image
+          src="/images/hero-iphone-repair.jpg"
+          alt="아이스마일어게인 스마트기기 전문 수리센터 작업 모습"
+          fill
+          priority
+          fetchPriority="high"
+          sizes="100vw"
+          quality={75}
+          style={heroImageStyle}
+        />
+        <div aria-hidden="true" style={heroOverlayStyle} />
+        <div style={heroContentStyle}>
       <p
   className="home-hero-label"
   style={{
@@ -122,6 +158,7 @@ export default async function Home() {
   지점안내
 </a>
         </div>
+        </div>
       </section>
 
       <section id="repair-items" style={sectionStyle}>
@@ -133,10 +170,9 @@ export default async function Home() {
   style={{ color: "inherit", textDecoration: "none" }}
 >
             <div style={cardStyle}>
-              <img
+              <OptimizedImage
                 src="/images/apple-repair.jpg"
                 alt="애플 아이폰 아이패드 맥북 애플워치 수리 이미지"
-                style={imageStyle}
               />
               <h3>애플 제품 수리</h3>
               <p>아이폰 액정교체 / 배터리교체 / 뒷유리교체</p>
@@ -151,10 +187,9 @@ export default async function Home() {
   style={{ color: "inherit", textDecoration: "none" }}
 >
             <div style={cardStyle}>
-              <img
+              <OptimizedImage
                 src="/images/microsoft-surface.jpg"
                 alt="마이크로소프트 서피스 액정 배터리 수리 이미지"
-                style={imageStyle}
               />
               <h3>마이크로소프트 서피스 수리</h3>
               <p>서피스프로 액정교체</p>
@@ -169,10 +204,9 @@ export default async function Home() {
   style={{ color: "inherit", textDecoration: "none" }}
 >
             <div style={cardStyle}>
-              <img
+              <OptimizedImage
                 src="/images/notebook-tablet.jpg"
                 alt="레노버 LG 노트북 태블릿 수리 이미지"
-                style={imageStyle}
               />
               <h3>레노버 LG 노트북 태블릿 수리</h3>
               <p>레노버 노트북 수리</p>
@@ -201,10 +235,9 @@ export default async function Home() {
           style={{ color: "inherit", textDecoration: "none" }}
         >
           <div style={cardStyle}>
-            <img
+            <OptimizedImage
               src={item.image_url}
               alt={item.alt_text || item.title}
-              style={imageStyle}
             />
 
             <h3>{item.title}</h3>
@@ -274,10 +307,10 @@ export default async function Home() {
     target="_blank"
     rel="noreferrer"
   >
-    <img
+    <OptimizedImage
       src="/images/gangbyeon-branch.jpg"
       alt="아이스마일어게인 강변점 강변테크노마트 지점 이미지"
-      style={branchImageStyle}
+      height={180}
     />
   </a>
 
@@ -297,10 +330,10 @@ export default async function Home() {
   target="_blank"
   rel="noreferrer"
 >
-  <img
+  <OptimizedImage
     src="/images/seolleung-branch.jpg"
     alt="아이스마일어게인 선릉점 선릉역 1번 출구 지점 이미지"
-    style={branchImageStyle}
+    height={180}
   />
 </a>
     <h3>선릉점</h3>
@@ -320,10 +353,10 @@ export default async function Home() {
   target="_blank"
   rel="noreferrer"
 >
-  <img
+  <OptimizedImage
     src="/images/sindorim-branch.jpg"
     alt="아이스마일어게인 신도림점 신도림테크노마트 지점 이미지"
-    style={branchImageStyle}
+    height={180}
   />
 </a>
     <h3>신도림점</h3>
@@ -342,19 +375,34 @@ export default async function Home() {
 }
 
 const heroSectionStyle = {
+  position: "relative",
+  overflow: "hidden",
   color: "white",
   padding: "90px 24px",
   textAlign: "center",
-  backgroundImage:
-    "linear-gradient(rgba(15,23,42,0.35), rgba(15,23,42,0.45)), url('/images/hero-iphone-repair.jpg')",
-  backgroundSize: "cover",
-  backgroundPosition: "center",
-  backgroundRepeat: "no-repeat",
   minHeight: "600px",
   display: "flex",
   flexDirection: "column",
   justifyContent: "center",
-  animation: "heroSlide 24s infinite",
+};
+
+const heroImageStyle = {
+  objectFit: "cover",
+  objectPosition: "center",
+  zIndex: 0,
+};
+
+const heroOverlayStyle = {
+  position: "absolute",
+  inset: 0,
+  zIndex: 1,
+  background:
+    "linear-gradient(rgba(15,23,42,0.35), rgba(15,23,42,0.45))",
+};
+
+const heroContentStyle = {
+  position: "relative",
+  zIndex: 2,
 };
 const sectionStyle = {
   maxWidth: "1180px",
@@ -384,14 +432,23 @@ const cardStyle = {
   height: "100%",
 };
 
-const imageStyle = {
+const imageFrameStyle = {
+  position: "relative",
   width: "100%",
-  height: "220px",
-  objectFit: "cover",
-  objectPosition: "center",
+  overflow: "hidden",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  color: "#64748b",
+  fontWeight: "800",
   background: "#f8fafc",
   borderRadius: "14px",
   marginBottom: "18px",
+};
+
+const optimizedImageStyle = {
+  objectFit: "cover",
+  objectPosition: "center",
 };
 
 const listCardStyle = {
@@ -432,15 +489,6 @@ const phoneStyle = {
   fontWeight: "900",
   textDecoration: "none",
 };
-const branchImageStyle = {
-    width: "100%",
-    height: "180px",
-    objectFit: "cover",
-    borderRadius: "14px",
-    marginBottom: "18px",
-    background: "#f8fafc",
-  };
-  
   const kakaoButtonStyle = {
     display: "inline-block",
     margin: "8px",
