@@ -73,16 +73,23 @@ export default async function Home() {
   return (
     <main style={{ fontFamily: "Arial, sans-serif", color: "#111827" }}>
       <section className="home-hero" style={heroSectionStyle}>
-        <Image
-          src="/images/hero-iphone-repair.jpg"
-          alt="아이스마일어게인 스마트기기 전문 수리센터 작업 모습"
-          fill
-          priority
-          fetchPriority="high"
-          sizes="100vw"
-          quality={75}
-          style={heroImageStyle}
-        />
+      <picture>
+  <source
+    media="(max-width: 768px)"
+    srcSet="/images/hero-iphone-repair-mobile.webp"
+  />
+
+  <img
+    src="/images/hero-iphone-repair-desktop.webp"
+    alt="아이스마일어게인 스마트기기 전문 수리센터 작업 모습"
+    width="1600"
+    height="900"
+    fetchPriority="high"
+    loading="eager"
+    decoding="async"
+    style={heroImageStyle}
+  />
+</picture>
         <div aria-hidden="true" style={heroOverlayStyle} />
         <div style={heroContentStyle}>
       <p
@@ -387,6 +394,10 @@ const heroSectionStyle = {
 };
 
 const heroImageStyle = {
+  position: "absolute",
+  inset: 0,
+  width: "100%",
+  height: "100%",
   objectFit: "cover",
   objectPosition: "center",
   zIndex: 0,
