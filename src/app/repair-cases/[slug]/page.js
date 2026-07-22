@@ -403,17 +403,19 @@ function makeMetaKeyword(item) {
     keywordParts.push(action);
   }
 
-  const combinedKeyword = dedupeAdjacentTerms(keywordParts.join(" "));
+  // 관리자가 사례별 검색 의도에 맞춰 입력한 SEO 키워드를 최우선 사용합니다.
+// 지점명·기기명·모델명은 makeTitle에서 다시 조합하므로 여기서는 중복을 제거합니다.
+const preferredKeyword = dedupeAdjacentTerms(cleanedSeoKeyword);
 
-  if (combinedKeyword) {
-    return combinedKeyword;
-  }
+if (preferredKeyword) {
+  return preferredKeyword;
+}
 
-  const fallbackKeyword = dedupeAdjacentTerms(cleanedSeoKeyword);
+const combinedKeyword = dedupeAdjacentTerms(keywordParts.join(" "));
 
-  if (fallbackKeyword) {
-    return fallbackKeyword;
-  }
+if (combinedKeyword) {
+  return combinedKeyword;
+}
 
   if (item?.category) {
     return dedupeAdjacentTerms(`${item.category} 수리`);
