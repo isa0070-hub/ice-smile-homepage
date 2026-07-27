@@ -4,6 +4,8 @@ import HomeNoticePopup from "@/components/HomeNoticePopup";
 import PopupNotice from "@/components/PopupNotice";
 import GoogleAnalyticsTracker from "@/components/GoogleAnalyticsTracker";
 import AdClickTracker from "@/components/AdClickTracker";
+import NaverConversionTracker from "@/components/NaverConversionTracker";
+
 export const metadata = {
   metadataBase: new URL("https://www.ismileagain.co.kr"),
 
@@ -137,6 +139,7 @@ export default function RootLayout({ children }) {
           </footer>
 <AdClickTracker />
 <GoogleAnalyticsTracker />
+<NaverConversionTracker />
 </body>
 </html>
   );
