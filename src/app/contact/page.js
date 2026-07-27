@@ -1,7 +1,9 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { supabase } from "@/lib/supabase"
+import { trackNaverLead } from "@/components/NaverConversionTracker"
 
 export default function ContactPage() {
   const [form, setForm] = useState({
@@ -55,6 +57,7 @@ await fetch("/api/send-telegram", {
 
 alert("온라인 접수가 완료되었습니다. 확인 후 연락드리겠습니다.")
 
+trackNaverLead()
 window.location.href = "/"
 return
 
@@ -73,9 +76,9 @@ return
   return (
     <main style={styles.page}>
       <section style={styles.box}>
-  <a href="/" style={styles.backButton}>
+  <Link href="/" style={styles.backButton}>
     ← 홈페이지로 돌아가기
-  </a>
+  </Link>
 
   <h1 style={styles.title}>온라인 접수</h1>
         <p style={styles.desc}>수리 문의 내용을 남겨주시면 확인 후 빠르게 연락드리겠습니다.</p>
