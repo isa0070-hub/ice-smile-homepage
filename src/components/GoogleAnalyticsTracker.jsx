@@ -51,6 +51,14 @@ function classifyContactClick(element) {
     };
   }
 
+  if (dataType === "kakao_talk") {
+    return {
+      eventName: "kakao_talk_click",
+      contactType: "kakao_talk",
+      linkUrl: "",
+    };
+  }
+
   if (dataType === "online_inquiry") {
     return {
       eventName: "online_inquiry_click",
@@ -94,6 +102,17 @@ function classifyContactClick(element) {
       }
 
       if (
+        url.hostname === "pf.kakao.com" ||
+        url.hostname.endsWith(".pf.kakao.com")
+      ) {
+        return {
+          eventName: "kakao_talk_click",
+          contactType: "kakao_talk",
+          linkUrl: url.href,
+        };
+      }
+
+      if (
         url.origin === window.location.origin &&
         normalizedPath === "/contact"
       ) {
@@ -116,6 +135,17 @@ function classifyContactClick(element) {
     return {
       eventName: "naver_talk_click",
       contactType: "naver_talk",
+      linkUrl: absoluteHref,
+    };
+  }
+
+  if (
+    normalizedText.includes("카카오톡") ||
+    normalizedText === "카카오"
+  ) {
+    return {
+      eventName: "kakao_talk_click",
+      contactType: "kakao_talk",
       linkUrl: absoluteHref,
     };
   }
