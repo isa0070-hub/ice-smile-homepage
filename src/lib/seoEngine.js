@@ -911,14 +911,39 @@ export function generateSeoKeyword(form = {}) {
     .trim();
 }
 
-export function generateAltText(form = {}, index = null) {
-  const base = `${form.branch || "수리전문 공식서비스센터"} ${
-    form.device || "기기"
-  } ${form.model || ""} ${
-    form.symptom || "수리"
-  } 수리사례 이미지 ${form.title || ""}`.trim();
+function normalizeImageSeoText(value = "") {
+  return String(value)
+    .normalize("NFKC")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
-  return index === null ? base : `${base} 상세사진 ${index + 1}`;
+function joinImageSeoText(...values) {
+  return values
+    .flat()
+    .map((value) => normalizeImageSeoText(value))
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function limitImageSeoText(value, maxLength = 80) {
+  const text = normalizeImageSeoText(value);
+
+  if (text.length <= maxLength) return text;
+
+  const sliced = text.slice(0, maxLength + 1);
+  const lastSpace = sliced.lastIndexOf(" ");
+  const cutPoint =
+    lastSpace >= Math.floor(maxLength * 0.6)
+      ? lastSpace
+      : maxLength;
+
+  return text
+    .slice(0, cutPoint)
+    .replace(/[\s,.:;·/_-]+$/g, "")
+    .trim();
 }
 
 function getImageGroup(index) {
@@ -929,95 +954,488 @@ function getImageGroup(index) {
   return "complete";
 }
 
-function getBaseInfo(form = {}) {
-  return {
-    branch: form.branch || "수리전문 공식서비스센터",
-    device: form.device || "기기",
-    model: form.model || "",
-    symptom: form.symptom || "수리",
-    title: form.title || "",
+function getImageGroupIndex(group, index) {
+  const groupStartMap = {
+    initial: 0,
+    disassemble: 4,
+    repair: 8,
+    assemble: 12,
+    complete: 16,
   };
+
+  return Math.max(0, index - groupStartMap[group]);
+}
+
+function getBaseInfo(form = {}) {
+  const branch = normalizeImageSeoText(form.branch);
+  const device =
+    normalizeImageSeoText(form.device) || "기기";
+  const model = normalizeImageSeoText(form.model);
+  const symptom = normalizeImageSeoText(form.symptom);
+  const repairContent = normalizeImageSeoText(
+    form.repair_content,
+  );
+  const deviceModel = joinImageSeoText(device, model);
+  const repairTask =
+    repairContent || symptom || "수리";
+  const issueLabel =
+    symptom || `${repairTask} 접수 내용`;
+
+  return {
+    branch,
+    device,
+    model,
+    symptom,
+    repairContent,
+    deviceModel,
+    repairTask,
+    issueLabel,
+  };
+}
+
+export function generateAltText(form = {}, index = null) {
+  const { branch, deviceModel, repairTask } = getBaseInfo(form);
+  const base = joinImageSeoText(
+    branch,
+    deviceModel,
+    repairTask,
+  );
+
+  if (index === null) {
+    return limitImageSeoText(`${base} 대표 이미지`);
+  }
+
+  return limitImageSeoText(
+    `${base} 상세사진 ${index + 1}`,
+  );
+}
+
+function includesCompactText(text, patterns = []) {
+  return patterns.some((pattern) =>
+    text.includes(compactText(pattern))
+  );
+}
+
+function getRepairSceneProfile(form = {}, baseInfo = getBaseInfo(form)) {
+  const source = getSourceText(form);
+  const sourceText = compactText(source);
+  const repairPart = parseRepairPart(source);
+  const deviceText = compactText(baseInfo.deviceModel);
+  const isLaptop = includesCompactText(deviceText, [
+    "맥북",
+    "노트북",
+    "그램",
+    "갤럭시북",
+    "서피스랩탑",
+  ]);
+
+  if (
+    includesCompactText(sourceText, [
+      "침수",
+      "액체유입",
+      "음료",
+      "커피",
+      "물들어감",
+      "waterdamage",
+      "liquiddamage",
+    ])
+  ) {
+    return {
+      target: "침수 부위",
+      access: isLaptop
+        ? "하판과 내부 연결 부품"
+        : "외장 패널과 내부 연결 부품",
+      existingPart: "오염·부식이 확인된 내부 부품",
+      check: "전원 인가와 주요 기능 작동 상태",
+      repairScenes: [
+        "침수 흔적과 부식 범위 근접 확인",
+        "오염된 내부 부품과 메인보드 상태 점검",
+        "침수 부위 세척과 부식 제거 작업",
+        "세척·복구 후 내부 회로와 커넥터 상태",
+      ],
+    };
+  }
+
+  if (repairPart === "battery") {
+    return {
+      target: "배터리",
+      access: isLaptop
+        ? "하판과 배터리 커넥터"
+        : "전면 패널과 배터리 커넥터",
+      existingPart: "기존 배터리",
+      check: "충전 반응과 배터리 인식 상태",
+      repairScenes: [
+        "기존 배터리의 팽창·손상 여부 확인과 분리",
+        "분리한 기존 배터리와 교체용 새 배터리 비교",
+        "새 배터리 장착 위치와 접착 상태",
+        "배터리 커넥터 연결과 내부 고정 상태",
+      ],
+    };
+  }
+
+  if (
+    repairPart === "screen" ||
+    repairPart === "touch"
+  ) {
+    return {
+      target: "액정",
+      access: isLaptop
+        ? "디스플레이 베젤과 화면 연결 케이블"
+        : "전면 액정과 디스플레이 케이블",
+      existingPart: "파손 또는 불량 액정",
+      check: "화면 출력과 터치 작동 상태",
+      repairScenes: [
+        "파손 또는 불량 액정 분리 작업",
+        "분리한 기존 액정과 교체용 새 액정 비교",
+        "새 액정의 디스플레이 케이블 연결 상태",
+        "액정 장착 전 화면 출력과 터치 테스트",
+      ],
+    };
+  }
+
+  if (repairPart === "charging-port") {
+    return {
+      target: "충전단자",
+      access: "외장 패널과 충전단자 연결 케이블",
+      existingPart: "불량 충전단자",
+      check: "케이블 연결과 충전 반응 상태",
+      repairScenes: [
+        "불량 충전단자와 주변 부품 상태 확인",
+        "기존 충전단자 분리와 연결 부위 점검",
+        "교체용 충전단자 장착 위치 확인",
+        "충전단자 케이블 연결과 충전 반응 테스트",
+      ],
+    };
+  }
+
+  if (repairPart === "logic-board") {
+    return {
+      target: "메인보드",
+      access: isLaptop
+        ? "하판과 메인보드 연결 부품"
+        : "외장 패널과 메인보드 연결 부품",
+      existingPart: "점검 대상 메인보드",
+      check: "전원 인가와 주요 기능 작동 상태",
+      repairScenes: [
+        "메인보드 손상 부위 현미경 점검",
+        "불량 회로와 미세 부품 상태 확인",
+        "메인보드 납땜·회로 복구 작업",
+        "보드 수리 후 전원과 기능 테스트",
+      ],
+    };
+  }
+
+  if (
+    repairPart === "camera" ||
+    repairPart === "camera-lens"
+  ) {
+    const isLens = repairPart === "camera-lens";
+
+    return {
+      target: isLens ? "카메라 렌즈" : "카메라 모듈",
+      access: isLens
+        ? "파손 렌즈와 주변 프레임"
+        : "외장 패널과 카메라 연결 케이블",
+      existingPart: isLens
+        ? "파손된 기존 카메라 렌즈"
+        : "불량 카메라 모듈",
+      check: "카메라 촬영과 초점 작동 상태",
+      repairScenes: isLens
+        ? [
+            "파손된 카메라 렌즈와 주변 프레임 확인",
+            "깨진 렌즈 조각 제거와 접착면 정리",
+            "교체용 새 카메라 렌즈 위치 확인",
+            "새 렌즈 부착과 카메라 촬영 테스트",
+          ]
+        : [
+            "불량 카메라 모듈과 연결 부위 확인",
+            "기존 카메라 모듈 분리 작업",
+            "교체용 카메라 모듈 장착과 케이블 연결",
+            "카메라 촬영·초점·떨림 보정 테스트",
+          ],
+    };
+  }
+
+  return {
+    target: "수리 대상 부품",
+    access: isLaptop
+      ? "하판과 내부 연결 부품"
+      : "외장 패널과 내부 연결 부품",
+    existingPart: "기존 수리 대상 부품",
+    check: "접수 증상과 기본 기능 작동 상태",
+    repairScenes: [
+      "수리 대상 부품의 손상 상태 확인",
+      "기존 부품 분리와 연결 부위 점검",
+      "교체 또는 복구한 부품 장착 과정",
+      "수리 부품 연결과 기능 작동 테스트",
+    ],
+  };
+}
+
+function getImageSceneDetail(form = {}, index = 0) {
+  const group = getImageGroup(index);
+  const baseInfo = getBaseInfo(form);
+  const profile = getRepairSceneProfile(form, baseInfo);
+  const {
+    repairTask,
+    issueLabel,
+  } = baseInfo;
+
+  const sceneMap = {
+    initial: [
+      `입고 당시 ${issueLabel}과 외관 상태`,
+      `${repairTask} 전 전면·측면 상태`,
+      `${issueLabel} 확인을 위한 수리 전 점검`,
+      `${repairTask} 전 전체 상태 확인`,
+    ],
+    disassemble: [
+      `${repairTask} 진행을 위한 ${profile.access} 분해 과정`,
+      `${profile.access} 분리 후 내부가 열린 상태`,
+      `${profile.target} 연결 케이블·커넥터 점검`,
+      `${profile.existingPart}가 확인된 내부 구조`,
+    ],
+    repair: profile.repairScenes,
+    assemble: [
+      `${repairTask} 후 내부 부품과 케이블 정리`,
+      `재조립 전 ${profile.check} 1차 점검`,
+      `${profile.access} 재조립 과정`,
+      "접착면·나사·커넥터 고정 상태 확인",
+    ],
+    complete: [
+      `${repairTask} 완료 후 외관 상태`,
+      `${profile.check} 확인`,
+      `${issueLabel} 개선 여부 점검`,
+      "화면·터치·버튼 등 기본 기능 테스트",
+      "수리 부위와 조립 상태 최종 확인",
+      "반복 테스트를 마친 품질 검사 상태",
+      "외관 정리와 출고 준비 상태",
+      "최종 검수를 마친 수리 완료 기기",
+    ],
+  };
+
+  const groupScenes =
+    sceneMap[group] || sceneMap.complete;
+  const relativeIndex = getImageGroupIndex(group, index);
+
+  return groupScenes[relativeIndex % groupScenes.length];
+}
+
+// 새 규칙 적용 직후 화면에 남아 있는 이전 자동문구를 구분할 때만 사용한다.
+// 관리자 페이지가 수동으로 고친 문구는 보존하면서 기존 자동문구만 새 문구로 바꿀 수 있다.
+export function generateLegacyGroupAltText(form = {}, index = 0) {
+  const group = getImageGroup(index);
+  const {
+    branch,
+    deviceModel,
+    symptom,
+    repairTask,
+  } = getBaseInfo(form);
+
+  const legacyAltTextMap = {
+    initial: [
+      `입고 상태와 ${symptom || repairTask} 내용 확인`,
+      "수리 전 기기 상태 기록",
+      `${symptom || repairTask} 관련 상태 확인`,
+      `${repairTask} 작업 전 상태 점검`,
+    ],
+    disassemble: [
+      `${repairTask} 작업 준비 단계`,
+      "수리 과정 초반 기기 상태",
+      `${repairTask} 작업 대상 상태 확인`,
+      "본격적인 수리 전 상태 기록",
+    ],
+    repair: [
+      `${repairTask} 작업 진행`,
+      `${repairTask} 과정 중간 상태`,
+      "수리 대상 부위 작업 과정",
+      `${repairTask} 작업 후 상태 확인`,
+    ],
+    assemble: [
+      "수리 후 기기 정리 과정",
+      `${repairTask} 마무리 단계`,
+      "수리 후 상태 확인 과정",
+      "작업 완료 전 기기 상태 점검",
+    ],
+    complete: [
+      `${repairTask} 완료 상태`,
+      "수리 후 기본 작동 상태 확인",
+      `${symptom || repairTask} 수리 결과 확인`,
+      "출고 전 기기 상태 점검",
+      "접수 증상 수리 후 확인",
+      "수리 마감 상태 확인",
+      "출고 준비를 마친 기기",
+      "최종 검수를 마친 수리 완료 상태",
+    ],
+  };
+
+  const groupTexts =
+    legacyAltTextMap[group] || legacyAltTextMap.complete;
+  const relativeIndex = getImageGroupIndex(group, index);
+  const detailText =
+    groupTexts[relativeIndex % groupTexts.length];
+  const importantPhoto =
+    index === 0 || index === 16;
+
+  return limitImageSeoText(
+    joinImageSeoText(
+      importantPhoto ? branch : "",
+      deviceModel,
+      detailText,
+    ),
+  );
+}
+
+export function generateLegacyImageDescription(
+  form = {},
+  index = 0,
+) {
+  const group = getImageGroup(index);
+  const {
+    deviceModel,
+    symptom,
+    repairTask,
+  } = getBaseInfo(form);
+  const issue = symptom || repairTask;
+
+  const legacyDescriptionMap = {
+    initial: [
+      `${deviceModel}의 입고 상태와 접수된 ${issue} 내용을 확인한 사진입니다.`,
+      `수리를 시작하기 전 ${deviceModel}의 상태를 다른 각도에서 기록한 사진입니다.`,
+      `${deviceModel}에서 접수된 ${issue} 관련 상태를 확인한 사진입니다.`,
+      `${repairTask} 작업 전 ${deviceModel}의 상태를 점검한 사진입니다.`,
+    ],
+    disassemble: [
+      `${deviceModel}의 ${repairTask} 작업을 준비하는 단계의 사진입니다.`,
+      `${deviceModel} 수리 과정 초반의 기기 상태를 기록한 사진입니다.`,
+      `${repairTask} 작업을 진행하기 전 대상 상태를 확인한 사진입니다.`,
+      `본격적인 수리 작업 전에 ${deviceModel}의 상태를 다시 확인한 사진입니다.`,
+    ],
+    repair: [
+      `${deviceModel}의 ${repairTask} 작업이 진행되는 과정을 기록한 사진입니다.`,
+      `${repairTask} 작업 중간에 ${deviceModel}의 상태를 확인한 사진입니다.`,
+      `${deviceModel}의 수리 대상 부위를 작업하는 과정을 담은 사진입니다.`,
+      `${repairTask} 작업 후 결과를 확인하는 단계의 사진입니다.`,
+    ],
+    assemble: [
+      `${deviceModel} 수리 후 마무리 작업이 진행되는 과정을 담은 사진입니다.`,
+      `${repairTask} 작업을 마무리하며 ${deviceModel}의 상태를 확인한 사진입니다.`,
+      `수리 후 ${deviceModel}의 상태를 다시 점검하는 과정을 담은 사진입니다.`,
+      `작업 완료 전 ${deviceModel}의 전체 상태를 확인한 사진입니다.`,
+    ],
+    complete: [
+      `${deviceModel}의 ${repairTask} 작업이 완료된 상태를 기록한 사진입니다.`,
+      `수리 후 ${deviceModel}의 기본 작동 상태를 확인한 사진입니다.`,
+      `${issue} 수리 결과를 확인한 ${deviceModel} 사진입니다.`,
+      `출고 전 ${deviceModel}의 상태를 최종 점검한 사진입니다.`,
+      `접수된 ${issue} 증상을 수리 후 다시 확인한 사진입니다.`,
+      `${deviceModel} 수리 마감 상태를 확인한 사진입니다.`,
+      `출고 준비를 마친 ${deviceModel}의 상태를 기록한 사진입니다.`,
+      `최종 검수를 마친 ${deviceModel}의 수리 완료 사진입니다.`,
+    ],
+  };
+
+  const groupTexts =
+    legacyDescriptionMap[group] ||
+    legacyDescriptionMap.complete;
+  const relativeIndex = getImageGroupIndex(group, index);
+
+  return groupTexts[relativeIndex % groupTexts.length];
+}
+
+function addSubjectParticle(value = "") {
+  const text = normalizeImageSeoText(value);
+  const lastCharacter = text.at(-1);
+
+  if (!lastCharacter) return text;
+
+  const code = lastCharacter.charCodeAt(0);
+  const isHangulSyllable =
+    code >= 0xac00 && code <= 0xd7a3;
+
+  if (!isHangulSyllable) {
+    return `${text}이`;
+  }
+
+  const hasFinalConsonant =
+    (code - 0xac00) % 28 !== 0;
+
+  return `${text}${hasFinalConsonant ? "이" : "가"}`;
 }
 
 export function generateGroupAltText(form = {}, index = 0) {
-  const group = getImageGroup(index);
-  const { branch, device, model, symptom, title } = getBaseInfo(form);
-  const target = `${branch} ${device} ${model} ${symptom}`
-    .replace(/\s+/g, " ")
-    .trim();
+  const {
+    branch,
+    deviceModel,
+  } = getBaseInfo(form);
+  const detailText = getImageSceneDetail(form, index);
 
-  const photoNo = index + 1;
-  const groupNo = Math.floor(index / 4) + 1;
+  // 지점명은 핵심 사진에만 넣어 동일 키워드의 과도한 반복을 막는다.
+  const importantPhoto =
+    index === 0 || index === 16;
 
-  const detailByGroup = {
-    initial: [
-      "입고된 기기의 외관 상태와 파손 부위를 확인하는 초기 점검 장면입니다.",
-      "화면과 프레임 상태를 확인하며 수리 전 증상을 기록하는 과정입니다.",
-      "고객 요청 증상과 실제 기기 상태를 비교하며 점검하는 이미지입니다.",
-      "수리 전 기본 기능과 손상 범위를 확인하는 초기 확인 과정입니다.",
-    ],
-    disassemble: [
-      "수리를 위해 기기를 분해하고 내부 구조를 확인하는 과정입니다.",
-      "내부 커넥터와 주요 부품 상태를 점검하는 분해 작업 이미지입니다.",
-      "메인보드와 연결 부위를 확인하며 고장 원인을 찾는 과정입니다.",
-      "내부 오염과 부품 손상 여부를 세밀하게 확인하는 점검 장면입니다.",
-    ],
-    repair: [
-      "문제가 확인된 부위를 중심으로 수리 작업을 진행하는 과정입니다.",
-      "부품 교체와 내부 클리닝을 함께 진행하며 상태를 개선하는 장면입니다.",
-      "수리 부위 주변을 점검하고 정상 작동을 위한 작업을 이어가는 이미지입니다.",
-      "손상 부위 수리 후 연결 상태와 내부 상태를 다시 확인하는 과정입니다.",
-    ],
-    assemble: [
-      "수리 완료 후 부품 위치와 체결 상태를 확인하며 조립하는 과정입니다.",
-      "액정과 내부 부품 정렬 상태를 확인하며 마감하는 장면입니다.",
-      "조립 후 화면과 주요 기능이 정상적으로 반응하는지 확인하는 이미지입니다.",
-      "수리 후 기기 외관과 내부 연결 상태를 함께 점검하는 과정입니다.",
-    ],
-    complete: [
-      "수리 완료 후 전원과 화면 상태를 최종 확인하는 테스트 이미지입니다.",
-      "출고 전 터치, 화면, 충전 등 기본 기능을 점검하는 과정입니다.",
-      "수리 완료 상태를 확인하고 고객 안내 전 마지막 검수를 진행하는 장면입니다.",
-      "최종 테스트를 마친 뒤 정상 작동 여부를 확인하는 완료 이미지입니다.",
-    ],
-  };
-
-  const groupTexts = detailByGroup[group];
-  const detailText = groupTexts[index % 4];
-
-  return `${target} 수리사례 상세사진 ${photoNo}번 이미지입니다. ${title} 관련 ${groupNo}번째 수리 단계로, ${detailText}`
-    .replace(/\s+/g, " ")
-    .trim();
+  return limitImageSeoText(
+    joinImageSeoText(
+      importantPhoto ? branch : "",
+      deviceModel,
+      detailText,
+    ),
+  );
 }
 
 export function generateImageDescription(form = {}, index = 0) {
-  const group = getImageGroup(index);
-  const { device, model, symptom } = getBaseInfo(form);
-  const target = `${device} ${model}`.replace(/\s+/g, " ").trim();
+  const { deviceModel } = getBaseInfo(form);
+  const detailText = getImageSceneDetail(form, index);
+  const subject = addSubjectParticle(
+    `${deviceModel}의 ${detailText}`,
+  );
 
-  const textMap = {
-    initial: `${target}의 ${symptom} 증상을 확인하기 위해 입고 상태와 기본 작동 여부를 점검하는 단계입니다.`,
-    disassemble: `${target} 내부를 분해하여 ${symptom} 원인과 관련된 부품 상태를 확인하는 과정입니다.`,
-    repair: `${target}의 문제 부위를 수리하고 내부 클리닝과 상태 점검을 함께 진행하는 단계입니다.`,
-    assemble: `수리 작업 후 ${target}을 다시 조립하며 연결 상태와 기능 작동 여부를 확인하는 과정입니다.`,
-    complete: `${target} ${symptom} 수리 완료 후 출고 전 최종 테스트를 진행하는 단계입니다.`,
-  };
-
-  return textMap[group];
+  return `사진에는 ${subject} 담겨 있습니다.`;
 }
 
-export function generateAltFromDescription(form = {}, description, index = 0) {
-  const branch = form.branch || "수리전문 공식서비스센터";
-  const device = form.device || "기기";
-  const model = form.model || "";
-  const symptom = form.symptom || "수리";
-  const cleanDescription = (description || "").trim();
+function makeConciseAltDetail(description) {
+  return normalizeImageSeoText(description)
+    .replace(/[.!?]+$/g, "")
+    .replace(/^사진에는\s*/g, "")
+    .replace(/\s*(?:이|가)\s*담겨\s*있습니다$/g, "")
+    .replace(/\s*사진입니다$/g, "")
+    .replace(/\s*(?:장면|과정|모습|단계|상태)입니다$/g, "")
+    .replace(/(?:을|를)\s*다른 각도에서 기록한$/g, " 다른 각도")
+    .replace(/(?:을|를)\s*준비하는 단계의?$/g, " 준비 단계")
+    .replace(/(?:이|가)\s*진행되는 과정을 기록한$/g, " 진행 과정")
+    .replace(/(?:을|를)\s*담은$/g, "")
+    .replace(/(?:이|가)\s*진행되는 과정$/g, " 진행 과정")
+    .replace(/(?:을|를)\s*확인한$/g, " 확인")
+    .replace(/(?:을|를)\s*점검한$/g, " 점검")
+    .replace(/(?:을|를)\s*기록한$/g, " 기록")
+    .replace(/\s*(장면|과정|모습|단계|상태)의$/g, " $1")
+    .trim();
+}
+
+export function generateAltFromDescription(
+  form = {},
+  description,
+  index = 0,
+) {
+  const cleanDescription = normalizeImageSeoText(description);
 
   if (!cleanDescription) {
     return generateGroupAltText(form, index);
   }
 
-  return `${branch} ${device} ${model} ${symptom} 수리사례 이미지입니다. ${cleanDescription} 과정입니다.`
-    .replace(/\s+/g, " ")
-    .trim();
+  const { branch, deviceModel } = getBaseInfo(form);
+  const detailText = makeConciseAltDetail(cleanDescription);
+  const compactDetail = compactText(detailText);
+  const compactTarget = compactText(deviceModel);
+  const includesTarget =
+    compactTarget && compactDetail.includes(compactTarget);
+  const importantPhoto =
+    index === 0 || index === 16;
+
+  return limitImageSeoText(
+    joinImageSeoText(
+      importantPhoto ? branch : "",
+      includesTarget ? "" : deviceModel,
+      detailText,
+    ),
+  );
 }
