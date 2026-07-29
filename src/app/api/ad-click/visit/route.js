@@ -345,7 +345,9 @@ export async function POST(request) {
         visitor_id: visitorId,
         session_id: sessionId,
         landing_url: landingUrl.toString(),
-        advertiser_url: cleanText(body?.advertiserUrl, 2000),
+        advertiser_url:
+          cleanText(body?.advertiserUrl, 2000) ||
+          landingUrl.toString(),
         landing_path: landingUrl.pathname,
         referrer,
         traffic_source: trafficSource,
