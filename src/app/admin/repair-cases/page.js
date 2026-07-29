@@ -285,20 +285,26 @@ function getSeoReadinessReport(
   }
 
   const hasMainImage = Boolean(form.image_url);
-  const mainAltLength = normalizeText(form.alt_text).length;
+  const mainAlt = normalizeText(form.alt_text);
 
-  if (hasMainImage && mainAltLength >= 50) {
-    addCheck("ok", "대표 이미지와 대표 ALT 문구가 좋습니다.", 10, 10);
-  } else if (hasMainImage && mainAltLength > 0) {
+  if (hasMainImage && !mainAlt) {
+    addCheck(
+      "bad",
+      "대표 이미지 ALT 문구가 비어 있습니다.",
+      2,
+      10,
+      "사진의 기기·상태·수리 내용을 짧고 정확하게 적어주세요.",
+    );
+  } else if (hasMainImage && isVagueAltText(mainAlt)) {
     addCheck(
       "warn",
-      "대표 이미지는 있지만 ALT 문구가 짧습니다.",
-      6,
+      "대표 이미지 ALT 문구가 너무 모호합니다.",
+      7,
       10,
-      "ALT는 최소 50자 이상을 추천합니다.",
+      "‘사진’ 대신 실제 기기와 사진 속 상태를 구체적으로 적어주세요.",
     );
   } else if (hasMainImage) {
-    addCheck("warn", "대표 이미지는 있지만 ALT 문구가 비어 있습니다.", 5, 10);
+    addCheck("ok", "대표 이미지와 대표 ALT 문구가 좋습니다.", 10, 10);
   } else {
     addCheck("warn", "대표 이미지가 아직 없습니다.", 0, 10);
   }
@@ -329,12 +335,19 @@ function getSeoReadinessReport(
 
   if (
     detailImages.length > 0 &&
-    imageReport.stats.altShort === 0 &&
+    imageReport.stats.altMissing === 0 &&
+    imageReport.stats.vagueAlt === 0 &&
     imageReport.stats.duplicateAlt === 0
   ) {
     addCheck("ok", "상세 이미지 ALT 품질이 좋습니다.", 5, 5);
   } else if (detailImages.length > 0) {
-    addCheck("warn", "상세 이미지 ALT 보완이 필요합니다.", 3, 5);
+    addCheck(
+      "warn",
+      "상세 이미지 ALT 보완이 필요합니다.",
+      3,
+      5,
+      "ALT 공백, 모호한 문구, 완전히 같은 ALT 반복만 확인합니다.",
+    );
   } else {
     addCheck("warn", "상세 이미지 ALT를 검사할 이미지가 없습니다.", 0, 5);
   }
@@ -345,7 +358,45 @@ function getSeoReadinessReport(
   };
 }
 
-function getImageQualityReport(form, detailImages) {
+function isVagueAltText(value = "") {
+  const compact = compactText(value);
+
+  if (!compact) return false;
+  if (compact.length < 4) return true;
+
+  const genericPhrases = new Set([
+    "사진",
+    "이미지",
+    "상세사진",
+    "상세이미지",
+    "제품사진",
+    "제품이미지",
+    "기기사진",
+    "기기이미지",
+    "수리사진",
+    "수리이미지",
+    "작업사진",
+    "작업이미지",
+    "과정사진",
+    "과정이미지",
+    "점검사진",
+    "점검이미지",
+    "수리전사진",
+    "수리후사진",
+    "수리완료",
+    "완료사진",
+    "photo",
+    "image",
+  ]);
+
+  if (genericPhrases.has(compact)) return true;
+
+  return /^(?:상세|제품|기기|수리|작업|과정|점검|수리전|수리후|완료)?(?:사진|이미지)\d*$/.test(
+    compact,
+  );
+}
+
+function getImageQualityReport(_form, detailImages) {
   const altCounter = new Map();
 
   detailImages.forEach((image) => {
@@ -359,16 +410,7 @@ function getImageQualityReport(form, detailImages) {
     const description = normalizeText(image.description);
     const alt = normalizeText(image.alt_text);
     const cleanAlt = compactText(alt);
-
-    const missingKeywords = [];
-
-    if (form.device && !hasKeyword(alt, form.device))
-      missingKeywords.push("기기");
-    if (form.model && !hasKeyword(alt, form.model))
-      missingKeywords.push("모델명");
-    if (form.symptom && !hasKeyword(alt, form.symptom))
-      missingKeywords.push("증상");
-
+    const isVague = Boolean(alt && isVagueAltText(alt));
     const isDuplicate = Boolean(cleanAlt && altCounter.get(cleanAlt) > 1);
 
     let status = "ok";
@@ -385,14 +427,9 @@ function getImageQualityReport(form, detailImages) {
     if (!alt) {
       status = "bad";
       warnings.push("ALT 없음");
-    } else if (alt.length < 50) {
+    } else if (isVague) {
       if (status !== "bad") status = "warn";
-      warnings.push("ALT 50자 미만");
-    }
-
-    if (missingKeywords.length > 0) {
-      if (status !== "bad") status = "warn";
-      warnings.push(`${missingKeywords.join(", ")} 키워드 누락`);
+      warnings.push("ALT 내용이 모호함");
     }
 
     if (isDuplicate) {
@@ -405,7 +442,7 @@ function getImageQualityReport(form, detailImages) {
       status,
       descriptionLength: description.length,
       altLength: alt.length,
-      missingKeywords,
+      isVague,
       isDuplicate,
       warnings,
     };
@@ -419,10 +456,8 @@ function getImageQualityReport(form, detailImages) {
       (row) => row.descriptionLength > 0 && row.descriptionLength < 20,
     ).length,
     altMissing: rows.filter((row) => row.altLength === 0).length,
-    altShort: rows.filter((row) => row.altLength > 0 && row.altLength < 50)
-      .length,
+    vagueAlt: rows.filter((row) => row.isVague).length,
     duplicateAlt: rows.filter((row) => row.isDuplicate).length,
-    keywordMissing: rows.filter((row) => row.missingKeywords.length > 0).length,
   };
 
   return {
@@ -594,8 +629,8 @@ function ImageQualityPanel({ report }) {
       <section style={imageQualityPanelStyle}>
         <h2 style={imageQualityTitleStyle}>상세 이미지 품질 검사</h2>
         <p style={imageQualityTextStyle}>
-          상세 이미지를 업로드하면 사진 설명, ALT 길이, 중복 ALT, 핵심 키워드
-          포함 여부를 자동으로 점검합니다.
+          상세 이미지를 업로드하면 사진 설명, ALT 공백, 모호한 ALT와 중복
+          여부를 자동으로 점검합니다.
         </p>
       </section>
     );
@@ -615,16 +650,16 @@ function ImageQualityPanel({ report }) {
           <span>설명 없음</span>
         </div>
         <div style={imageStatCardStyle}>
-          <strong>{report.stats.altShort}</strong>
-          <span>ALT 짧음</span>
+          <strong>{report.stats.altMissing}</strong>
+          <span>ALT 없음</span>
+        </div>
+        <div style={imageStatCardStyle}>
+          <strong>{report.stats.vagueAlt}</strong>
+          <span>모호한 ALT</span>
         </div>
         <div style={imageStatCardStyle}>
           <strong>{report.stats.duplicateAlt}</strong>
           <span>중복 ALT</span>
-        </div>
-        <div style={imageStatCardStyle}>
-          <strong>{report.stats.keywordMissing}</strong>
-          <span>키워드 누락</span>
         </div>
       </div>
 
