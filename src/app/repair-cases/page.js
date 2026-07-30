@@ -4,32 +4,57 @@ const BASE_URL = "https://www.ismileagain.co.kr";
 
 const categories = ["전체", "애플", "마이크로소프트 서피스", "노트북 및 태블릿"];
 
-function getCategoryTitle(category) {
-  if (!category || category === "전체") {
-    return "수리사례 | 아이폰 아이패드 맥북 서피스 수리전문 공식서비스센터";
-  }
+const categoryMetadata = {
+  전체: {
+    title:
+      "아이폰·아이패드·맥북·서피스 수리사례 | 아이스마일어게인",
+    description:
+      "강변·선릉·신도림 아이스마일어게인의 실제 수리사례입니다. 아이폰, 아이패드, 맥북, 애플워치, 서피스, 레노버, LG그램의 증상 진단, 수리 과정, 기능 검수 결과를 확인하세요.",
+  },
+  애플: {
+    title:
+      "아이폰·아이패드·맥북·애플워치 수리사례 | 아이스마일어게인",
+    description:
+      "아이폰 액정·배터리·후면유리, 아이패드 액정·배터리, 맥북과 애플워치 등 실제 접수 기기의 증상 확인부터 수리·기능 검수까지 정리한 사례입니다.",
+  },
+  "마이크로소프트 서피스": {
+    title: "서피스 프로·랩탑·북 수리사례 | 아이스마일어게인",
+    description:
+      "서피스 프로·랩탑·고·북의 액정 파손, 배터리 스웰링, 충전 및 전원 불량을 점검·수리한 실제 사례와 결과를 확인할 수 있습니다.",
+  },
+  "노트북 및 태블릿": {
+    title:
+      "레노버·LG그램·노트북·태블릿 수리사례 | 아이스마일어게인",
+    description:
+      "레노버, LG그램, 삼성 노트북과 태블릿의 액정, 배터리, 키보드, 충전, 전원 및 메인보드 점검·수리 사례를 확인할 수 있습니다.",
+  },
+};
 
-  return `${category} 수리사례 | 아이스마일어게인 수리전문 공식서비스센터`;
+function normalizeCategory(category) {
+  return categories.includes(category) ? category : "전체";
+}
+
+function getCategoryTitle(category) {
+  return categoryMetadata[normalizeCategory(category)].title;
 }
 
 function getCategoryDescription(category) {
-  if (!category || category === "전체") {
-    return "아이스마일어게인의 실제 수리사례 모음입니다. 아이폰, 아이패드, 맥북, 애플워치, 마이크로소프트 서피스, 레노버, LG그램 등 다양한 수리 과정을 확인할 수 있습니다.";
-  }
-
-  return `아이스마일어게인의 ${category} 실제 수리사례 모음입니다. 증상 확인, 수리 과정, 지점별 접수 사례를 확인할 수 있습니다.`;
+  return categoryMetadata[normalizeCategory(category)].description;
 }
 
 function getCanonicalUrl(category) {
-  if (!category || category === "전체") {
+  const safeCategory = normalizeCategory(category);
+
+  if (safeCategory === "전체") {
     return `${BASE_URL}/repair-cases`;
   }
 
-  return `${BASE_URL}/repair-cases?category=${encodeURIComponent(category)}`;
+  return `${BASE_URL}/repair-cases?category=${encodeURIComponent(safeCategory)}`;
 }
 
 function toAbsoluteUrl(url) {
   if (!url) return "";
+
   if (url.startsWith("http://") || url.startsWith("https://")) {
     return url;
   }
@@ -61,15 +86,14 @@ function makeJsonLd({ cases = [], category = "전체" }) {
         image: toAbsoluteUrl(cases?.[0]?.image_url) || `${BASE_URL}/favicon.ico`,
         address: {
           "@type": "PostalAddress",
-          streetAddress: "서울 광진구 광나루로56길 85 강변테크노마트 5층 B-20호",
+          streetAddress:
+            "서울 광진구 광나루로56길 85 강변테크노마트 5층 B-20호",
           addressLocality: "광진구",
           addressRegion: "서울",
           postalCode: "05116",
           addressCountry: "KR",
         },
-        sameAs: [
-          "https://talk.naver.com/WCH5S2X",
-        ],
+        sameAs: ["https://talk.naver.com/WCH5S2X"],
       },
       {
         "@type": "WebSite",
@@ -101,7 +125,10 @@ function makeJsonLd({ cases = [], category = "전체" }) {
       {
         "@type": "ItemList",
         "@id": `${canonicalUrl}#itemlist`,
-        name: category === "전체" ? "전체 수리사례 목록" : `${category} 수리사례 목록`,
+        name:
+          category === "전체"
+            ? "전체 수리사례 목록"
+            : `${category} 수리사례 목록`,
         itemListOrder: "https://schema.org/ItemListOrderDescending",
         numberOfItems: cases.length,
         itemListElement,
@@ -137,7 +164,7 @@ function makeJsonLd({ cases = [], category = "전체" }) {
 
 export async function generateMetadata({ searchParams }) {
   const currentParams = await searchParams;
-  const category = currentParams?.category || "전체";
+  const category = normalizeCategory(currentParams?.category);
 
   const title = getCategoryTitle(category);
   const description = getCategoryDescription(category);
@@ -167,7 +194,7 @@ export async function generateMetadata({ searchParams }) {
 
 export default async function RepairCasesPage({ searchParams }) {
   const currentParams = await searchParams;
-  const category = currentParams?.category || "전체";
+  const category = normalizeCategory(currentParams?.category);
 
   let query = supabase
     .from("repair_cases")
@@ -195,6 +222,7 @@ export default async function RepairCasesPage({ searchParams }) {
         <a href="/" style={breadcrumbLinkStyle}>
           홈
         </a>
+
         <span style={breadcrumbSeparatorStyle}>›</span>
         <span style={breadcrumbCurrentStyle}>수리사례</span>
       </nav>
@@ -207,9 +235,9 @@ export default async function RepairCasesPage({ searchParams }) {
         <p style={heroDescriptionStyle}>
           아이스마일어게인 수리사례에서는 아이폰, 아이패드, 맥북,
           애플워치, 마이크로소프트 서피스, 레노버, LG그램 등 실제 접수된
-          기기의 수리 과정을 확인할 수 있습니다. 강변점, 선릉점, 신도림점에서
-          진행한 액정수리, 배터리교체, 충전불량, 후면유리, 카메라렌즈,
-          메인보드 점검 사례를 정리하고 있습니다.
+          기기의 수리 과정을 확인할 수 있습니다. 강변점, 선릉점,
+          신도림점에서 진행한 액정수리, 배터리교체, 충전불량, 후면유리,
+          카메라렌즈, 메인보드 점검 사례를 정리하고 있습니다.
         </p>
       </section>
 
@@ -219,6 +247,7 @@ export default async function RepairCasesPage({ searchParams }) {
         <div style={seoGuideGridStyle}>
           <div style={seoGuideCardStyle}>
             <h3 style={seoGuideCardTitleStyle}>애플 수리사례</h3>
+
             <p style={seoGuideCardTextStyle}>
               아이폰 액정수리, 아이폰 배터리교체, 아이패드 액정교체,
               맥북 수리, 애플워치 배터리 관련 사례를 확인할 수 있습니다.
@@ -227,6 +256,7 @@ export default async function RepairCasesPage({ searchParams }) {
 
           <div style={seoGuideCardStyle}>
             <h3 style={seoGuideCardTitleStyle}>서피스 수리사례</h3>
+
             <p style={seoGuideCardTextStyle}>
               서피스 프로, 서피스 랩탑, 서피스 고, 서피스 북의 액정파손,
               배터리 스웰링, 충전불량 수리 사례를 정리하고 있습니다.
@@ -234,7 +264,10 @@ export default async function RepairCasesPage({ searchParams }) {
           </div>
 
           <div style={seoGuideCardStyle}>
-            <h3 style={seoGuideCardTitleStyle}>노트북 및 태블릿 수리사례</h3>
+            <h3 style={seoGuideCardTitleStyle}>
+              노트북 및 태블릿 수리사례
+            </h3>
+
             <p style={seoGuideCardTextStyle}>
               레노버, LG그램, 노트북 액정파손, 키보드 불량, 전원불량,
               메인보드 점검 등 다양한 수리 과정을 확인할 수 있습니다.
@@ -269,9 +302,9 @@ export default async function RepairCasesPage({ searchParams }) {
         </h2>
 
         <p style={currentListTextStyle}>
-          총 {safeCases.length}개의 수리사례가 등록되어 있습니다. 각 사례에서
-          기기 상태, 모델명, 증상, 수리 과정, 관련 키워드를 함께 확인할 수
-          있습니다.
+          총 {safeCases.length}개의 수리사례가 등록되어 있습니다. 각
+          사례에서 기기 상태, 모델명, 증상, 수리 과정, 관련 키워드를 함께
+          확인할 수 있습니다.
         </p>
       </section>
 
@@ -320,7 +353,10 @@ export default async function RepairCasesPage({ searchParams }) {
                   : "수리 내용 준비중입니다."}
               </p>
 
-              <a href={`/repair-cases/${item.slug}`} style={detailButtonStyle}>
+              <a
+                href={`/repair-cases/${item.slug}`}
+                style={detailButtonStyle}
+              >
                 자세히 보기
               </a>
             </article>
@@ -334,17 +370,22 @@ export default async function RepairCasesPage({ searchParams }) {
         <h2 style={bottomSeoTitleStyle}>방문 수리와 택배 수리 상담 안내</h2>
 
         <p style={bottomSeoTextStyle}>
-          아이스마일어게인은 강변점, 선릉점, 신도림점에서 방문 상담을 진행하고
-          있으며, 방문이 어려운 경우 택배 접수 상담도 가능합니다. 수리 전
-          기기 모델명, 고장 증상, 파손 상태를 알려주시면 예상 수리 가능 여부와
-          소요 시간을 안내해드립니다.
+          아이스마일어게인은 강변점, 선릉점, 신도림점에서 방문 상담을
+          진행하고 있으며, 방문이 어려운 경우 택배 접수 상담도 가능합니다.
+          수리 전 기기 모델명, 고장 증상, 파손 상태를 알려주시면 예상 수리
+          가능 여부와 소요 시간을 안내해드립니다.
         </p>
 
         <div style={bottomLinkWrapStyle}>
           <a href="/contact" style={bottomLinkStyle}>
             온라인 수리문의
           </a>
-          <a href="https://talk.naver.com/WCH5S2X" target="_blank" style={bottomTalkLinkStyle}>
+
+          <a
+            href="https://talk.naver.com/WCH5S2X"
+            target="_blank"
+            style={bottomTalkLinkStyle}
+          >
             네이버톡톡 문의
           </a>
         </div>
