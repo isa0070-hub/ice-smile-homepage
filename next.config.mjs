@@ -1,5 +1,20 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async redirects() {
+    return [
+      {
+        source: "/store/store_gb.asp",
+        destination: "/branches/gangbyeon",
+        statusCode: 301,
+      },
+      {
+        source: "/store/store_agj.asp",
+        destination: "/branches",
+        statusCode: 301,
+      },
+    ];
+  },
+
   images: {
     formats: ["image/webp"],
     minimumCacheTTL: 604800,
