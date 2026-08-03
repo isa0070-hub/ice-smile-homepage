@@ -128,8 +128,7 @@ export default async function RepairServicePage({ params }) {
 <section className="repair-service-hero" style={styles.hero}>
   <img
     src={service.image}
-    alt=""
-    aria-hidden="true"
+    alt={service.imageAlt}
     style={styles.heroBgImage}
   />
 
