@@ -1,4 +1,5 @@
 const allowedBranches = new Set(["강변점", "선릉점", "신도림점"]);
+const MAX_BODY_SIZE = 16 * 1024;
 
 function clean(value, maxLength) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
@@ -6,12 +7,34 @@ function clean(value, maxLength) {
 
 export async function POST(request) {
   const { supabaseAdmin } = await import("@/lib/supabaseAdmin");
+  const { isSameOriginRequest } = await import("@/lib/adminSession");
+  const { sendTelegramInquiry } = await import("@/lib/sendTelegramInquiry");
+
+  if (!isSameOriginRequest(request)) {
+    return Response.json({ message: "허용되지 않은 요청입니다." }, { status: 403 });
+  }
+
+  if (Number(request.headers.get("content-length") || 0) > MAX_BODY_SIZE) {
+    return Response.json({ message: "요청 데이터가 너무 큽니다." }, { status: 413 });
+  }
+
   let body;
 
   try {
     body = await request.json();
   } catch {
     return Response.json({ message: "잘못된 요청입니다." }, { status: 400 });
+  }
+
+  if (clean(body.website, 200)) {
+    return Response.json({ ok: true });
+  }
+
+  if (body.privacy_consent !== true) {
+    return Response.json(
+      { message: "개인정보 수집·이용에 동의해 주세요." },
+      { status: 400 },
+    );
   }
 
   const inquiry = {
@@ -42,6 +65,23 @@ export async function POST(request) {
     );
   }
 
+  const duplicateSince = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+  const { data: recentDuplicates, error: duplicateError } = await supabaseAdmin
+    .from("online_inquiries")
+    .select("id")
+    .eq("phone", inquiry.phone)
+    .gte("created_at", duplicateSince)
+    .limit(1);
+
+  if (duplicateError) {
+    console.error("online inquiry duplicate check error", duplicateError);
+  } else if (recentDuplicates?.length) {
+    return Response.json(
+      { message: "이미 접수된 내용이 있습니다. 잠시 후 다시 시도해 주세요." },
+      { status: 429 },
+    );
+  }
+
   const { error } = await supabaseAdmin
     .from("online_inquiries")
     .insert([inquiry]);
@@ -52,6 +92,12 @@ export async function POST(request) {
       { message: "접수 저장에 실패했습니다. 잠시 후 다시 시도해 주세요." },
       { status: 500 },
     );
+  }
+
+  try {
+    await sendTelegramInquiry(inquiry);
+  } catch (notificationError) {
+    console.error("online inquiry notification error", notificationError);
   }
 
   return Response.json({ ok: true });
