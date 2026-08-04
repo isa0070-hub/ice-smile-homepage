@@ -87,7 +87,7 @@ export default function EditRepairCasePage() {
         "repair_content",
       ].includes(name)
     ) {
-      nextForm.slug = makeSlug(nextForm);
+      nextForm.slug = makeSlug(nextForm.title || "");
     }
   
     // SEO 키워드와 대표 ALT 문구도 최신 입력값으로 다시 생성
