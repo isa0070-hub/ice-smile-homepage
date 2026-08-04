@@ -1,7 +1,6 @@
 "use client"
 
-import { useState } from "react"
-import { supabase } from "@/lib/supabase"
+import { useEffect, useRef, useState } from "react"
 import PhoneContactButton from "@/components/PhoneContactButton"
 
 export default function SiteHeader() {
@@ -18,6 +17,24 @@ export default function SiteHeader() {
     contact_time: "",
     memo: "",
   })
+  const nameInputRef = useRef(null)
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    const previousActiveElement = document.activeElement
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setIsOpen(false)
+    }
+
+    document.addEventListener("keydown", handleKeyDown)
+    nameInputRef.current?.focus()
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown)
+      previousActiveElement?.focus?.()
+    }
+  }, [isOpen])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -42,13 +59,16 @@ export default function SiteHeader() {
 
     setLoading(true)
 
-    const { error } = await supabase.from("online_inquiries").insert([
-      { ...form, status: "접수대기" },
-    ])
+    const response = await fetch("/api/online-inquiries", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    })
+    const result = await response.json()
 
     setLoading(false)
 
-    if (error) return alert("온라인 접수 저장에 실패했습니다: " + error.message)
+    if (!response.ok) return alert(result.message || "온라인 접수 저장에 실패했습니다.")
 
     await fetch("/api/send-telegram", {
       method: "POST",
@@ -107,6 +127,8 @@ return (
     type="button"
     className="mobile-menu-button"
     onClick={() => setIsMenuOpen(true)}
+    aria-label="메뉴 열기"
+    aria-expanded={isMenuOpen}
     style={mobileMenuButtonStyle}
   >
     ☰
@@ -120,7 +142,7 @@ return (
           <div style={mobileMenuStyle} onClick={(e) => e.stopPropagation()}>
             <div style={mobileMenuTopStyle}>
               <strong style={{ fontSize: "22px" }}>아이스마일어게인</strong>
-              <button type="button" onClick={closeMenu} style={closeButtonStyle}>×</button>
+              <button type="button" onClick={closeMenu} aria-label="메뉴 닫기" style={closeButtonStyle}>×</button>
             </div>
 
             <a href="/" onClick={closeMenu} style={mobileNavStyle}>홈</a>
@@ -136,35 +158,43 @@ return (
 
       {isOpen && (
         <div style={overlayStyle} onClick={() => setIsOpen(false)}>
-          <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
+          <div role="dialog" aria-modal="true" aria-labelledby="inquiry-dialog-title" style={modalStyle} onClick={(e) => e.stopPropagation()}>
             <div style={modalHeaderStyle}>
               <div>
-                <h2 style={{ margin: 0, fontSize: "26px", fontWeight: 900 }}>온라인 접수</h2>
+                <h2 id="inquiry-dialog-title" style={{ margin: 0, fontSize: "26px", fontWeight: 900 }}>온라인 접수</h2>
                 <p style={{ margin: "6px 0 0", color: "#64748b" }}>
                   수리 문의를 남겨주시면 확인 후 연락드리겠습니다.
                 </p>
               </div>
-              <button type="button" onClick={() => setIsOpen(false)} style={closeButtonStyle}>×</button>
+              <button type="button" onClick={() => setIsOpen(false)} aria-label="접수창 닫기" style={closeButtonStyle}>×</button>
             </div>
 
-            <form onSubmit={handleSubmit} style={{ display: "grid", gap: "10px" }}>
-              <input name="customer_name" value={form.customer_name} onChange={handleChange} placeholder="성함" style={inputStyle} />
-              <input name="phone" value={form.phone} onChange={handleChange} placeholder="연락처" style={inputStyle} />
+            <form method="post" onSubmit={handleSubmit} style={{ display: "grid", gap: "10px" }}>
+              <label htmlFor="inquiry-name" style={labelStyle}>성함 <span aria-hidden="true">*</span></label>
+              <input ref={nameInputRef} id="inquiry-name" name="customer_name" value={form.customer_name} onChange={handleChange} placeholder="성함" autoComplete="name" required style={inputStyle} />
+              <label htmlFor="inquiry-phone" style={labelStyle}>연락처 <span aria-hidden="true">*</span></label>
+              <input id="inquiry-phone" type="tel" inputMode="tel" name="phone" value={form.phone} onChange={handleChange} placeholder="010-0000-0000" autoComplete="tel" required style={inputStyle} />
 
-              <select name="preferred_branch" value={form.preferred_branch} onChange={handleChange} style={inputStyle}>
+              <label htmlFor="inquiry-branch" style={labelStyle}>희망 지점</label>
+              <select id="inquiry-branch" name="preferred_branch" value={form.preferred_branch} onChange={handleChange} style={inputStyle}>
                 <option>강변점</option>
                 <option>선릉점</option>
                 <option>신도림점</option>
               </select>
 
-              <input name="device" value={form.device} onChange={handleChange} placeholder="기기 종류 예: 아이폰, 아이패드, 맥북, 서피스" style={inputStyle} />
-              <input name="model" value={form.model} onChange={handleChange} placeholder="모델명 예: 아이폰15프로, 아이패드프로12.9" style={inputStyle} />
-              <input name="contact_time" value={form.contact_time} onChange={handleChange} placeholder="연락 가능 시간 예: 오후 2시 이후" style={inputStyle} />
+              <label htmlFor="inquiry-device" style={labelStyle}>기기 종류</label>
+              <input id="inquiry-device" name="device" value={form.device} onChange={handleChange} placeholder="예: 아이폰, 아이패드, 맥북, 서피스" style={inputStyle} />
+              <label htmlFor="inquiry-model" style={labelStyle}>모델명</label>
+              <input id="inquiry-model" name="model" value={form.model} onChange={handleChange} placeholder="예: 아이폰15프로, 아이패드프로12.9" style={inputStyle} />
+              <label htmlFor="inquiry-time" style={labelStyle}>연락 가능 시간</label>
+              <input id="inquiry-time" name="contact_time" value={form.contact_time} onChange={handleChange} placeholder="예: 오후 2시 이후" style={inputStyle} />
 
-              <textarea name="symptom" value={form.symptom} onChange={handleChange} placeholder="고장 증상 또는 문의 내용을 입력해 주세요." style={textareaStyle} />
-              <textarea name="memo" value={form.memo} onChange={handleChange} placeholder="추가 메모 선택사항" style={smallTextareaStyle} />
+              <label htmlFor="inquiry-symptom" style={labelStyle}>고장 증상 또는 문의 내용 <span aria-hidden="true">*</span></label>
+              <textarea id="inquiry-symptom" name="symptom" value={form.symptom} onChange={handleChange} placeholder="고장 증상 또는 문의 내용을 입력해 주세요." required style={textareaStyle} />
+              <label htmlFor="inquiry-memo" style={labelStyle}>추가 메모 <span style={optionalStyle}>(선택)</span></label>
+              <textarea id="inquiry-memo" name="memo" value={form.memo} onChange={handleChange} placeholder="추가로 전달할 내용을 입력해 주세요." style={smallTextareaStyle} />
 
-              <button type="submit" disabled={loading} style={submitButtonStyle}>
+              <button type="submit" disabled={loading} aria-busy={loading} style={submitButtonStyle}>
                 {loading ? "접수 중..." : "온라인 접수하기"}
               </button>
             </form>
@@ -310,6 +340,18 @@ const inputStyle = {
   fontSize: "15px",
   backgroundColor: "#ffffff",
   color: "#111827",
+}
+
+const labelStyle = {
+  color: "#334155",
+  fontSize: "14px",
+  fontWeight: 800,
+  marginTop: "4px",
+}
+
+const optionalStyle = {
+  color: "#64748b",
+  fontWeight: 500,
 }
 
 const textareaStyle = {
