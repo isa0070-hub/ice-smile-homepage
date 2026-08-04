@@ -10,18 +10,21 @@ const BRANCH_INFO = {
     address: "서울 광진구 광나루로56길 85 강변테크노마트 5층 B-20호",
     locality: "광진구",
     postalCode: "05116",
+pageUrl: "/branches/gangbyeon",
   },
   선릉점: {
     phone: "02-554-5295",
     address: "서울 강남구 테헤란로 406 샹제리제센터 A동 406호",
     locality: "강남구",
     postalCode: "06192",
+pageUrl: "/branches/seolleung",
   },
   신도림점: {
     phone: "02-2111-8899",
     address: "서울 구로구 새말로 97 신도림테크노마트 9층 57-1번 기둥",
     locality: "구로구",
     postalCode: "08288",
+pageUrl: "/branches/sindorim",
   },
 };
 
@@ -879,7 +882,18 @@ export default async function RepairCaseDetailPage({ params }) {
         <div style={summaryGridStyle}>
           <div style={summaryItemStyle}>
             <span style={summaryLabelStyle}>수리 지점</span>
-            <strong style={summaryValueStyle}>{item.branch}</strong>
+            <a
+  href={branchInfo.pageUrl}
+  aria-label={`${item.branch} 지점 안내 페이지로 이동`}
+  style={{
+    ...summaryValueStyle,
+    color: "#0b57d0",
+    textDecoration: "underline",
+    textUnderlineOffset: "3px",
+  }}
+>
+  {item.branch}
+</a>
           </div>
 
           <div style={summaryItemStyle}>
