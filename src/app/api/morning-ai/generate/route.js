@@ -24,8 +24,14 @@
 
 import { NextResponse } from "next/server";
 import { runMorningAI } from "@/lib/morning-ai";
+import { isSameOriginRequest, verifyAdminSessionToken } from "@/lib/adminSession";
 
-export async function POST() {
+export async function POST(request) {
+  const token = request.cookies.get("admin_auth")?.value;
+  if (!(await verifyAdminSessionToken(token)) || !isSameOriginRequest(request)) {
+    return NextResponse.json({ ok: false, message: "관리자 인증이 필요합니다." }, { status: 401 });
+  }
+
   try {
     const result = await runMorningAI();
 
