@@ -76,20 +76,9 @@ export default function EditRepairCasePage() {
       [name]: value,
     };
   
-    // 제목·기기·모델·증상·수리내용이 바뀔 때
-    // 전체 폼 정보를 이용해 SEO 주소를 다시 생성
-    if (
-      [
-        "title",
-        "device",
-        "model",
-        "symptom",
-        "repair_content",
-      ].includes(name)
-    ) {
-      nextForm.slug = makeSlug(nextForm.title || "");
-    }
-  
+    // 기존 공개 주소가 끊기지 않도록 제목 수정 시 slug는 유지합니다.
+    // SEO 주소 입력란을 직접 수정한 경우에만 slug가 변경됩니다.
+
     // SEO 키워드와 대표 ALT 문구도 최신 입력값으로 다시 생성
     if (
       [
