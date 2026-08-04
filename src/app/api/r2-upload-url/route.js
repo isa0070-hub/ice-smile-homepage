@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { isSameOriginRequest, verifyAdminSessionToken } from "@/lib/adminSession";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,17 +51,13 @@ function errorResponse(message, status) {
 }
 
 export async function POST(request) {
-  const adminPassword = process.env.ADMIN_PASSWORD;
   const adminAuth = request.cookies.get("admin_auth")?.value;
 
-  if (!adminPassword || !adminAuth || adminAuth !== adminPassword) {
+  if (!(await verifyAdminSessionToken(adminAuth))) {
     return errorResponse("관리자 인증이 필요합니다.", 401);
   }
 
-  const requestOrigin = request.headers.get("origin");
-  const siteOrigin = new URL(request.url).origin;
-
-  if (requestOrigin && requestOrigin !== siteOrigin) {
+  if (!isSameOriginRequest(request)) {
     return errorResponse("허용되지 않은 요청입니다.", 403);
   }
 
