@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { supabase } from "@/lib/supabase"
 import { trackNaverLead } from "@/components/NaverConversionTracker"
 
 export default function ContactPage() {
@@ -33,17 +32,17 @@ export default function ContactPage() {
 
     setLoading(true)
 
-    const { error } = await supabase.from("online_inquiries").insert([
-      {
-        ...form,
-        status: "접수대기",
-      },
-    ])
+    const response = await fetch("/api/online-inquiries", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    })
+    const result = await response.json()
 
     setLoading(false)
 
-if (error) {
-  alert("접수 저장에 실패했습니다: " + error.message)
+if (!response.ok) {
+  alert(result.message || "접수 저장에 실패했습니다.")
   return
 }
 
@@ -83,22 +82,30 @@ return
   <h1 style={styles.title}>온라인 접수</h1>
         <p style={styles.desc}>수리 문의 내용을 남겨주시면 확인 후 빠르게 연락드리겠습니다.</p>
 
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <input name="customer_name" value={form.customer_name} onChange={handleChange} placeholder="성함" style={styles.input} />
-          <input name="phone" value={form.phone} onChange={handleChange} placeholder="연락처" style={styles.input} />
+        <form method="post" onSubmit={handleSubmit} style={styles.form}>
+          <label htmlFor="contact-name" style={styles.label}>성함 <span aria-hidden="true">*</span></label>
+          <input id="contact-name" name="customer_name" value={form.customer_name} onChange={handleChange} placeholder="성함" autoComplete="name" required style={styles.input} />
+          <label htmlFor="contact-phone" style={styles.label}>연락처 <span aria-hidden="true">*</span></label>
+          <input id="contact-phone" type="tel" inputMode="tel" name="phone" value={form.phone} onChange={handleChange} placeholder="010-0000-0000" autoComplete="tel" required style={styles.input} />
 
-          <select name="preferred_branch" value={form.preferred_branch} onChange={handleChange} style={styles.input}>
+          <label htmlFor="contact-branch" style={styles.label}>희망 지점</label>
+          <select id="contact-branch" name="preferred_branch" value={form.preferred_branch} onChange={handleChange} style={styles.input}>
             <option>강변점</option>
             <option>선릉점</option>
             <option>신도림점</option>
           </select>
 
-          <input name="device" value={form.device} onChange={handleChange} placeholder="기기 종류 예: 아이폰, 아이패드, 맥북, 서피스" style={styles.input} />
-          <input name="model" value={form.model} onChange={handleChange} placeholder="모델명 예: 아이폰15프로, 아이패드프로12.9" style={styles.input} />
-          <input name="contact_time" value={form.contact_time} onChange={handleChange} placeholder="연락 가능 시간 예: 오후 2시 이후" style={styles.input} />
+          <label htmlFor="contact-device" style={styles.label}>기기 종류</label>
+          <input id="contact-device" name="device" value={form.device} onChange={handleChange} placeholder="예: 아이폰, 아이패드, 맥북, 서피스" style={styles.input} />
+          <label htmlFor="contact-model" style={styles.label}>모델명</label>
+          <input id="contact-model" name="model" value={form.model} onChange={handleChange} placeholder="예: 아이폰15프로, 아이패드프로12.9" style={styles.input} />
+          <label htmlFor="contact-time" style={styles.label}>연락 가능 시간</label>
+          <input id="contact-time" name="contact_time" value={form.contact_time} onChange={handleChange} placeholder="예: 오후 2시 이후" style={styles.input} />
 
-          <textarea name="symptom" value={form.symptom} onChange={handleChange} placeholder="고장 증상 또는 문의 내용을 입력해 주세요." style={styles.textarea} />
-          <textarea name="memo" value={form.memo} onChange={handleChange} placeholder="추가 메모 선택사항" style={styles.textareaSmall} />
+          <label htmlFor="contact-symptom" style={styles.label}>고장 증상 또는 문의 내용 <span aria-hidden="true">*</span></label>
+          <textarea id="contact-symptom" name="symptom" value={form.symptom} onChange={handleChange} placeholder="고장 증상 또는 문의 내용을 입력해 주세요." required style={styles.textarea} />
+          <label htmlFor="contact-memo" style={styles.label}>추가 메모 <span style={styles.optional}>(선택)</span></label>
+          <textarea id="contact-memo" name="memo" value={form.memo} onChange={handleChange} placeholder="추가로 전달할 내용을 입력해 주세요." style={styles.textareaSmall} />
 
           <button type="submit" disabled={loading} style={styles.button}>
             {loading ? "접수 중..." : "온라인 접수하기"}
@@ -136,6 +143,16 @@ const styles = {
   form: {
     display: "grid",
     gap: "12px",
+  },
+  label: {
+    fontSize: "14px",
+    fontWeight: 800,
+    color: "#334155",
+    marginTop: "4px",
+  },
+  optional: {
+    color: "#64748b",
+    fontWeight: 500,
   },
   input: {
     padding: "14px",
