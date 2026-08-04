@@ -1,5 +1,9 @@
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
+import {
+  branchSeo,
+  getBranchLocalBusinessJsonLd,
+} from "@/lib/branchSeo"
 
 export const dynamic = "force-dynamic"
 
@@ -20,7 +24,7 @@ export const metadata = {
     title:
       "강변·선릉·신도림 아이폰·아이패드 수리센터 | 지점안내",
     description:
-      "강변점·선릉점·신도림점의 주소, 전화번호, 네이버지도와 방문 안내를 확인하세요.",
+      "강변역점·선릉점·신도림점의 주소, 전화번호, 네이버지도와 방문 안내를 확인하세요.",
     url: "https://www.ismileagain.co.kr/branches",
     siteName: "아이스마일어게인",
     locale: "ko_KR",
@@ -46,8 +50,38 @@ export default async function BranchesPage() {
     .eq("is_active", true)
     .order("sort_order", { ascending: true })
 
+  const localBusinesses = (branches || []).flatMap((branch) => {
+    const slug = branchSlugByPhone[branch.phone]
+    const seo = slug ? branchSeo[slug] : null
+    return seo ? [getBranchLocalBusinessJsonLd(seo, branch)] : []
+  })
+
+  const branchesJsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "ItemList",
+        "@id": "https://www.ismileagain.co.kr/branches#branch-list",
+        name: "아이스마일어게인 지점 안내",
+        numberOfItems: localBusinesses.length,
+        itemListElement: localBusinesses.map((business, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          item: { "@id": business["@id"] },
+        })),
+      },
+      ...localBusinesses,
+    ],
+  }
+
   return (
     <main style={styles.page}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(branchesJsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
       <section style={styles.hero}>
         <p style={styles.breadcrumb}>
           <Link href="/" style={styles.breadcrumbLink}>
@@ -68,7 +102,7 @@ export default async function BranchesPage() {
 
 <p style={styles.subtitle}>
   아이폰·아이패드·맥북·서피스·노트북 수리가 가능한
-  강변점·선릉점·신도림점의 주소, 전화번호, 약도와 방문 안내를
+  강변역점·선릉점·신도림점의 주소, 전화번호, 약도와 방문 안내를
   확인하세요.
 </p>
       </section>
@@ -77,6 +111,7 @@ export default async function BranchesPage() {
         {(branches || []).map((branch) => {
           const slug = branchSlugByPhone[branch.phone]
           const detailUrl = slug ? `/branches/${slug}` : null
+          const displayName = slug ? branchSeo[slug].shortName : branch.name
 
           return (
             <article
@@ -88,18 +123,18 @@ export default async function BranchesPage() {
                 {detailUrl ? (
                   <Link
                     href={detailUrl}
-                    aria-label={`${branch.name} 상세 안내 보기`}
+                    aria-label={`${displayName} 상세 안내 보기`}
                   >
                     <img
                       src={branch.map_image}
-                      alt={`${branch.name} 위치 약도`}
+                      alt={`아이스마일어게인 ${displayName} 위치 약도`}
                       style={styles.mapImage}
                     />
                   </Link>
                 ) : (
                   <img
                     src={branch.map_image}
-                    alt={`${branch.name} 위치 약도`}
+                    alt={`아이스마일어게인 ${displayName} 위치 약도`}
                     style={styles.mapImage}
                   />
                 )}
@@ -112,11 +147,11 @@ export default async function BranchesPage() {
                       href={detailUrl}
                       style={styles.branchNameLink}
                     >
-                      {branch.name}
+                      {displayName}
                     </Link>
                   </h2>
                 ) : (
-                  <h2 style={styles.branchName}>{branch.name}</h2>
+                  <h2 style={styles.branchName}>{displayName}</h2>
                 )}
 
                 <div style={styles.infoRow}>
@@ -156,7 +191,7 @@ export default async function BranchesPage() {
                       href={detailUrl}
                       style={styles.detailButton}
                     >
-                      {branch.name} 상세보기
+                      {displayName} 상세보기
                     </Link>
                   )}
 
