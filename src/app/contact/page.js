@@ -14,13 +14,15 @@ export default function ContactPage() {
     preferred_branch: "강변점",
     contact_time: "",
     memo: "",
+    website: "",
+    privacy_consent: false,
   })
 
   const [loading, setLoading] = useState(false)
 
   const handleChange = (e) => {
-    const { name, value } = e.target
-    setForm((prev) => ({ ...prev, [name]: value }))
+    const { checked, name, type, value } = e.target
+    setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }))
   }
 
   const handleSubmit = async (e) => {
@@ -46,14 +48,6 @@ if (!response.ok) {
   return
 }
 
-await fetch("/api/send-telegram", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify(form),
-})
-
 alert("온라인 접수가 완료되었습니다. 확인 후 연락드리겠습니다.")
 
 trackNaverLead()
@@ -69,6 +63,8 @@ return
       preferred_branch: "강변점",
       contact_time: "",
       memo: "",
+      website: "",
+      privacy_consent: false,
     })
   }
 
@@ -106,6 +102,16 @@ return
           <textarea id="contact-symptom" name="symptom" value={form.symptom} onChange={handleChange} placeholder="고장 증상 또는 문의 내용을 입력해 주세요." required style={styles.textarea} />
           <label htmlFor="contact-memo" style={styles.label}>추가 메모 <span style={styles.optional}>(선택)</span></label>
           <textarea id="contact-memo" name="memo" value={form.memo} onChange={handleChange} placeholder="추가로 전달할 내용을 입력해 주세요." style={styles.textareaSmall} />
+
+          <div aria-hidden="true" style={styles.honeypot}>
+            <label htmlFor="contact-website">웹사이트</label>
+            <input id="contact-website" name="website" value={form.website} onChange={handleChange} tabIndex={-1} autoComplete="off" />
+          </div>
+
+          <label style={styles.consentLabel}>
+            <input type="checkbox" name="privacy_consent" checked={form.privacy_consent} onChange={handleChange} required />
+            <span><Link href="/privacy">개인정보처리방침</Link>의 수집·이용 내용에 동의합니다. <span aria-hidden="true">*</span></span>
+          </label>
 
           <button type="submit" disabled={loading} style={styles.button}>
             {loading ? "접수 중..." : "온라인 접수하기"}
@@ -153,6 +159,21 @@ const styles = {
   optional: {
     color: "#64748b",
     fontWeight: 500,
+  },
+  honeypot: {
+    position: "absolute",
+    left: "-10000px",
+    width: "1px",
+    height: "1px",
+    overflow: "hidden",
+  },
+  consentLabel: {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: "10px",
+    color: "#334155",
+    fontSize: "14px",
+    lineHeight: 1.6,
   },
   input: {
     padding: "14px",
