@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
+import { adminSessionMaxAge, createAdminSessionToken, isSameOriginRequest } from "@/lib/adminSession";
 
 export async function POST(request) {
+  if (!isSameOriginRequest(request)) {
+    return NextResponse.json({ success: false }, { status: 403 });
+  }
+
   const { adminId, adminPassword } = await request.json();
 
   if (
@@ -9,12 +14,12 @@ export async function POST(request) {
   ) {
     const response = NextResponse.json({ success: true });
 
-    response.cookies.set("admin_auth", process.env.ADMIN_PASSWORD, {
+    response.cookies.set("admin_auth", await createAdminSessionToken(), {
       httpOnly: true,
       secure: true,
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 8,
+      maxAge: adminSessionMaxAge,
     });
 
     return response;
