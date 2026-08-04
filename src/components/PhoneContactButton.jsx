@@ -29,7 +29,7 @@ export default function PhoneContactButton({ buttonStyle }) {
             <h2>지점 전화문의</h2>
 
             <p>
-              <strong>강변점</strong><br />
+              <strong>강변역점</strong><br />
               <a href="tel:02-3424-5295" style={phoneStyle}>02-3424-5295</a>
             </p>
 
