@@ -1,6 +1,11 @@
 import PhoneContactButton from "@/components/PhoneContactButton";
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
+import Link from "next/link";
+import {
+  branchSeo,
+  getBranchLocalBusinessJsonLd,
+} from "@/lib/branchSeo";
 
 export const dynamic = "force-dynamic";
 
@@ -66,35 +71,39 @@ export default async function Home() {
 
   const { data: contacts } = await supabase
     .from("online_inquiries")
-    .select("customer_name, phone, preferred_branch, device, model, symptom")
+    .select("*")
     .order("created_at", { ascending: false })
     .limit(7);
 
-  const jsonLd = {
+  const homeLocalBusinessJsonLd = {
     "@context": "https://schema.org",
-    "@type": "LocalBusiness",
-    name: "아이스마일어게인",
-    url: "https://www.ismileagain.co.kr/",
-    image: "https://www.ismileagain.co.kr/images/hero-iphone-repair-desktop.webp",
-    description: metadata.description,
-    telephone: ["02-3424-5295", "02-554-5295", "02-2111-8899"],
-    areaServed: "대한민국",
-    department: [
-      { "@type": "LocalBusiness", name: "아이스마일어게인 강변점", telephone: "02-3424-5295", address: { "@type": "PostalAddress", streetAddress: "광나루로56길 85 강변테크노마트 5층 B-20호", addressLocality: "광진구", addressRegion: "서울특별시", addressCountry: "KR" } },
-      { "@type": "LocalBusiness", name: "아이스마일어게인 선릉점", telephone: "02-554-5295", address: { "@type": "PostalAddress", streetAddress: "테헤란로 406 샹제리제센터 A동 406호", addressLocality: "강남구", addressRegion: "서울특별시", addressCountry: "KR" } },
-      { "@type": "LocalBusiness", name: "아이스마일어게인 신도림점", telephone: "02-2111-8899", address: { "@type": "PostalAddress", streetAddress: "새말로 97 신도림테크노마트 9층", addressLocality: "구로구", addressRegion: "서울특별시", addressCountry: "KR" } },
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://www.ismileagain.co.kr/#organization",
+        name: "아이스마일어게인",
+        url: "https://www.ismileagain.co.kr/",
+        department: Object.values(branchSeo).map((seo) => ({
+          "@id": `https://www.ismileagain.co.kr/branches/${seo.slug}#localbusiness`,
+        })),
+      },
+      ...Object.values(branchSeo).map((seo) =>
+        getBranchLocalBusinessJsonLd(seo)
+      ),
     ],
   };
 
   return (
-    <>
+    <main style={{ fontFamily: "Arial, sans-serif", color: "#111827" }}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+          __html: JSON.stringify(homeLocalBusinessJsonLd).replace(
+            /</g,
+            "\\u003c"
+          ),
         }}
       />
-      <main style={{ fontFamily: "Arial, sans-serif", color: "#111827" }}>
       <section className="home-hero" style={heroSectionStyle}>
         <picture>
           <source
@@ -140,7 +149,7 @@ export default async function Home() {
               textShadow: "0 4px 20px rgba(0,0,0,0.6)",
             }}
           >
-            아이폰 · 아이패드 · 맥북
+            아이폰 · 아이패드 · 맥북 ·{" "}
             <br className="seo-mobile-title-break" aria-hidden="true" />
             <span className="seo-mobile-title-line">
               서피스 전문 수리센터
@@ -443,7 +452,7 @@ export default async function Home() {
       </section>
 
       <section style={{ ...sectionStyle, background: "#f1f5f9" }}>
-        <h2 style={titleStyle}>강변점 · 선릉점 · 신도림점 지점안내</h2>
+        <h2 style={titleStyle}>강변역점 · 선릉점 · 신도림점 지점안내</h2>
 
         <div style={gridStyle}>
           <div style={cardStyle}>
@@ -454,12 +463,16 @@ export default async function Home() {
             >
               <OptimizedImage
                 src="/images/gangbyeon-branch.jpg"
-                alt="아이스마일어게인 강변점 강변테크노마트 지점 이미지"
+                alt="아이스마일어게인 강변역점 강변테크노마트 지점 이미지"
                 height={180}
               />
             </a>
 
-            <h3>강변점</h3>
+            <h3>
+              <Link href="/branches/gangbyeon" style={branchTitleLinkStyle}>
+                강변역점
+              </Link>
+            </h3>
             <p>서울특별시 광진구 광나루로56길 85</p>
             <p>강변테크노마트 5층 B-20호</p>
 
@@ -483,7 +496,11 @@ export default async function Home() {
               />
             </a>
 
-            <h3>선릉점</h3>
+            <h3>
+              <Link href="/branches/seolleung" style={branchTitleLinkStyle}>
+                선릉점
+              </Link>
+            </h3>
             <p>서울특별시 강남구 테헤란로 406</p>
             <p>샹제리제센터 A동 406호</p>
             <p>선릉역 1번 출구 바로 옆 1분 거리</p>
@@ -508,7 +525,11 @@ export default async function Home() {
               />
             </a>
 
-            <h3>신도림점</h3>
+            <h3>
+              <Link href="/branches/sindorim" style={branchTitleLinkStyle}>
+                신도림점
+              </Link>
+            </h3>
             <p>서울특별시 구로구 새말로 97</p>
             <p>신도림테크노마트 9층 57-1번 기둥</p>
 
@@ -520,8 +541,7 @@ export default async function Home() {
           </div>
         </div>
       </section>
-      </main>
-    </>
+    </main>
   );
 }
 
@@ -643,6 +663,11 @@ const darkButtonStyle = {
 const phoneStyle = {
   color: "#1e3a8a",
   fontWeight: "900",
+  textDecoration: "none",
+};
+
+const branchTitleLinkStyle = {
+  color: "inherit",
   textDecoration: "none",
 };
 
