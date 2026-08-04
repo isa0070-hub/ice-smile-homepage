@@ -1,6 +1,7 @@
 export const metadata = {
     title: "이용약관 | 아이스마일어게인",
     description: "아이스마일어게인 이용약관",
+    alternates: { canonical: "/terms" },
   };
   
   export default function TermsPage() {
