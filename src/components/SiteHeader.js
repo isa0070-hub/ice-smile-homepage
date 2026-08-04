@@ -16,6 +16,8 @@ export default function SiteHeader() {
     preferred_branch: "강변점",
     contact_time: "",
     memo: "",
+    website: "",
+    privacy_consent: false,
   })
   const nameInputRef = useRef(null)
 
@@ -37,8 +39,8 @@ export default function SiteHeader() {
   }, [isOpen])
 
   const handleChange = (e) => {
-    const { name, value } = e.target
-    setForm((prev) => ({ ...prev, [name]: value }))
+    const { checked, name, type, value } = e.target
+    setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }))
   }
 
   const closeMenu = () => {
@@ -69,14 +71,6 @@ export default function SiteHeader() {
     setLoading(false)
 
     if (!response.ok) return alert(result.message || "온라인 접수 저장에 실패했습니다.")
-
-    await fetch("/api/send-telegram", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(form),
-    })
 
     alert("온라인 접수가 완료되었습니다. 확인 후 연락드리겠습니다.")
 
@@ -193,6 +187,16 @@ return (
               <textarea id="inquiry-symptom" name="symptom" value={form.symptom} onChange={handleChange} placeholder="고장 증상 또는 문의 내용을 입력해 주세요." required style={textareaStyle} />
               <label htmlFor="inquiry-memo" style={labelStyle}>추가 메모 <span style={optionalStyle}>(선택)</span></label>
               <textarea id="inquiry-memo" name="memo" value={form.memo} onChange={handleChange} placeholder="추가로 전달할 내용을 입력해 주세요." style={smallTextareaStyle} />
+
+              <div aria-hidden="true" style={honeypotStyle}>
+                <label htmlFor="inquiry-website">웹사이트</label>
+                <input id="inquiry-website" name="website" value={form.website} onChange={handleChange} tabIndex={-1} autoComplete="off" />
+              </div>
+
+              <label style={consentLabelStyle}>
+                <input type="checkbox" name="privacy_consent" checked={form.privacy_consent} onChange={handleChange} required />
+                <span><a href="/privacy">개인정보처리방침</a>의 수집·이용 내용에 동의합니다. <span aria-hidden="true">*</span></span>
+              </label>
 
               <button type="submit" disabled={loading} aria-busy={loading} style={submitButtonStyle}>
                 {loading ? "접수 중..." : "온라인 접수하기"}
@@ -352,6 +356,23 @@ const labelStyle = {
 const optionalStyle = {
   color: "#64748b",
   fontWeight: 500,
+}
+
+const honeypotStyle = {
+  position: "absolute",
+  left: "-10000px",
+  width: "1px",
+  height: "1px",
+  overflow: "hidden",
+}
+
+const consentLabelStyle = {
+  display: "flex",
+  alignItems: "flex-start",
+  gap: "10px",
+  color: "#334155",
+  fontSize: "14px",
+  lineHeight: 1.6,
 }
 
 const textareaStyle = {
