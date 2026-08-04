@@ -15,32 +15,6 @@ export const metadata = {
   description:
     "아이패드 수리, 아이폰 수리, 맥북 수리, 마이크로소프트 서피스 수리, 레노버 노트북 수리, HP 노트북 수리, 아수스 노트북 수리 전문 공식 홈페이지입니다.",
 
-  openGraph: {
-    type: "website",
-    locale: "ko_KR",
-    url: "/",
-    siteName: "아이스마일어게인",
-    title: "아이폰·아이패드·맥북·서피스 전문 수리센터 | 아이스마일어게인",
-    description:
-      "강변·선릉·신도림 3개 지점에서 스마트기기 수리 상담과 전국 택배 접수를 제공합니다.",
-    images: [
-      {
-        url: "/images/hero-iphone-repair-desktop.webp",
-        width: 1600,
-        height: 900,
-        alt: "아이스마일어게인 스마트기기 전문 수리센터",
-      },
-    ],
-  },
-
-  twitter: {
-    card: "summary_large_image",
-    title: "아이폰·아이패드·맥북·서피스 전문 수리센터 | 아이스마일어게인",
-    description:
-      "강변·선릉·신도림 3개 지점에서 스마트기기 수리 상담과 전국 택배 접수를 제공합니다.",
-    images: ["/images/hero-iphone-repair-desktop.webp"],
-  },
-
   keywords: [
     "아이스마일어게인",
     "강남아이폰수리",
@@ -101,7 +75,7 @@ export default function RootLayout({ children }) {
             <p>사업자등록번호 : 542-52-00920</p>
 
             <p>
-              강변점 : 서울 광진구 광나루로56길 85 강변테크노마트
+              강변역점 : 서울 광진구 광나루로56길 85 강변테크노마트
               5층 B-20호 / 02-3424-5295
             </p>
 
