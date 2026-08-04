@@ -1,7 +1,10 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { supabase } from "@/lib/supabase"
-import { getBranchSeo } from "@/lib/branchSeo"
+import {
+  getBranchLocalBusinessJsonLd,
+  getBranchSeo,
+} from "@/lib/branchSeo"
 
 export const dynamic = "force-dynamic"
 
@@ -70,37 +73,9 @@ export default async function BranchDetailPage({ params }) {
 
   const canonicalUrl = `https://www.ismileagain.co.kr/branches/${seo.slug}`
 
-  const fullAddress = [branch.address1, branch.address2]
-    .filter(Boolean)
-    .join(" ")
-
   const localBusinessJsonLd = {
     "@context": "https://schema.org",
-    "@type": "LocalBusiness",
-    "@id": `${canonicalUrl}#localbusiness`,
-    name: seo.name,
-    url: canonicalUrl,
-    telephone: branch.phone,
-
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: fullAddress,
-      addressLocality: seo.locality,
-      addressRegion: "서울특별시",
-      addressCountry: "KR",
-    },
-
-    ...(branch.map_image
-      ? {
-          image: branch.map_image,
-        }
-      : {}),
-
-    ...(branch.naver_map
-      ? {
-          hasMap: branch.naver_map,
-        }
-      : {}),
+    ...getBranchLocalBusinessJsonLd(seo, branch),
   }
 
   const breadcrumbJsonLd = {
@@ -164,7 +139,7 @@ export default async function BranchDetailPage({ params }) {
         </p>
 
         <h1 className="branch-detail-title" style={styles.title}>
-  {seo.h1 || "아이스마일어게인"}
+  {seo.h1 || "아이스마일어게인"}{" · "}
   <br className="seo-mobile-title-break" aria-hidden="true" />
   <span className="seo-mobile-title-line">{seo.shortName}</span>
 </h1>
