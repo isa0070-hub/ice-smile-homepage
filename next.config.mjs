@@ -19,6 +19,11 @@ const nextConfig = {
   async redirects() {
     return [
       {
+        source: "/m/home.html",
+        destination: "/branches/gangbyeon",
+        statusCode: 301,
+      },
+      {
         source: "/store/store_gb.asp",
         destination: "/branches/gangbyeon",
         statusCode: 301,
