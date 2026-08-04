@@ -1,6 +1,7 @@
 export const metadata = {
     title: "개인정보처리방침 | 아이스마일어게인",
     description: "아이스마일어게인 개인정보처리방침",
+    alternates: { canonical: "/privacy" },
   };
   
   export default function PrivacyPage() {
