@@ -66,7 +66,7 @@ export default async function Home() {
 
   const { data: contacts } = await supabase
     .from("online_inquiries")
-    .select("*")
+    .select("customer_name, phone, preferred_branch, device, model, symptom")
     .order("created_at", { ascending: false })
     .limit(7);
 
