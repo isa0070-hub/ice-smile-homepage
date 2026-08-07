@@ -3,11 +3,15 @@ import { supabase } from "@/lib/supabase";
 import Image from "next/image";
 import Link from "next/link";
 import {
+  getPublicRepairCasePath,
+  isPublicRepairCaseSlug,
+} from "@/lib/publicRepairCases";
+import {
   branchSeo,
   getBranchLocalBusinessJsonLd,
 } from "@/lib/branchSeo";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 900;
 
 export const metadata = {
   title: "아이폰·아이패드·맥북·서피스 전문 수리센터 | 아이스마일어게인",
@@ -17,26 +21,24 @@ export const metadata = {
   alternates: {
     canonical: "/",
   },
+
+  openGraph: {
+    title: "아이폰·아이패드·맥북·서피스 전문 수리센터 | 아이스마일어게인",
+    description:
+      "강변·선릉·신도림 3개 지점의 스마트기기 수리 안내와 실제 수리사례를 확인하세요.",
+    url: "/",
+    siteName: "아이스마일어게인",
+    locale: "ko_KR",
+    type: "website",
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: "아이폰·아이패드·맥북·서피스 전문 수리센터 | 아이스마일어게인",
+    description:
+      "강변·선릉·신도림 3개 지점의 스마트기기 수리 안내와 실제 수리사례를 확인하세요.",
+  },
 };
-
-function maskName(name) {
-  if (!name) return "고객";
-  if (name.length <= 1) return name + "*";
-  return name[0] + "*".repeat(name.length - 1);
-}
-
-function maskPhone(phone) {
-  if (!phone) return "연락처 비공개";
-  const onlyNumber = phone.replace(/[^0-9]/g, "");
-  if (onlyNumber.length < 8) return "연락처 비공개";
-  return onlyNumber.slice(0, 3) + "-****-" + onlyNumber.slice(-4);
-}
-
-function maskText(text) {
-  if (!text) return "증상 확인중";
-  if (text.length <= 8) return text[0] + "***";
-  return text.slice(0, 8) + "...";
-}
 
 function OptimizedImage({
   src,
@@ -63,17 +65,22 @@ function OptimizedImage({
 }
 
 export default async function Home() {
-  const { data: latestCases } = await supabase
+  const latestCasesResult = await supabase
     .from("repair_cases")
     .select("id, slug, image_url, alt_text, title, branch")
+    .not("slug", "is", null)
+    .neq("slug", "")
     .order("created_at", { ascending: false })
     .limit(8);
 
-  const { data: contacts } = await supabase
-    .from("online_inquiries")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(7);
+  const latestCases = (latestCasesResult.data || []).filter((item) =>
+    isPublicRepairCaseSlug(item?.slug),
+  );
+
+  if (latestCasesResult.error) {
+    console.error("homepage repair_cases error:", latestCasesResult.error);
+    throw new Error("최근 수리사례를 불러오지 못했습니다.");
+  }
 
   const homeLocalBusinessJsonLd = {
     "@context": "https://schema.org",
@@ -112,8 +119,8 @@ export default async function Home() {
           />
 
           <img
-            src="/images/hero-iphone-repair-desktop.webp"
-            alt="아이스마일어게인 스마트기기 전문 수리센터 작업 모습"
+            src="/images/hero-repair-clean.jpg"
+            alt="아이스마일어게인 스마트기기 내부 점검 작업 모습"
             width="1600"
             height="900"
             fetchPriority="high"
@@ -178,9 +185,9 @@ export default async function Home() {
               네이버톡톡 문의
             </a>
 
-            <a href="/contact" style={buttonStyle}>
+            <Link href="/contact" style={buttonStyle}>
               온라인 수리문의
-            </a>
+            </Link>
 
             <PhoneContactButton buttonStyle={buttonStyle} />
 
@@ -193,13 +200,13 @@ export default async function Home() {
               카카오톡 문의
             </a>
 
-            <a
+            <Link
               href="/branches"
               className="mobile-only-branch-button"
               style={buttonStyle}
             >
               지점안내
-            </a>
+            </Link>
           </div>
         </div>
       </section>
@@ -208,7 +215,7 @@ export default async function Home() {
         <h2 style={titleStyle}>수리 가능 품목</h2>
 
         <div style={gridStyle}>
-          <a
+          <Link
             href="/repair-services/apple"
             style={{ color: "inherit", textDecoration: "none" }}
           >
@@ -224,9 +231,9 @@ export default async function Home() {
               <p>맥북 액정교체 / 배터리교체</p>
               <p>애플워치 액정수리</p>
             </div>
-          </a>
+          </Link>
 
-          <a
+          <Link
             href="/repair-services/surface"
             style={{ color: "inherit", textDecoration: "none" }}
           >
@@ -242,9 +249,9 @@ export default async function Home() {
               <p>서피스북 / 서피스랩탑 수리</p>
               <p>방문 및 택배 접수 가능</p>
             </div>
-          </a>
+          </Link>
 
-          <a
+          <Link
             href="/repair-services/notebook-tablet"
             style={{ color: "inherit", textDecoration: "none" }}
           >
@@ -260,7 +267,7 @@ export default async function Home() {
               <p>삼성 노트북 수리</p>
               <p>액정교체 / 배터리교체 / 전원불량 점검</p>
             </div>
-          </a>
+          </Link>
         </div>
       </section>
 
@@ -349,13 +356,13 @@ export default async function Home() {
         </p>
 
         <div style={trustLinkRowStyle}>
-          <a href="/repair-cases" style={trustLinkStyle}>
+          <Link href="/repair-cases" style={trustLinkStyle}>
             실제 수리사례 확인
-          </a>
+          </Link>
 
-          <a href="/branches" style={trustLinkStyle}>
+          <Link href="/branches" style={trustLinkStyle}>
             가까운 지점 확인
-          </a>
+          </Link>
         </div>
       </section>
 
@@ -370,9 +377,9 @@ export default async function Home() {
         <div style={gridStyle}>
           {latestCases && latestCases.length > 0 ? (
             latestCases.map((item) => (
-              <a
+              <Link
                 key={item.id}
-                href={`/repair-cases/${item.slug}`}
+                href={getPublicRepairCasePath(item.slug)}
                 style={{ color: "inherit", textDecoration: "none" }}
               >
                 <div style={cardStyle}>
@@ -384,53 +391,11 @@ export default async function Home() {
                   <h3>{item.title}</h3>
                   <p>{item.branch}</p>
                 </div>
-              </a>
+              </Link>
             ))
           ) : (
             <p style={{ textAlign: "center" }}>
               등록된 수리사례가 없습니다.
-            </p>
-          )}
-        </div>
-      </section>
-
-      <section style={{ ...sectionStyle, background: "#f8fafc" }}>
-        <h2 style={titleStyle}>최근 온라인 접수 현황</h2>
-
-        <p
-          style={{
-            textAlign: "center",
-            marginBottom: "30px",
-            color: "#475569",
-          }}
-        >
-          개인정보 보호를 위해 이름과 연락처, 증상 일부는 가려서 표시됩니다.
-        </p>
-
-        <div style={{ display: "grid", gap: "12px" }}>
-          {contacts && contacts.length > 0 ? (
-            contacts.map((item) => (
-              <div key={item.id} style={listCardStyle}>
-                <strong>
-                  {maskName(item.customer_name)} 고객님 /{" "}
-                  {item.preferred_branch || "지점 선택"}
-                </strong>
-
-                <span>
-                  {item.device || "기기 확인중"} ·{" "}
-                  {item.model || "모델 확인중"}
-                </span>
-
-                <span>증상 : {maskText(item.symptom)}</span>
-
-                <span>연락처 : {maskPhone(item.phone)}</span>
-
-                <span>접수방식 : 온라인접수</span>
-              </div>
-            ))
-          ) : (
-            <p style={{ textAlign: "center" }}>
-              아직 접수된 내역이 없습니다.
             </p>
           )}
         </div>
@@ -625,18 +590,6 @@ const imageFrameStyle = {
 const optimizedImageStyle = {
   objectFit: "cover",
   objectPosition: "center",
-};
-
-const listCardStyle = {
-  background: "white",
-  border: "1px solid #e5e7eb",
-  borderRadius: "14px",
-  padding: "16px 20px",
-  lineHeight: 1.6,
-  display: "flex",
-  alignItems: "center",
-  gap: "18px",
-  flexWrap: "wrap",
 };
 
 const buttonStyle = {

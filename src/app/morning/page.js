@@ -249,7 +249,7 @@ async function requestMorningAnswer(question, signal) {
 export default function MorningPage() {
   const [question, setQuestion] = useState("");
   const [submittedQuestion, setSubmittedQuestion] = useState("");
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState(() => makeItems());
   const [mode, setMode] = useState("home");
   const [step, setStep] = useState(0);
   const [result, setResult] = useState(null);
@@ -259,8 +259,6 @@ export default function MorningPage() {
   const controllerRef = useRef(null);
 
   useEffect(() => {
-    setItems(makeItems());
-
     const timer = setInterval(() => {
       setItems((prev) =>
         prev.map((item) => ({

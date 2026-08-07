@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { adminFetch } from "@/lib/adminClient";
 
 export default function PopupEditPage() {
   const params = useParams();
@@ -13,24 +13,22 @@ export default function PopupEditPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    loadPopup();
-  }, []);
+    let active = true;
 
-  async function loadPopup() {
-    const { data, error } = await supabase
-      .from("popup_notices")
-      .select("*")
-      .eq("id", params.id)
-      .single();
+    adminFetch(`/api/admin/content/popups/${params.id}`)
+      .then((result) => {
+        if (active) setForm(result.data);
+      })
+      .catch((error) => {
+        if (!active) return;
+        console.error(error);
+        setMessage(error.message || "팝업 정보를 불러오지 못했습니다.");
+      });
 
-    if (error) {
-      console.error(error);
-      setMessage("팝업 정보를 불러오지 못했습니다.");
-      return;
-    }
-
-    setForm(data);
-  }
+    return () => {
+      active = false;
+    };
+  }, [params.id]);
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target;
@@ -46,9 +44,10 @@ export default function PopupEditPage() {
     setSaving(true);
     setMessage("");
 
-    const { error } = await supabase
-      .from("popup_notices")
-      .update({
+    try {
+      await adminFetch(`/api/admin/content/popups/${params.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
         title: form.title,
         content: form.content,
         image_url: form.image_url,
@@ -62,23 +61,20 @@ export default function PopupEditPage() {
         sort_order: Number(form.sort_order || 0),
         start_date: form.start_date || null,
         end_date: form.end_date || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", params.id);
+        }),
+      });
 
-    setSaving(false);
+      setMessage("팝업이 수정되었습니다.");
 
-    if (error) {
+      setTimeout(() => {
+        router.push("/admin/popups/list");
+      }, 700);
+    } catch (error) {
       console.error(error);
-      setMessage("팝업 수정 중 오류가 발생했습니다.");
-      return;
+      setMessage(error.message || "팝업 수정 중 오류가 발생했습니다.");
+    } finally {
+      setSaving(false);
     }
-
-    setMessage("팝업이 수정되었습니다.");
-
-    setTimeout(() => {
-      router.push("/admin/popups/list");
-    }, 700);
   }
 
   if (!form) {

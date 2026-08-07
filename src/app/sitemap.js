@@ -1,26 +1,64 @@
 import { supabase } from "@/lib/supabase";
+import { isPublicRepairCaseSlug } from "@/lib/publicRepairCases";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 const baseUrl = "https://www.ismileagain.co.kr";
 
+function toValidDate(value) {
+  if (!value) {
+    return undefined;
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
+function getCaseModifiedDate(item) {
+  return toValidDate(item?.updated_at) || toValidDate(item?.created_at);
+}
+
 export default async function sitemap() {
-  const { data: cases, error } = await supabase
+  let { data: cases, error } = await supabase
     .from("repair_cases")
-    .select("slug, created_at")
+    .select("slug, created_at, updated_at")
     .not("slug", "is", null)
     .neq("slug", "")
     .order("created_at", { ascending: false });
 
+  // Older production schemas may not have updated_at yet. A missing optional
+  // column must never empty the entire sitemap, so fall back to created_at.
   if (error) {
-    console.error("sitemap repair_cases error:", error);
+    const fallbackResult = await supabase
+      .from("repair_cases")
+      .select("slug, created_at")
+      .not("slug", "is", null)
+      .neq("slug", "")
+      .order("created_at", { ascending: false });
+
+    cases = fallbackResult.data;
+    error = fallbackResult.error;
   }
 
-  // 가장 최근 수리사례 등록일
-  // 홈과 수리사례 목록은 새 글 등록 시 실제 내용이 바뀌므로 이 날짜를 사용
-  const latestCaseDate = cases?.[0]?.created_at
-    ? new Date(cases[0].created_at)
-    : undefined;
+  if (error) {
+    console.error("sitemap repair_cases error:", error);
+    throw new Error("사이트맵의 수리사례 URL을 불러오지 못했습니다.");
+  }
+
+  const safeCases = (cases || []).filter((item) =>
+    isPublicRepairCaseSlug(item?.slug),
+  );
+
+  // 새 글뿐 아니라 기존 글 수정도 홈·목록의 실제 변경으로 반영합니다.
+  const latestCaseDate = safeCases.reduce((latest, item) => {
+    const modifiedDate = getCaseModifiedDate(item);
+
+    if (!modifiedDate || (latest && modifiedDate <= latest)) {
+      return latest;
+    }
+
+    return modifiedDate;
+  }, undefined);
 
   const staticPages = [
     {
@@ -97,14 +135,16 @@ export default async function sitemap() {
     },
   ];
 
-  const repairCasePages = (cases || []).map((item) => ({
-    url: `${baseUrl}/repair-cases/${encodeURIComponent(item.slug)}`,
-    ...(item.created_at
-      ? { lastModified: new Date(item.created_at) }
-      : {}),
-    changeFrequency: "monthly",
-    priority: 0.8,
-  }));
+  const repairCasePages = safeCases.map((item) => {
+    const modifiedDate = getCaseModifiedDate(item);
+
+    return {
+      url: `${baseUrl}/repair-cases/${encodeURIComponent(item.slug)}`,
+      ...(modifiedDate ? { lastModified: modifiedDate } : {}),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    };
+  });
 
   return [...staticPages, ...repairCasePages];
 }

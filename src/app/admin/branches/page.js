@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabase"
+import Link from "next/link"
+import { adminFetch } from "@/lib/adminClient"
 
 export default function AdminBranchesPage() {
   const [branches, setBranches] = useState([])
@@ -10,23 +11,35 @@ export default function AdminBranchesPage() {
   const loadBranches = async () => {
     setLoading(true)
 
-    const { data, error } = await supabase
-      .from("branches")
-      .select("*")
-      .order("sort_order", { ascending: true })
-
-    setLoading(false)
-
-    if (error) {
+    try {
+      const result = await adminFetch("/api/admin/content/branches")
+      setBranches(result.data || [])
+    } catch (error) {
       alert("지점 정보를 불러오지 못했습니다: " + error.message)
-      return
+    } finally {
+      setLoading(false)
     }
-
-    setBranches(data || [])
   }
 
   useEffect(() => {
-    loadBranches()
+    let active = true
+
+    adminFetch("/api/admin/content/branches")
+      .then((result) => {
+        if (active) setBranches(result.data || [])
+      })
+      .catch((error) => {
+        if (active) {
+          alert("지점 정보를 불러오지 못했습니다: " + error.message)
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
   }, [])
 
   const updateBranch = (id, field, value) => {
@@ -38,44 +51,38 @@ export default function AdminBranchesPage() {
   }
 
   const saveBranch = async (branch) => {
-    const { error } = await supabase
-      .from("branches")
-      .update({
-        name: branch.name,
-        phone: branch.phone,
-        address1: branch.address1,
-        address2: branch.address2,
+    try {
+      await adminFetch(`/api/admin/content/branches/${branch.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
         visit_info: branch.visit_info,
-        naver_map: branch.naver_map,
         map_image: branch.map_image,
         is_active: branch.is_active,
         sort_order: Number(branch.sort_order || 0),
+        }),
       })
-      .eq("id", branch.id)
-
-    if (error) {
+      alert("지점 정보가 저장되었습니다.")
+      loadBranches()
+    } catch (error) {
       alert("저장 실패: " + error.message)
-      return
     }
-
-    alert("지점 정보가 저장되었습니다.")
-    loadBranches()
   }
 
   return (
     <main style={styles.page}>
       <div style={styles.topButtons}>
-        <a href="/admin" style={styles.backButton}>
+        <Link href="/admin" style={styles.backButton}>
           ← 관리자 메인
-        </a>
-        <a href="/branches" style={styles.linkButton}>
+        </Link>
+        <Link href="/branches" style={styles.linkButton}>
           지점안내 페이지 보기
-        </a>
+        </Link>
       </div>
 
       <h1 style={styles.title}>지점관리</h1>
       <p style={styles.desc}>
-        지점 주소, 전화번호, 방문안내, 네이버지도 링크, 약도 이미지를 수정할 수 있습니다.
+        검색 노출의 지점 일관성을 보호하기 위해 지점명·전화·주소·네이버 지도는
+        고정합니다. 방문안내, 약도 이미지, 공개 여부와 순서만 수정할 수 있습니다.
       </p>
 
       {loading && <p>불러오는 중...</p>}
@@ -109,43 +116,37 @@ export default function AdminBranchesPage() {
             <div style={styles.grid}>
               <input
                 value={branch.name || ""}
-                onChange={(e) => updateBranch(branch.id, "name", e.target.value)}
                 placeholder="지점명"
-                style={styles.input}
+                style={styles.readOnlyInput}
+                readOnly
               />
 
               <input
                 value={branch.phone || ""}
-                onChange={(e) => updateBranch(branch.id, "phone", e.target.value)}
                 placeholder="전화번호"
-                style={styles.input}
+                style={styles.readOnlyInput}
+                readOnly
               />
 
               <input
                 value={branch.address1 || ""}
-                onChange={(e) =>
-                  updateBranch(branch.id, "address1", e.target.value)
-                }
                 placeholder="주소 1"
-                style={styles.input}
+                style={styles.readOnlyInput}
+                readOnly
               />
 
               <input
                 value={branch.address2 || ""}
-                onChange={(e) =>
-                  updateBranch(branch.id, "address2", e.target.value)
-                }
                 placeholder="주소 2"
-                style={styles.input}
+                style={styles.readOnlyInput}
+                readOnly
               />
 
               <input
                 value={branch.naver_map || ""}
-                onChange={(e) =>
-                  updateBranch(branch.id, "naver_map", e.target.value)
-                }
                 placeholder="네이버지도 링크"
-                style={styles.input}
+                style={styles.readOnlyInput}
+                readOnly
               />
 
               <input
@@ -273,6 +274,14 @@ const styles = {
     border: "1px solid #cbd5e1",
     borderRadius: "12px",
     fontSize: "15px",
+  },
+  readOnlyInput: {
+    padding: "12px",
+    border: "1px solid #cbd5e1",
+    borderRadius: "12px",
+    fontSize: "15px",
+    backgroundColor: "#f1f5f9",
+    color: "#475569",
   },
   textarea: {
     width: "100%",

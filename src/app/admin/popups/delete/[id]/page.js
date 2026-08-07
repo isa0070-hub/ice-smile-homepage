@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { adminFetch } from "@/lib/adminClient";
 
 export default function PopupDeletePage() {
   const params = useParams();
@@ -14,26 +14,25 @@ export default function PopupDeletePage() {
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    loadPopup();
-  }, []);
+    let active = true;
 
-  async function loadPopup() {
-    const { data, error } = await supabase
-      .from("popup_notices")
-      .select("*")
-      .eq("id", params.id)
-      .single();
+    adminFetch(`/api/admin/content/popups/${params.id}`)
+      .then((result) => {
+        if (active) setPopup(result.data);
+      })
+      .catch((error) => {
+        if (!active) return;
+        console.error(error);
+        setMessage(error.message || "삭제할 팝업을 찾을 수 없습니다.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
 
-    if (error) {
-      console.error(error);
-      setMessage("삭제할 팝업을 찾을 수 없습니다.");
-      setLoading(false);
-      return;
-    }
-
-    setPopup(data);
-    setLoading(false);
-  }
+    return () => {
+      active = false;
+    };
+  }, [params.id]);
 
   async function handleDelete() {
     if (!confirm("정말 이 팝업을 삭제하시겠습니까?")) {
@@ -43,24 +42,22 @@ export default function PopupDeletePage() {
     setDeleting(true);
     setMessage("");
 
-    const { error } = await supabase
-      .from("popup_notices")
-      .delete()
-      .eq("id", params.id);
+    try {
+      await adminFetch(`/api/admin/content/popups/${params.id}`, {
+        method: "DELETE",
+      });
 
-    setDeleting(false);
+      setMessage("팝업이 삭제되었습니다.");
 
-    if (error) {
+      setTimeout(() => {
+        router.push("/admin/popups/list");
+      }, 800);
+    } catch (error) {
       console.error(error);
-      setMessage("팝업 삭제 중 오류가 발생했습니다.");
-      return;
+      setMessage(error.message || "팝업 삭제 중 오류가 발생했습니다.");
+    } finally {
+      setDeleting(false);
     }
-
-    setMessage("팝업이 삭제되었습니다.");
-
-    setTimeout(() => {
-      router.push("/admin/popups/list");
-    }, 800);
   }
 
   if (loading) {

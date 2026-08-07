@@ -1,4 +1,8 @@
 import { supabase } from "@/lib/supabase";
+import {
+  getPublicRepairCasePath,
+  isPublicRepairCaseSlug,
+} from "@/lib/publicRepairCases";
 
 const BASE_URL = "https://www.ismileagain.co.kr";
 
@@ -40,7 +44,7 @@ function toRssDate(value) {
 }
 
 function makeCaseUrl(item) {
-  return `${BASE_URL}/repair-cases/${item.slug}`;
+  return `${BASE_URL}${getPublicRepairCasePath(item.slug)}`;
 }
 
 function makeDescription(item) {
@@ -72,7 +76,7 @@ export async function GET() {
   }
 
   const items = (cases || [])
-    .filter((item) => item?.title && item?.slug)
+    .filter((item) => item?.title && isPublicRepairCaseSlug(item?.slug))
     .map((item) => {
       const url = makeCaseUrl(item);
       const pubDate = toRssDate(item.created_at);

@@ -1,12 +1,17 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import {
   getRepairService,
   getRepairServiceSlugs,
 } from "@/lib/repairServices";
+import {
+  getPublicRepairCasePath,
+  isPublicRepairCaseSlug,
+} from "@/lib/publicRepairCases";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 1800;
 
 const baseUrl = "https://www.ismileagain.co.kr";
 
@@ -84,10 +89,11 @@ export default async function RepairServicePage({ params }) {
     .not("slug", "is", null)
     .neq("slug", "")
     .order("created_at", { ascending: false })
-    .limit(6);
+    .limit(12);
 
   if (error) {
     console.error("repair service cases error:", error);
+    throw new Error("수리품목 사례를 불러오지 못했습니다.");
   }
 
   const canonicalUrl = `${baseUrl}/repair-services/${service.slug}`;
@@ -111,7 +117,9 @@ export default async function RepairServicePage({ params }) {
     ],
   };
 
-  const cases = repairCases || [];
+  const cases = (repairCases || [])
+    .filter((item) => isPublicRepairCaseSlug(item?.slug))
+    .slice(0, 6);
 
   return (
     <main style={styles.page}>
@@ -126,9 +134,13 @@ export default async function RepairServicePage({ params }) {
       />
 
 <section className="repair-service-hero" style={styles.hero}>
-  <img
+  <Image
     src={service.image}
     alt={service.imageAlt}
+    fill
+    priority
+    sizes="(max-width: 1220px) calc(100vw - 40px), 1180px"
+    quality={78}
     style={styles.heroBgImage}
   />
 
@@ -249,15 +261,21 @@ export default async function RepairServicePage({ params }) {
               {cases.map((item) => (
                 <Link
                   key={item.id}
-                  href={`/repair-cases/${item.slug}`}
+                  href={getPublicRepairCasePath(item.slug)}
                   style={styles.caseLink}
                 >
                   <article style={styles.caseCard}>
-                    <img
-                      src={item.image_url || service.image}
-                      alt={item.alt_text || item.title}
-                      style={styles.caseImage}
-                    />
+                    <div style={styles.caseImageFrame}>
+                      <Image
+                        src={item.image_url || service.image}
+                        alt={item.alt_text || item.title}
+                        fill
+                        sizes="(max-width: 760px) 100vw, (max-width: 1100px) 50vw, 33vw"
+                        quality={72}
+                        loading="lazy"
+                        style={styles.caseImage}
+                      />
+                    </div>
 
                     <div style={styles.caseBody}>
                       <p style={styles.caseMeta}>
@@ -580,10 +598,18 @@ const styles = {
     boxShadow: "0 10px 28px rgba(15, 23, 42, 0.06)",
   },
 
+  caseImageFrame: {
+    position: "relative",
+    width: "100%",
+    height: "210px",
+    overflow: "hidden",
+    background: "#e2e8f0",
+  },
+
   caseImage: {
     display: "block",
     width: "100%",
-    height: "210px",
+    height: "100%",
     objectFit: "cover",
     background: "#e2e8f0",
   },

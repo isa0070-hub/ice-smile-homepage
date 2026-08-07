@@ -1,6 +1,5 @@
 import "./globals.css";
 import SiteHeader from "@/components/SiteHeader";
-import HomeNoticePopup from "@/components/HomeNoticePopup";
 import PopupNotice from "@/components/PopupNotice";
 import GoogleAnalyticsTracker from "@/components/GoogleAnalyticsTracker";
 import AdClickTracker from "@/components/AdClickTracker";
@@ -13,7 +12,7 @@ export const metadata = {
     "아이스마일어게인 | 아이폰 아이패드 맥북 서피스 노트북 수리",
 
   description:
-    "아이패드 수리, 아이폰 수리, 맥북 수리, 마이크로소프트 서피스 수리, 레노버 노트북 수리, HP 노트북 수리, 아수스 노트북 수리 전문 공식 홈페이지입니다.",
+    "강변·선릉·신도림에서 아이패드, 아이폰, 맥북, 마이크로소프트 서피스, 레노버, HP, ASUS 노트북을 점검·수리하는 아이스마일어게인 홈페이지입니다.",
 
   keywords: [
     "아이스마일어게인",
@@ -49,7 +48,6 @@ export default function RootLayout({ children }) {
     <html lang="ko">
       <body>
         <SiteHeader />
-        <HomeNoticePopup />
         <PopupNotice />
 
         <div style={{ paddingTop: "78px" }}>{children}</div>
@@ -123,18 +121,6 @@ export default function RootLayout({ children }) {
               © 아이스마일어게인 All Rights Reserved.
             </p>
 
-            <p style={{ marginTop: "8px" }}>
-              <a
-                href="/admin"
-                style={{
-                  color: "#94a3b8",
-                  fontSize: "13px",
-                  textDecoration: "none",
-                }}
-              >
-                관리자
-              </a>
-            </p>
           </div>
           </footer>
 <AdClickTracker />
