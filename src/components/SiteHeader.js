@@ -75,8 +75,8 @@ export default function SiteHeader() {
 
     try {
       await submitOnlineInquiry(form, submissionTokenRef.current)
-      alert("온라인 접수가 완료되었습니다. 확인 후 연락드리겠습니다.")
       trackNaverLead()
+      alert("온라인 접수가 완료되었습니다. 확인 후 연락드리겠습니다.")
       setIsOpen(false)
       window.location.assign("/")
     } catch (error) {
