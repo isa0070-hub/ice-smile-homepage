@@ -1,35 +1,50 @@
 import { supabase } from "@/lib/supabase";
+import { cache } from "react";
 import PhoneContactButton from "@/components/PhoneContactButton";
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import {
+  decodePublicRepairCaseSlug,
+  getPublicRepairCasePath,
+  isPublicRepairCaseSlug,
+} from "@/lib/publicRepairCases";
+import {
+  ORGANIZATION_ID,
+  getBranchCanonicalUrl,
+  getBranchLocalBusinessId,
+  getBranchLocalBusinessJsonLd,
+  getBranchSeoByName,
+} from "@/lib/branchSeo";
 
 const BASE_URL = "https://www.ismileagain.co.kr";
+export const revalidate = 3600;
 
-const BRANCH_INFO = {
-  강변점: {
-    phone: "02-3424-5295",
-    address: "서울 광진구 광나루로56길 85 강변테크노마트 5층 B-20호",
-    locality: "광진구",
-    postalCode: "05116",
-pageUrl: "/branches/gangbyeon",
-  },
-  선릉점: {
-    phone: "02-554-5295",
-    address: "서울 강남구 테헤란로 406 샹제리제센터 A동 406호",
-    locality: "강남구",
-    postalCode: "06192",
-pageUrl: "/branches/seolleung",
-  },
-  신도림점: {
-    phone: "02-2111-8899",
-    address: "서울 구로구 새말로 97 신도림테크노마트 9층 57-1번 기둥",
-    locality: "구로구",
-    postalCode: "08288",
-pageUrl: "/branches/sindorim",
-  },
-};
+const getRepairCaseBySlug = cache(async (slug) => {
+  const { data, error } = await supabase
+    .from("repair_cases")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error) {
+    console.error("repair case detail error:", error);
+    throw new Error("수리사례를 불러오지 못했습니다.");
+  }
+
+  return data;
+});
 
 function getBranchInfo(branch) {
-  return BRANCH_INFO[branch] || BRANCH_INFO["강변점"];
+  const seo = getBranchSeoByName(branch);
+
+  if (!seo) return null;
+
+  return {
+    seo,
+    phone: seo.phone,
+    address: [seo.address1, seo.address2].filter(Boolean).join(" "),
+    pageUrl: getBranchCanonicalUrl(seo),
+  };
 }
 
 function toAbsoluteUrl(url) {
@@ -180,43 +195,24 @@ function removeTextParts(text, parts = []) {
 }
 
 function getBranchSearchLabel(branch) {
-  if (branch === "강변점") return "강변";
-  if (branch === "선릉점") return "선릉";
-  if (branch === "신도림점") return "신도림";
+  const seo = getBranchSeoByName(branch);
 
-  return cleanText(branch || "서울");
+  return seo?.searchLabel || cleanText(branch || "서울");
 }
 
 function getBranchIntro(branch) {
-  if (branch === "강변점") {
-    return "강변역 1번 출구 인근 아이스마일어게인 강변점";
-  }
+  const seo = getBranchSeoByName(branch);
 
-  if (branch === "선릉점") {
-    return "선릉역 1번 출구 인근 아이스마일어게인 선릉점";
-  }
-
-  if (branch === "신도림점") {
-    return "신도림테크노마트 9층 아이스마일어게인 신도림점";
-  }
-
-  return "아이스마일어게인";
+  return seo?.caseIntro || "아이스마일어게인";
 }
 
 function getBranchVisitGuide(branch) {
-  if (branch === "강변점") {
-    return "강변역 인근 강변테크노마트 5층 B-20호 아이스마일어게인 강변점으로 방문하시면 됩니다.";
-  }
+  const seo = getBranchSeoByName(branch);
 
-  if (branch === "선릉점") {
-    return "선릉역 1번 출구 인근 샹제리제센터 A동 406호 아이스마일어게인 선릉점으로 방문하시면 됩니다.";
-  }
-
-  if (branch === "신도림점") {
-    return "신도림테크노마트 9층 57-1번 기둥 아이스마일어게인 신도림점으로 방문하시면 됩니다.";
-  }
-
-  return "방문 전 상담 후 가까운 아이스마일어게인 지점으로 안내드립니다.";
+  return (
+    seo?.visitInfo ||
+    "방문 전 상담 후 가까운 아이스마일어게인 지점으로 안내드립니다."
+  );
 }
 
 function makeConsultTitle(item) {
@@ -450,7 +446,7 @@ function makeDescription(item) {
 
 function makeTitle(item) {
   if (!item) {
-    return "수리사례 | 아이스마일어게인 수리전문 공식서비스센터";
+    return "수리사례 | 아이스마일어게인 독립 스마트기기 수리센터";
   }
 
   const branchLabel = getBranchSearchLabel(item.branch);
@@ -465,20 +461,22 @@ function makeTitle(item) {
 }
 
 function makeCanonicalUrl(item) {
-  return item
-    ? `${BASE_URL}/repair-cases/${item.slug}`
-    : `${BASE_URL}/repair-cases`;
+  const casePath = getPublicRepairCasePath(item?.slug);
+  return casePath ? `${BASE_URL}${casePath}` : `${BASE_URL}/repair-cases`;
 }
 function makeFaqItems(item, phoneNumber) {
   const deviceModel = makeDeviceModelText(item);
   const branch = item?.branch || "아이스마일어게인";
   const keyword = makeMetaKeyword(item);
   const visitGuide = getBranchVisitGuide(item?.branch);
+  const contactMethod = phoneNumber
+    ? `${phoneNumber} 또는 네이버톡톡`
+    : "네이버톡톡 또는 온라인 문의";
 
   return [
     {
       question: `${deviceModel} ${keyword} 가능 여부는 어떻게 확인하나요?`,
-      answer: `${branch} 방문 전 ${phoneNumber} 또는 네이버톡톡으로 모델명과 증상 사진을 보내주시면 ${keyword} 가능 여부와 예상 비용, 소요 시간을 확인해드립니다.`,
+      answer: `${branch} 방문 전 ${contactMethod}로 모델명과 증상 사진을 보내주시면 ${keyword} 가능 여부와 예상 비용, 소요 시간을 확인해드립니다.`,
     },
     {
       question: `${deviceModel} 수리 시간과 데이터 유지 여부는 어떻게 확인하나요?`,
@@ -501,6 +499,17 @@ function makeJsonLd({ item, detailImages = [], phoneNumber }) {
   const displayTitle = makeDisplayTitle(item);
   const deviceModel = makeDeviceModelText(item);
   const displayKeyword = makeMetaKeyword(item);
+  const providerEntity = branchInfo
+    ? getBranchLocalBusinessJsonLd(branchInfo.seo)
+    : {
+        "@type": "Organization",
+        "@id": ORGANIZATION_ID,
+        name: "아이스마일어게인",
+        url: `${BASE_URL}/`,
+      };
+  const providerReference = branchInfo
+    ? { "@id": getBranchLocalBusinessId(branchInfo.seo) }
+    : { "@id": ORGANIZATION_ID };
 
   const imageUrls = [
     item.image_url,
@@ -548,16 +557,19 @@ function makeJsonLd({ item, detailImages = [], phoneNumber }) {
         mainEntityOfPage: canonicalUrl,
         author: {
           "@type": "Organization",
+          "@id": ORGANIZATION_ID,
           name: "아이스마일어게인",
-          url: BASE_URL,
+          url: `${BASE_URL}/`,
         },
         publisher: {
           "@type": "Organization",
+          "@id": ORGANIZATION_ID,
           name: "아이스마일어게인",
-          url: BASE_URL,
+          url: `${BASE_URL}/`,
         },
         about: cleanText(`${deviceModel} ${displayKeyword}`),
       },
+      providerEntity,
       {
         "@type": "Service",
         "@id": `${canonicalUrl}#service`,
@@ -567,23 +579,7 @@ function makeJsonLd({ item, detailImages = [], phoneNumber }) {
           "@type": "Country",
           name: "대한민국",
         },
-        provider: {
-          "@type": "LocalBusiness",
-          name: `아이스마일어게인 ${item.branch || ""}`.trim(),
-          url: BASE_URL,
-          telephone: phoneNumber,
-          priceRange: "₩₩",
-          image:
-            imageUrls.length > 0 ? imageUrls[0] : `${BASE_URL}/favicon.ico`,
-          address: {
-            "@type": "PostalAddress",
-            streetAddress: branchInfo.address,
-            addressLocality: branchInfo.locality,
-            addressRegion: "서울",
-            postalCode: branchInfo.postalCode,
-            addressCountry: "KR",
-          },
-        },
+        provider: providerReference,
       },
       {
         "@type": "FAQPage",
@@ -621,9 +617,53 @@ async function getRelatedCases(item) {
   if (!item) return [];
 
   const relatedMap = new Map();
+  const relatedQueries = [];
+  const relatedFields =
+    "id,slug,title,image_url,alt_text,branch,category,device,model,seo_keyword,symptom,created_at";
 
-  async function addRelated(query) {
-    const { data } = await query;
+  if (item.device) {
+    relatedQueries.push(
+      supabase
+        .from("repair_cases")
+        .select(relatedFields)
+        .eq("device", item.device)
+        .neq("id", item.id)
+        .order("created_at", { ascending: false })
+        .limit(4),
+    );
+  }
+
+  if (item.category) {
+    relatedQueries.push(
+      supabase
+        .from("repair_cases")
+        .select(relatedFields)
+        .eq("category", item.category)
+        .neq("id", item.id)
+        .order("created_at", { ascending: false })
+        .limit(4),
+    );
+  }
+
+  if (item.branch) {
+    relatedQueries.push(
+      supabase
+        .from("repair_cases")
+        .select(relatedFields)
+        .eq("branch", item.branch)
+        .neq("id", item.id)
+        .order("created_at", { ascending: false })
+        .limit(4),
+    );
+  }
+
+  const relatedResults = await Promise.all(relatedQueries);
+
+  relatedResults.forEach(({ data, error }) => {
+    if (error) {
+      console.error("related repair cases error:", error);
+      throw new Error("관련 수리사례를 불러오지 못했습니다.");
+    }
 
     (data || []).forEach((related) => {
       if (
@@ -634,56 +674,40 @@ async function getRelatedCases(item) {
         relatedMap.set(related.id, related);
       }
     });
-  }
+  });
 
-  if (item.device) {
-    await addRelated(
-      supabase
-        .from("repair_cases")
-        .select("*")
-        .eq("device", item.device)
-        .neq("id", item.id)
-        .order("created_at", { ascending: false })
-        .limit(4),
-    );
-  }
-
-  if (item.category) {
-    await addRelated(
-      supabase
-        .from("repair_cases")
-        .select("*")
-        .eq("category", item.category)
-        .neq("id", item.id)
-        .order("created_at", { ascending: false })
-        .limit(4),
-    );
-  }
-
-  if (item.branch) {
-    await addRelated(
-      supabase
-        .from("repair_cases")
-        .select("*")
-        .eq("branch", item.branch)
-        .neq("id", item.id)
-        .order("created_at", { ascending: false })
-        .limit(4),
-    );
-  }
-
-  return Array.from(relatedMap.values()).slice(0, 6);
+  return Array.from(relatedMap.values())
+    .filter((related) => isPublicRepairCaseSlug(related?.slug))
+    .slice(0, 6);
 }
 
 export async function generateMetadata({ params }) {
   const resolvedParams = await params;
-  const slug = decodeURIComponent(resolvedParams.slug);
+  const slug = decodePublicRepairCaseSlug(resolvedParams.slug);
 
-  const { data: item } = await supabase
-    .from("repair_cases")
-    .select("*")
-    .eq("slug", slug)
-    .single();
+  if (!slug) {
+    return {
+      title: makeTitle(null),
+      description: makeDescription(null),
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
+  }
+
+  const item = await getRepairCaseBySlug(slug);
+
+  if (!item) {
+    return {
+      title: makeTitle(null),
+      description: makeDescription(null),
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
+  }
 
   const title = makeTitle(item);
   const description = makeDescription(item);
@@ -730,45 +754,36 @@ export async function generateMetadata({ params }) {
 
 export default async function RepairCaseDetailPage({ params }) {
   const resolvedParams = await params;
-  const slug = decodeURIComponent(resolvedParams.slug);
+  const slug = decodePublicRepairCaseSlug(resolvedParams.slug);
 
-  const { data: item } = await supabase
-    .from("repair_cases")
-    .select("*")
-    .eq("slug", slug)
-    .single();
-
-  let phoneNumber = "02-3424-5295";
-
-  if (item?.branch === "선릉점") {
-    phoneNumber = "02-554-5295";
+  if (!slug) {
+    notFound();
   }
 
-  if (item?.branch === "신도림점") {
-    phoneNumber = "02-2111-8899";
-  }
+  const item = await getRepairCaseBySlug(slug);
 
   if (!item) {
     notFound();
   }
 
-  const nextViews = (item.views || 0) + 1;
-
-  await supabase
-    .from("repair_cases")
-    .update({ views: nextViews })
-    .eq("id", item.id);
-
-  item.views = nextViews;
-
-  const { data: detailImages } = await supabase
-    .from("repair_case_images")
-    .select("*")
-    .eq("repair_case_id", item.id)
-    .order("sort_order", { ascending: true });
-
-  const relatedCases = await getRelatedCases(item);
   const branchInfo = getBranchInfo(item.branch);
+  const phoneNumber = branchInfo?.phone || "";
+
+  const [detailImagesResult, relatedCases] = await Promise.all([
+    supabase
+      .from("repair_case_images")
+      .select("id,image_url,alt_text,description,sort_order")
+      .eq("repair_case_id", item.id)
+      .order("sort_order", { ascending: true }),
+    getRelatedCases(item),
+  ]);
+  const { data: detailImages, error: detailImagesError } = detailImagesResult;
+
+  if (detailImagesError) {
+    console.error("repair case images error:", detailImagesError);
+    throw new Error("수리사례 이미지를 불러오지 못했습니다.");
+  }
+
   const branchVisitGuide = getBranchVisitGuide(item.branch);
   const consultTitle = makeConsultTitle(item);
 
@@ -832,13 +847,13 @@ export default async function RepairCaseDetailPage({ params }) {
       )}
 
       <nav aria-label="breadcrumb" style={breadcrumbStyle}>
-        <a href="/" style={breadcrumbLinkStyle}>
+        <Link href="/" style={breadcrumbLinkStyle}>
           홈
-        </a>
+        </Link>
         <span style={breadcrumbSeparatorStyle}>›</span>
-        <a href="/repair-cases" style={breadcrumbLinkStyle}>
+        <Link href="/repair-cases" style={breadcrumbLinkStyle}>
           수리사례
-        </a>
+        </Link>
         <span style={breadcrumbSeparatorStyle}>›</span>
         <span style={breadcrumbCurrentStyle}>{displayTitle}</span>
       </nav>
@@ -855,14 +870,14 @@ export default async function RepairCaseDetailPage({ params }) {
         대표 키워드 : {displayKeyword}
       </p>
 
-      <p style={{ color: "#64748b", fontWeight: "700", marginBottom: "30px" }}>
-        조회수 : {item.views || 0}
-      </p>
-
       {item.image_url && (
         <img
           src={item.image_url}
           alt={makeSafeAltText(item.alt_text, displayTitle)}
+          width="1200"
+          height="900"
+          fetchPriority="high"
+          decoding="async"
           style={mainImageStyle}
         />
       )}
@@ -883,22 +898,24 @@ export default async function RepairCaseDetailPage({ params }) {
           <div style={summaryItemStyle}>
             <span style={summaryLabelStyle}>수리 지점</span>
             <a
-  href={branchInfo.pageUrl}
-  aria-label={`${item.branch} 지점 안내 페이지로 이동`}
-  style={{
-    ...summaryValueStyle,
-    color: "#0b57d0",
-    textDecoration: "underline",
-    textUnderlineOffset: "3px",
-  }}
->
-  {item.branch}
-</a>
+              href={branchInfo?.pageUrl || "/branches"}
+              aria-label={`${item.branch || "수리"} 지점 안내 페이지로 이동`}
+              style={{
+                ...summaryValueStyle,
+                color: "#0b57d0",
+                textDecoration: "underline",
+                textUnderlineOffset: "3px",
+              }}
+            >
+              {item.branch || "지점안내"}
+            </a>
           </div>
 
           <div style={summaryItemStyle}>
             <span style={summaryLabelStyle}>지점 주소</span>
-            <strong style={summaryValueStyle}>{branchInfo.address}</strong>
+            <strong style={summaryValueStyle}>
+              {branchInfo?.address || "지점안내 페이지에서 확인"}
+            </strong>
           </div>
 
           <div style={summaryItemStyle}>
@@ -931,9 +948,15 @@ export default async function RepairCaseDetailPage({ params }) {
 
           <div style={summaryItemStyle}>
             <span style={summaryLabelStyle}>상담 전화</span>
-            <a href={`tel:${phoneNumber}`} style={phoneLinkStyle}>
-              {phoneNumber}
-            </a>
+            {phoneNumber ? (
+              <a href={`tel:${phoneNumber}`} style={phoneLinkStyle}>
+                {phoneNumber}
+              </a>
+            ) : (
+              <a href="/contact" style={phoneLinkStyle}>
+                온라인 문의
+              </a>
+            )}
           </div>
 
           <div style={summaryItemStyle}>
@@ -954,9 +977,15 @@ export default async function RepairCaseDetailPage({ params }) {
             네이버톡톡 문의
           </a>
 
-          <a href={`tel:${phoneNumber}`} style={summaryPhoneButtonStyle}>
-            전화 상담
-          </a>
+          {phoneNumber ? (
+            <a href={`tel:${phoneNumber}`} style={summaryPhoneButtonStyle}>
+              전화 상담
+            </a>
+          ) : (
+            <a href="/contact" style={summaryPhoneButtonStyle}>
+              온라인 상담
+            </a>
+          )}
         </div>
       </section>
 
@@ -1021,7 +1050,10 @@ export default async function RepairCaseDetailPage({ params }) {
                               image.alt_text || image.description,
                               `${displayTitle} 수리 과정 이미지 ${absoluteIndex + 1}`,
                             )}
+                            width="900"
+                            height="675"
                             loading="lazy"
+                            decoding="async"
                             style={structuredImageStyle}
                           />
                         )}
@@ -1056,7 +1088,10 @@ export default async function RepairCaseDetailPage({ params }) {
                       image.alt_text || image.description,
                       `${displayTitle} 상세 이미지 ${index + 1}`,
                     )}
+                    width="1200"
+                    height="900"
                     loading="lazy"
+                    decoding="async"
                     style={detailImageStyle}
                   />
                 )}
@@ -1117,7 +1152,7 @@ export default async function RepairCaseDetailPage({ params }) {
             {relatedCases.map((related) => (
               <a
                 key={related.id}
-                href={`/repair-cases/${related.slug}`}
+                href={getPublicRepairCasePath(related.slug)}
                 style={relatedCardStyle}
               >
                 {related.image_url ? (
@@ -1128,6 +1163,10 @@ export default async function RepairCaseDetailPage({ params }) {
                       related.alt_text,
                       makeDisplayTitle(related),
                     )}
+                    width="600"
+                    height="450"
+                    loading="lazy"
+                    decoding="async"
                     style={relatedImageStyle}
                   />
                 ) : (
@@ -1244,9 +1283,9 @@ export default async function RepairCaseDetailPage({ params }) {
       </section>
 
       <div style={{ marginTop: "50px" }}>
-        <a href="/repair-cases" style={backButtonStyle}>
+        <Link href="/repair-cases" style={backButtonStyle}>
           수리사례 목록으로
-        </a>
+        </Link>
       </div>
 
       <FloatingButtons phoneNumber={phoneNumber} />

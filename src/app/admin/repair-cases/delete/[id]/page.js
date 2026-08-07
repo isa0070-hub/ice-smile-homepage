@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { adminFetch } from "@/lib/adminClient";
 
 export default function DeleteRepairCasePage() {
   const params = useParams();
@@ -14,26 +14,25 @@ export default function DeleteRepairCasePage() {
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    let active = true;
 
-  async function loadData() {
-    const { data, error } = await supabase
-      .from("repair_cases")
-      .select("*")
-      .eq("id", params.id)
-      .single();
+    adminFetch(`/api/admin/content/repair-cases/${params.id}`)
+      .then((result) => {
+        if (active) setItem(result.data);
+      })
+      .catch((error) => {
+        if (!active) return;
+        console.error(error);
+        setMessage(error.message || "삭제할 수리사례를 찾을 수 없습니다.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
 
-    if (error) {
-      console.error(error);
-      setMessage("삭제할 수리사례를 찾을 수 없습니다.");
-      setLoading(false);
-      return;
-    }
-
-    setItem(data);
-    setLoading(false);
-  }
+    return () => {
+      active = false;
+    };
+  }, [params.id]);
 
   async function handleDelete() {
     if (!confirm("정말 이 수리사례를 삭제할까요?")) {
@@ -43,28 +42,22 @@ export default function DeleteRepairCasePage() {
     setDeleting(true);
     setMessage("");
 
-    await supabase
-      .from("repair_case_images")
-      .delete()
-      .eq("repair_case_id", params.id);
+    try {
+      await adminFetch(`/api/admin/content/repair-cases/${params.id}`, {
+        method: "DELETE",
+      });
 
-    const { error } = await supabase
-      .from("repair_cases")
-      .delete()
-      .eq("id", params.id);
+      setMessage("삭제 완료되었습니다.");
 
-    if (error) {
+      setTimeout(() => {
+        router.push("/admin/repair-cases/list");
+      }, 800);
+    } catch (error) {
       console.error(error);
-      setMessage("삭제 중 오류가 발생했습니다.");
+      setMessage(error.message || "삭제 중 오류가 발생했습니다.");
+    } finally {
       setDeleting(false);
-      return;
     }
-
-    setMessage("삭제 완료되었습니다.");
-
-    setTimeout(() => {
-      router.push("/admin/repair-cases/list");
-    }, 800);
   }
 
   if (loading) {

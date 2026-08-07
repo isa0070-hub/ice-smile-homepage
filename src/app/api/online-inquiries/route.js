@@ -1,104 +1,177 @@
-const allowedBranches = new Set(["강변점", "선릉점", "신도림점"]);
-const MAX_BODY_SIZE = 16 * 1024;
+import {
+  adminErrorResponse,
+  adminSuccessResponse,
+  requireAdminRequest,
+} from "@/lib/adminApi";
+import { isSameOriginRequest } from "@/lib/adminSession";
+import {
+  consumeInquiryGlobalRateLimit,
+  consumeInquiryIpRateLimit,
+  INQUIRY_MAX_BODY_SIZE,
+  insertInquiryOnce,
+  readLimitedJson,
+  sendTelegramInquiry,
+  validateInquirySubmission,
+  validateSubmissionToken,
+} from "@/lib/onlineInquiries";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
-function clean(value, maxLength) {
-  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const PUBLIC_HEADERS = {
+  "Cache-Control": "no-store, max-age=0",
+};
+
+function publicResponse(body, status = 200, headers = {}) {
+  return Response.json(body, {
+    status,
+    headers: {
+      ...PUBLIC_HEADERS,
+      ...headers,
+    },
+  });
+}
+
+function rateLimitResponse(retryAfter) {
+  return publicResponse(
+    {
+      ok: false,
+      message: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+    },
+    429,
+    { "Retry-After": String(retryAfter) },
+  );
+}
+
+export async function GET(request) {
+  const authError = requireAdminRequest(request);
+
+  if (authError) {
+    return authError;
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("online_inquiries")
+    .select(
+      "id,created_at,customer_name,phone,preferred_branch,device,model,symptom,contact_time,memo,status",
+    )
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  if (error) {
+    console.error("Failed to load online inquiries.");
+    return adminErrorResponse("온라인 접수 목록을 불러오지 못했습니다.");
+  }
+
+  return adminSuccessResponse({ items: data || [] });
 }
 
 export async function POST(request) {
-  const { supabaseAdmin } = await import("@/lib/supabaseAdmin");
-  const { isSameOriginRequest } = await import("@/lib/adminSession");
-  const { sendTelegramInquiry } = await import("@/lib/sendTelegramInquiry");
-
   if (!isSameOriginRequest(request)) {
-    return Response.json({ message: "허용되지 않은 요청입니다." }, { status: 403 });
+    return publicResponse(
+      { ok: false, message: "허용되지 않은 요청입니다." },
+      403,
+    );
   }
 
-  if (Number(request.headers.get("content-length") || 0) > MAX_BODY_SIZE) {
-    return Response.json({ message: "요청 데이터가 너무 큽니다." }, { status: 413 });
+  if (!request.headers.get("content-type")?.startsWith("application/json")) {
+    return publicResponse(
+      { ok: false, message: "JSON 형식의 요청만 허용됩니다." },
+      415,
+    );
   }
 
-  let body;
+  if (
+    Number(request.headers.get("content-length") || 0) >
+    INQUIRY_MAX_BODY_SIZE
+  ) {
+    return publicResponse(
+      { ok: false, message: "요청 데이터가 너무 큽니다." },
+      413,
+    );
+  }
+
+  const ipLimit = consumeInquiryIpRateLimit(request);
+
+  if (!ipLimit.allowed) {
+    return rateLimitResponse(ipLimit.retryAfter);
+  }
+
+  const parsedBody = await readLimitedJson(request, INQUIRY_MAX_BODY_SIZE);
+
+  if (parsedBody.tooLarge) {
+    return publicResponse(
+      { ok: false, message: "요청 데이터가 너무 큽니다." },
+      413,
+    );
+  }
+
+  if (parsedBody.error) {
+    return publicResponse(
+      { ok: false, message: "잘못된 요청입니다." },
+      400,
+    );
+  }
+
+  const validation = validateInquirySubmission(parsedBody.value);
+
+  if (validation.bot) {
+    return publicResponse({ ok: true });
+  }
+
+  if (validation.error) {
+    return publicResponse(
+      { ok: false, message: validation.error },
+      400,
+    );
+  }
+
+  const submissionToken = request.headers.get("idempotency-key");
+
+  if (!validateSubmissionToken(submissionToken)) {
+    return publicResponse(
+      { ok: false, message: "접수 확인값이 올바르지 않습니다." },
+      400,
+    );
+  }
+
+  const globalLimit = consumeInquiryGlobalRateLimit();
+
+  if (!globalLimit.allowed) {
+    return rateLimitResponse(globalLimit.retryAfter);
+  }
+
+  let insertion;
 
   try {
-    body = await request.json();
+    insertion = await insertInquiryOnce(
+      validation.inquiry,
+      submissionToken,
+    );
   } catch {
-    return Response.json({ message: "잘못된 요청입니다." }, { status: 400 });
-  }
-
-  if (clean(body.website, 200)) {
-    return Response.json({ ok: true });
-  }
-
-  if (body.privacy_consent !== true) {
-    return Response.json(
-      { message: "개인정보 수집·이용에 동의해 주세요." },
-      { status: 400 },
+    console.error("Failed to save an online inquiry.");
+    return publicResponse(
+      {
+        ok: false,
+        message: "접수 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+      },
+      500,
     );
   }
 
-  const inquiry = {
-    customer_name: clean(body.customer_name, 40),
-    phone: clean(body.phone, 30),
-    preferred_branch: allowedBranches.has(body.preferred_branch)
-      ? body.preferred_branch
-      : "강변점",
-    device: clean(body.device, 80),
-    model: clean(body.model, 100),
-    contact_time: clean(body.contact_time, 80),
-    symptom: clean(body.symptom, 2000),
-    memo: clean(body.memo, 1000),
-    status: "접수대기",
-  };
-
-  if (!inquiry.customer_name || !inquiry.phone || !inquiry.symptom) {
-    return Response.json(
-      { message: "성함, 연락처, 고장 증상을 모두 입력해 주세요." },
-      { status: 400 },
-    );
-  }
-
-  if (!/^[0-9+()\-\s]{8,30}$/.test(inquiry.phone)) {
-    return Response.json(
-      { message: "연락처 형식을 확인해 주세요." },
-      { status: 400 },
-    );
-  }
-
-  const duplicateSince = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-  const { data: recentDuplicates, error: duplicateError } = await supabaseAdmin
-    .from("online_inquiries")
-    .select("id")
-    .eq("phone", inquiry.phone)
-    .gte("created_at", duplicateSince)
-    .limit(1);
-
-  if (duplicateError) {
-    console.error("online inquiry duplicate check error", duplicateError);
-  } else if (recentDuplicates?.length) {
-    return Response.json(
-      { message: "이미 접수된 내용이 있습니다. 잠시 후 다시 시도해 주세요." },
-      { status: 429 },
-    );
-  }
-
-  const { error } = await supabaseAdmin
-    .from("online_inquiries")
-    .insert([inquiry]);
-
-  if (error) {
-    console.error("online inquiry insert error", error);
-    return Response.json(
-      { message: "접수 저장에 실패했습니다. 잠시 후 다시 시도해 주세요." },
-      { status: 500 },
-    );
+  if (!insertion.inserted) {
+    return publicResponse({ ok: true, duplicate: true });
   }
 
   try {
-    await sendTelegramInquiry(inquiry);
-  } catch (notificationError) {
-    console.error("online inquiry notification error", notificationError);
+    await sendTelegramInquiry(validation.inquiry);
+  } catch (error) {
+    console.error(
+      "Online inquiry was saved, but Telegram notification failed:",
+      error?.name || "unknown",
+    );
   }
 
-  return Response.json({ ok: true });
+  return publicResponse({ ok: true }, 201);
 }

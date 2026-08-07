@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { adminFetch } from "@/lib/adminClient";
 
 export default function AdminNoticeDeletePage() {
   const params = useParams();
@@ -14,26 +14,25 @@ export default function AdminNoticeDeletePage() {
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    loadNotice();
-  }, []);
+    let active = true;
 
-  async function loadNotice() {
-    const { data, error } = await supabase
-      .from("notices")
-      .select("*")
-      .eq("id", params.id)
-      .single();
+    adminFetch(`/api/admin/content/notices/${params.id}`)
+      .then((result) => {
+        if (active) setNotice(result.data);
+      })
+      .catch((error) => {
+        if (!active) return;
+        console.error(error);
+        setMessage(error.message || "공지사항을 찾을 수 없습니다.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
 
-    if (error) {
-      console.error(error);
-      setMessage("공지사항을 찾을 수 없습니다.");
-      setLoading(false);
-      return;
-    }
-
-    setNotice(data);
-    setLoading(false);
-  }
+    return () => {
+      active = false;
+    };
+  }, [params.id]);
 
   async function handleDelete() {
     const confirmDelete = confirm("정말 이 공지사항을 삭제하시겠습니까?");
@@ -43,24 +42,22 @@ export default function AdminNoticeDeletePage() {
     setDeleting(true);
     setMessage("");
 
-    const { error } = await supabase
-      .from("notices")
-      .delete()
-      .eq("id", params.id);
+    try {
+      await adminFetch(`/api/admin/content/notices/${params.id}`, {
+        method: "DELETE",
+      });
 
-    setDeleting(false);
+      setMessage("공지사항이 삭제되었습니다.");
 
-    if (error) {
+      setTimeout(() => {
+        router.push("/admin/notices/list");
+      }, 800);
+    } catch (error) {
       console.error(error);
-      setMessage("삭제 중 오류가 발생했습니다.");
-      return;
+      setMessage(error.message || "삭제 중 오류가 발생했습니다.");
+    } finally {
+      setDeleting(false);
     }
-
-    setMessage("공지사항이 삭제되었습니다.");
-
-    setTimeout(() => {
-      router.push("/admin/notices/list");
-    }, 800);
   }
 
   if (loading) {

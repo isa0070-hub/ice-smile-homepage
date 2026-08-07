@@ -1,7 +1,31 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabase"
+
+async function readResponse(response) {
+  const result = await response.json().catch(() => null)
+
+  if (response.status === 401) {
+    window.location.assign("/login")
+    return null
+  }
+
+  if (!response.ok) {
+    throw new Error(result?.message || "요청을 처리하지 못했습니다.")
+  }
+
+  return result
+}
+
+async function fetchInquiryItems() {
+  const response = await fetch("/api/online-inquiries", {
+    cache: "no-store",
+    credentials: "same-origin",
+  })
+  const result = await readResponse(response)
+
+  return result?.items ?? null
+}
 
 export default function OnlineInquiriesAdminPage() {
   const [items, setItems] = useState([])
@@ -10,53 +34,86 @@ export default function OnlineInquiriesAdminPage() {
   const loadItems = async () => {
     setLoading(true)
 
-    const { data, error } = await supabase
-      .from("online_inquiries")
-      .select("*")
-      .order("created_at", { ascending: false })
+    try {
+      const nextItems = await fetchInquiryItems()
 
-    setLoading(false)
-
-    if (error) {
-      alert("온라인 접수 목록을 불러오지 못했습니다: " + error.message)
-      return
+      if (nextItems) {
+        setItems(nextItems)
+      }
+    } catch (error) {
+      alert(error?.message || "온라인 접수 목록을 불러오지 못했습니다.")
+    } finally {
+      setLoading(false)
     }
-
-    setItems(data || [])
   }
 
   useEffect(() => {
-    loadItems()
+    let active = true
+
+    fetchInquiryItems()
+      .then((nextItems) => {
+        if (active && nextItems) {
+          setItems(nextItems)
+        }
+      })
+      .catch((error) => {
+        if (active) {
+          alert(error?.message || "온라인 접수 목록을 불러오지 못했습니다.")
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setLoading(false)
+        }
+      })
+
+    return () => {
+      active = false
+    }
   }, [])
 
   const updateStatus = async (id, status) => {
-    const { error } = await supabase
-      .from("online_inquiries")
-      .update({ status })
-      .eq("id", id)
+    try {
+      const response = await fetch(
+        `/api/online-inquiries/${encodeURIComponent(id)}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+          cache: "no-store",
+          credentials: "same-origin",
+        },
+      )
+      const result = await readResponse(response)
 
-    if (error) {
-      alert("상태 변경 실패: " + error.message)
-      return
+      if (result) {
+        await loadItems()
+      }
+    } catch (error) {
+      alert(error?.message || "상태 변경에 실패했습니다.")
     }
-
-    loadItems()
   }
 
   const deleteItem = async (id) => {
     if (!confirm("정말 삭제할까?")) return
 
-    const { error } = await supabase
-      .from("online_inquiries")
-      .delete()
-      .eq("id", id)
+    try {
+      const response = await fetch(
+        `/api/online-inquiries/${encodeURIComponent(id)}`,
+        {
+          method: "DELETE",
+          cache: "no-store",
+          credentials: "same-origin",
+        },
+      )
+      const result = await readResponse(response)
 
-    if (error) {
-      alert("삭제 실패: " + error.message)
-      return
+      if (result) {
+        await loadItems()
+      }
+    } catch (error) {
+      alert(error?.message || "삭제에 실패했습니다.")
     }
-
-    loadItems()
   }
 
   return (

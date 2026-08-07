@@ -29,13 +29,15 @@
  * ===========================================================
  */
 
-import { supabase } from "@/lib/supabase";
+import "server-only";
+
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { logInfo, logSuccess, logError } from "./logger";
 
 export async function publishMorningBrief(briefing) {
   logInfo("💾 Morning Brief DB 저장 시작");
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("gm_morning_notes")
     .upsert(briefing, { onConflict: "note_date" })
     .select()

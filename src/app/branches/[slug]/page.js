@@ -2,11 +2,39 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import {
+  getBranchCanonicalUrl,
+  getBranchDisplayData,
   getBranchLocalBusinessJsonLd,
   getBranchSeo,
+  getBranchSeoForRecord,
+  branchSlugs,
 } from "@/lib/branchSeo"
 
-export const dynamic = "force-dynamic"
+export const revalidate = 3600
+
+export function generateStaticParams() {
+  return branchSlugs.map((slug) => ({ slug }))
+}
+
+function getBranchFaqs(seo) {
+  return [
+    {
+      question: `${seo.shortName} 방문 전에 무엇을 확인해야 하나요?`,
+      answer:
+        "기기 모델명과 고장 증상을 먼저 알려주세요. 액정 파손은 사진을 함께 보내주시면 부품 재고와 점검 범위를 확인하는 데 도움이 됩니다.",
+    },
+    {
+      question: "수리 비용과 시간은 바로 알 수 있나요?",
+      answer:
+        "같은 모델도 손상 상태와 필요한 부품이 다를 수 있습니다. 기기 상태를 확인한 뒤 예상 비용과 소요 시간을 안내하며, 부품 재고에 따라 일정이 달라질 수 있습니다.",
+    },
+    {
+      question: "방문이 어려우면 택배 접수도 가능한가요?",
+      answer:
+        "방문이 어려운 경우 전국 택배 접수를 상담할 수 있습니다. 발송 전에 기기 모델과 증상을 알려주시면 포장과 접수 방법을 안내합니다.",
+    },
+  ]
+}
 
 export async function generateMetadata({ params }) {
   const { slug } = await params
@@ -24,7 +52,7 @@ export async function generateMetadata({ params }) {
     }
   }
 
-  const canonicalUrl = `https://www.ismileagain.co.kr/branches/${seo.slug}`
+  const canonicalUrl = getBranchCanonicalUrl(seo)
 
   return {
     title: {
@@ -60,22 +88,32 @@ export default async function BranchDetailPage({ params }) {
     notFound()
   }
 
-  const { data: branch, error } = await supabase
+  const { data: branchRows, error } = await supabase
     .from("branches")
-    .select("*")
-    .eq("phone", seo.phone)
-    .eq("is_active", true)
-    .maybeSingle()
+    .select(
+      "id,name,phone,address1,address2,visit_info,naver_map,map_image,is_active,sort_order",
+    )
 
-  if (error || !branch) {
+  const databaseBranch = error
+    ? null
+    : (branchRows || []).find(
+        (branch) => getBranchSeoForRecord(branch)?.slug === seo.slug,
+      )
+
+  // An explicitly disabled branch remains unavailable. A missing row or a
+  // transient database error must not turn a verified, static branch URL into
+  // a temporary 404 that search engines could deindex.
+  if (!error && databaseBranch?.is_active === false) {
     notFound()
   }
 
-  const canonicalUrl = `https://www.ismileagain.co.kr/branches/${seo.slug}`
+  const branch = getBranchDisplayData(seo, databaseBranch)
+  const canonicalUrl = getBranchCanonicalUrl(seo)
+  const branchFaqs = getBranchFaqs(seo)
 
   const localBusinessJsonLd = {
     "@context": "https://schema.org",
-    ...getBranchLocalBusinessJsonLd(seo, branch),
+    ...getBranchLocalBusinessJsonLd(seo),
   }
 
   const breadcrumbJsonLd = {
@@ -103,6 +141,20 @@ export default async function BranchDetailPage({ params }) {
     ],
   }
 
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "@id": `${canonicalUrl}#faq`,
+    mainEntity: branchFaqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.answer,
+      },
+    })),
+  }
+
   return (
     <main style={styles.page}>
       <script
@@ -112,6 +164,13 @@ export default async function BranchDetailPage({ params }) {
             /</g,
             "\\u003c"
           ),
+        }}
+      />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(faqJsonLd).replace(/</g, "\\u003c"),
         }}
       />
 
@@ -232,6 +291,58 @@ export default async function BranchDetailPage({ params }) {
           <Link href="/repair-cases" style={styles.caseButton}>
             최근 수리사례 확인하기
           </Link>
+        </article>
+
+        <article style={styles.textCard}>
+          <h2 style={styles.sectionTitle}>방문·택배 접수 전 확인사항</h2>
+
+          <div style={styles.checkGrid}>
+            <section style={styles.checkItem}>
+              <h3 style={styles.checkTitle}>1. 정확한 모델명</h3>
+              <p style={styles.checkText}>
+                설정 화면 또는 제품 뒷면의 모델명을 확인하면 호환 부품과
+                재고를 더 정확하게 안내할 수 있습니다.
+              </p>
+            </section>
+
+            <section style={styles.checkItem}>
+              <h3 style={styles.checkTitle}>2. 증상과 파손 사진</h3>
+              <p style={styles.checkText}>
+                화면, 배터리, 충전, 전원 등 불편한 증상과 파손 사진을 함께
+                보내주시면 필요한 점검 범위를 정하는 데 도움이 됩니다.
+              </p>
+            </section>
+
+            <section style={styles.checkItem}>
+              <h3 style={styles.checkTitle}>3. 재고·일정 확인</h3>
+              <p style={styles.checkText}>
+                부품 재고와 기기 상태에 따라 비용과 시간이 달라질 수 있으므로
+                방문 또는 발송 전에 상담해 주세요.
+              </p>
+            </section>
+          </div>
+
+          <div style={styles.buttons}>
+            <a href={`tel:${branch.phone}`} style={styles.primaryButton}>
+              {seo.shortName} 전화 상담
+            </a>
+            <Link href="/contact" style={styles.secondaryButton}>
+              사진·증상 온라인 문의
+            </Link>
+          </div>
+        </article>
+
+        <article style={styles.textCard}>
+          <h2 style={styles.sectionTitle}>{seo.shortName} 자주 묻는 질문</h2>
+
+          <div style={styles.faqList}>
+            {branchFaqs.map((faq) => (
+              <section key={faq.question} style={styles.faqItem}>
+                <h3 style={styles.faqQuestion}>{faq.question}</h3>
+                <p style={styles.faqAnswer}>{faq.answer}</p>
+              </section>
+            ))}
+          </div>
         </article>
       </section>
     </main>
@@ -406,5 +517,55 @@ const styles = {
     borderRadius: "12px",
     textDecoration: "none",
     fontWeight: 800,
+  },
+
+  checkGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: "14px",
+    marginBottom: "24px",
+  },
+
+  checkItem: {
+    border: "1px solid #dbeafe",
+    borderRadius: "16px",
+    backgroundColor: "#f8fbff",
+    padding: "20px",
+  },
+
+  checkTitle: {
+    margin: "0 0 10px",
+    fontSize: "18px",
+    color: "#1e3a8a",
+  },
+
+  checkText: {
+    margin: 0,
+    color: "#475569",
+    fontSize: "15px",
+    lineHeight: 1.75,
+  },
+
+  faqList: {
+    display: "grid",
+    gap: "14px",
+  },
+
+  faqItem: {
+    borderTop: "1px solid #e2e8f0",
+    paddingTop: "18px",
+  },
+
+  faqQuestion: {
+    margin: "0 0 8px",
+    fontSize: "18px",
+    color: "#111827",
+  },
+
+  faqAnswer: {
+    margin: 0,
+    color: "#475569",
+    fontSize: "16px",
+    lineHeight: 1.8,
   },
 }

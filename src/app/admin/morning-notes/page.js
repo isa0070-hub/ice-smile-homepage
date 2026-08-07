@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { adminFetch } from "@/lib/adminClient";
 
 export default function AdminMorningNotesPage() {
   const [notes, setNotes] = useState([]);
@@ -12,7 +12,26 @@ export default function AdminMorningNotesPage() {
   const [generateMessage, setGenerateMessage] = useState("");
 
   useEffect(() => {
-    fetchNotes();
+    let active = true;
+
+    adminFetch("/api/admin/content/morning-notes")
+      .then((result) => {
+        if (!active) return;
+
+        const data = result.data || [];
+        setNotes(data);
+        setSelectedNote(data[0] || null);
+      })
+      .catch((error) => {
+        if (active) console.error(error);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 async function handleGenerateBriefing() {
   setGenerating(true);
@@ -41,20 +60,16 @@ async function handleGenerateBriefing() {
   async function fetchNotes() {
     setLoading(true);
 
-    const { data, error } = await supabase
-      .from("gm_morning_notes")
-      .select("*")
-      .order("note_date", { ascending: false });
-
-    if (error) {
+    try {
+      const result = await adminFetch("/api/admin/content/morning-notes");
+      const data = result.data || [];
+      setNotes(data);
+      setSelectedNote(data[0] || null);
+    } catch (error) {
       console.error(error);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setNotes(data || []);
-    setSelectedNote(data?.[0] || null);
-    setLoading(false);
   }
 
   function formatDate(dateText) {

@@ -1,11 +1,7 @@
-import { supabase } from "@/lib/supabase";
+import { listAdminResourceForPage } from "@/lib/adminContent";
 
 export default async function AdminNoticeListPage() {
-  const { data: notices } = await supabase
-    .from("notices")
-    .select("*")
-    .order("is_pinned", { ascending: false })
-    .order("created_at", { ascending: false });
+  const notices = await listAdminResourceForPage("notices");
 
   return (
     <main style={{ maxWidth: "1000px", margin: "60px auto", padding: "20px" }}>

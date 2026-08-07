@@ -47,35 +47,6 @@ a {
     color-scheme: dark;
   }
 }
-@keyframes heroSlide {
-  0%,
-  20% {
-    background-image:
-      linear-gradient(rgba(15,23,42,0.35), rgba(15,23,42,0.45)),
-      url("/images/hero-iphone-repair.jpg");
-  }
-
-  25%,
-  45% {
-    background-image:
-      linear-gradient(rgba(15,23,42,0.35), rgba(15,23,42,0.45)),
-      url("/images/hero-ipad-repair.jpg");
-  }
-
-  50%,
-  70% {
-    background-image:
-      linear-gradient(rgba(15,23,42,0.35), rgba(15,23,42,0.45)),
-      url("/images/hero-notebook-repair.jpg");
-  }
-
-  75%,
-  100% {
-    background-image:
-      linear-gradient(rgba(15,23,42,0.35), rgba(15,23,42,0.45)),
-      url("/images/hero-service-center.jpg");
-  }
-}
 @media (max-width: 768px) {
   .desktop-nav,
   .desktop-phone {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { adminFetch } from "@/lib/adminClient";
 import { useRouter } from "next/navigation";
 
 export default function AdminNoticeCreatePage() {
@@ -30,21 +30,23 @@ export default function AdminNoticeCreatePage() {
     setSaving(true);
     setMessage("");
 
-    const { error } = await supabase.from("notices").insert([form]);
+    try {
+      await adminFetch("/api/admin/content/notices", {
+        method: "POST",
+        body: JSON.stringify(form),
+      });
 
-    setSaving(false);
+      setMessage("공지사항이 등록되었습니다.");
 
-    if (error) {
+      setTimeout(() => {
+        router.push("/admin/notices/list");
+      }, 700);
+    } catch (error) {
       console.error(error);
-      setMessage("공지사항 등록 중 오류가 발생했습니다.");
-      return;
+      setMessage(error.message || "공지사항 등록 중 오류가 발생했습니다.");
+    } finally {
+      setSaving(false);
     }
-
-    setMessage("공지사항이 등록되었습니다.");
-
-    setTimeout(() => {
-      router.push("/admin/notices/list");
-    }, 700);
   }
 
   return (

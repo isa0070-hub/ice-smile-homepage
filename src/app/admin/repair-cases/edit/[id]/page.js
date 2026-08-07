@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { useParams } from "next/navigation";
+import { adminFetch } from "@/lib/adminClient";
 
 export default function EditRepairCasePage() {
   const params = useParams();
-  const router = useRouter();
 
   const [form, setForm] = useState(null);
   const [detailImages, setDetailImages] = useState([]);
@@ -14,36 +13,36 @@ export default function EditRepairCasePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    let active = true;
 
-  async function loadData() {
-    const { data, error } = await supabase
-      .from("repair_cases")
-      .select("*")
-      .eq("id", params.id)
-      .single();
+    Promise.all([
+        adminFetch(`/api/admin/content/repair-cases/${params.id}`),
+        adminFetch(
+          `/api/admin/content/repair-case-images?repairCaseId=${encodeURIComponent(params.id)}`,
+        ),
+      ])
+      .then(([caseResult, imageResult]) => {
+        if (!active) return;
 
-    if (error) {
-      console.error(error);
-      setMessage("수리사례를 불러오지 못했습니다.");
-      setLoading(false);
-      return;
-    }
+        setForm(caseResult.data);
+        setDetailImages(imageResult.data || []);
+      })
+      .catch((error) => {
+        if (!active) return;
+        console.error(error);
+        setMessage(error.message || "수리사례를 불러오지 못했습니다.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
 
-    setForm(data);
-
-    const { data: images } = await supabase
-      .from("repair_case_images")
-      .select("*")
-      .eq("repair_case_id", params.id)
-      .order("sort_order", { ascending: true });
-
-    setDetailImages(images || []);
-    setLoading(false);
-  }
+    return () => {
+      active = false;
+    };
+  }, [params.id, refreshKey]);
 
   function makeSlug(value) {
     return value
@@ -70,14 +69,15 @@ export default function EditRepairCasePage() {
 
   function handleChange(e) {
     const { name, value } = e.target;
-  
+
     const nextForm = {
       ...form,
       [name]: value,
     };
-  
-    // 기존 공개 주소가 끊기지 않도록 제목 수정 시 slug는 유지합니다.
-    // SEO 주소 입력란을 직접 수정한 경우에만 slug가 변경됩니다.
+
+    // 검색엔진에 이미 수집된 공개 주소가 끊기지 않도록 제목을 수정해도
+    // 기존 slug는 유지합니다. SEO 주소 입력란을 직접 수정한 경우에만
+    // 공개 URL이 변경됩니다.
 
     // SEO 키워드와 대표 ALT 문구도 최신 입력값으로 다시 생성
     if (
@@ -97,23 +97,36 @@ export default function EditRepairCasePage() {
   }
 
   async function uploadFile(file, folder = "repair-cases") {
-    const fileExt = file.name.split(".").pop();
-    const fileName = `${Date.now()}-${Math.random()
-      .toString(36)
-      .substring(2)}.${fileExt}`;
-    const filePath = `${folder}/${fileName}`;
+    const prepareResponse = await fetch("/api/r2-upload-url", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contentType: String(file.type || "").toLowerCase(),
+        fileSize: file.size,
+        slug: form.slug || makeSlug(form.title || "") || "repair-case",
+        imageRole: folder.includes("detail") ? "detail" : "main",
+      }),
+    });
+    const prepareResult = await prepareResponse.json().catch(() => null);
 
-    const { error } = await supabase.storage
-      .from("repair-images")
-      .upload(filePath, file);
+    if (!prepareResponse.ok || !prepareResult?.success) {
+      throw new Error(
+        prepareResult?.message || "이미지 업로드 주소를 준비하지 못했습니다.",
+      );
+    }
 
-    if (error) throw error;
+    const uploadResponse = await fetch(prepareResult.uploadUrl, {
+      method: "PUT",
+      headers: prepareResult.uploadHeaders,
+      body: file,
+    });
 
-    const { data } = supabase.storage
-      .from("repair-images")
-      .getPublicUrl(filePath);
+    if (!uploadResponse.ok) {
+      throw new Error(`이미지 업로드에 실패했습니다. (${uploadResponse.status})`);
+    }
 
-    return data.publicUrl;
+    return prepareResult.publicUrl;
   }
 
   async function handleMainImageUpload(e) {
@@ -153,19 +166,20 @@ export default function EditRepairCasePage() {
 
         const sortOrder = detailImages.length + i + 1;
 
-        await supabase.from("repair_case_images").insert([
-          {
+        await adminFetch("/api/admin/content/repair-case-images", {
+          method: "POST",
+          body: JSON.stringify({
             repair_case_id: Number(params.id),
             image_url: publicUrl,
             description: "",
             alt_text: `${form.title || "수리사례"} 상세 이미지 ${sortOrder}`,
             sort_order: sortOrder,
-          },
-        ]);
+          }),
+        });
       }
 
       setMessage("상세사진 추가 완료");
-      await loadData();
+      setRefreshKey((key) => key + 1);
     } catch (error) {
       console.error(error);
       setMessage("상세사진 업로드 중 오류가 발생했습니다.");
@@ -181,41 +195,39 @@ export default function EditRepairCasePage() {
   }
 
   async function handleSaveDetailImage(image) {
-    const { error } = await supabase
-      .from("repair_case_images")
-      .update({
-        description: image.description || "",
-        alt_text: image.alt_text || "",
-        sort_order: Number(image.sort_order || 0),
-      })
-      .eq("id", image.id);
+    try {
+      await adminFetch(`/api/admin/content/repair-case-images/${image.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          image_url: image.image_url,
+          description: image.description || "",
+          alt_text: image.alt_text || "",
+          sort_order: Number(image.sort_order || 0),
+        }),
+      });
 
-    if (error) {
+      setMessage("상세사진 설명 저장 완료");
+      setRefreshKey((key) => key + 1);
+    } catch (error) {
       console.error(error);
-      setMessage("상세사진 설명 저장 중 오류가 발생했습니다.");
-      return;
+      setMessage(error.message || "상세사진 설명 저장 중 오류가 발생했습니다.");
     }
-
-    setMessage("상세사진 설명 저장 완료");
-    await loadData();
   }
 
   async function handleDeleteDetailImage(id) {
     if (!confirm("이 상세사진을 삭제할까요?")) return;
 
-    const { error } = await supabase
-      .from("repair_case_images")
-      .delete()
-      .eq("id", id);
+    try {
+      await adminFetch(`/api/admin/content/repair-case-images/${id}`, {
+        method: "DELETE",
+      });
 
-    if (error) {
+      setMessage("상세사진 삭제 완료");
+      setRefreshKey((key) => key + 1);
+    } catch (error) {
       console.error(error);
-      setMessage("상세사진 삭제 중 오류가 발생했습니다.");
-      return;
+      setMessage(error.message || "상세사진 삭제 중 오류가 발생했습니다.");
     }
-
-    setMessage("상세사진 삭제 완료");
-    await loadData();
   }
 
   async function handleSubmit(e) {
@@ -230,32 +242,31 @@ export default function EditRepairCasePage() {
       alt_text: form.alt_text || makeAltText(form),
     };
 
-    const { error } = await supabase
-      .from("repair_cases")
-      .update({
-        title: finalForm.title,
-        slug: finalForm.slug,
-        category: finalForm.category,
-        branch: finalForm.branch,
-        device: finalForm.device,
-        model: finalForm.model,
-        symptom: finalForm.symptom,
-        repair_content: finalForm.repair_content,
-        seo_keyword: finalForm.seo_keyword,
-        image_url: finalForm.image_url,
-        alt_text: finalForm.alt_text,
-      })
-      .eq("id", params.id);
+    try {
+      await adminFetch(`/api/admin/content/repair-cases/${params.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          title: finalForm.title,
+          slug: finalForm.slug,
+          category: finalForm.category,
+          branch: finalForm.branch,
+          device: finalForm.device,
+          model: finalForm.model,
+          symptom: finalForm.symptom,
+          repair_content: finalForm.repair_content,
+          seo_keyword: finalForm.seo_keyword,
+          image_url: finalForm.image_url,
+          alt_text: finalForm.alt_text,
+        }),
+      });
 
-    setSaving(false);
-
-    if (error) {
+      setMessage("수리사례가 수정되었습니다.");
+    } catch (error) {
       console.error(error);
-      setMessage("수정 중 오류가 발생했습니다.");
-      return;
+      setMessage(error.message || "수정 중 오류가 발생했습니다.");
+    } finally {
+      setSaving(false);
     }
-
-    setMessage("수리사례가 수정되었습니다.");
   }
 
   if (loading) {

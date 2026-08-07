@@ -1,7 +1,13 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import Link from "next/link"
 import PhoneContactButton from "@/components/PhoneContactButton"
+import { trackNaverLead } from "@/components/NaverConversionTracker"
+import {
+  createInquirySubmissionToken,
+  submitOnlineInquiry,
+} from "@/lib/inquiryClient"
 
 export default function SiteHeader() {
   const [isOpen, setIsOpen] = useState(false)
@@ -20,6 +26,7 @@ export default function SiteHeader() {
     privacy_consent: false,
   })
   const nameInputRef = useRef(null)
+  const submissionTokenRef = useRef(null)
 
   useEffect(() => {
     if (!isOpen) return
@@ -58,39 +65,41 @@ export default function SiteHeader() {
     if (!form.customer_name.trim()) return alert("성함을 입력해 주세요.")
     if (!form.phone.trim()) return alert("연락처를 입력해 주세요.")
     if (!form.symptom.trim()) return alert("증상을 입력해 주세요.")
+    if (!form.privacy_consent) return alert("개인정보 수집·이용에 동의해 주세요.")
 
     setLoading(true)
 
-    const response = await fetch("/api/online-inquiries", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    })
-    const result = await response.json()
+    if (!submissionTokenRef.current) {
+      submissionTokenRef.current = createInquirySubmissionToken()
+    }
 
-    setLoading(false)
+    try {
+      await submitOnlineInquiry(form, submissionTokenRef.current)
+      alert("온라인 접수가 완료되었습니다. 확인 후 연락드리겠습니다.")
+      trackNaverLead()
+      setIsOpen(false)
+      window.location.assign("/")
+    } catch (error) {
+      alert(error?.message || "온라인 접수 저장에 실패했습니다.")
+    } finally {
+      setLoading(false)
+    }
+  }
 
-    if (!response.ok) return alert(result.message || "온라인 접수 저장에 실패했습니다.")
-
-    alert("온라인 접수가 완료되었습니다. 확인 후 연락드리겠습니다.")
-
-setIsOpen(false)
-window.location.href = "/"
-}
-return (
+  return (
     <>
       <header className="site-header" style={headerStyle}>
         <div style={innerStyle}>
-          <a href="/" style={logoStyle}>아이스마일어게인</a>
+          <Link href="/" style={logoStyle}>아이스마일어게인</Link>
 
           <nav className="desktop-nav" style={navWrapStyle}>
-            <a style={navStyle} href="/">홈</a>
-            <a href="/#repair-items" style={navStyle}>수리품목</a>
-            <a style={navStyle} href="/repair-cases">수리사례</a>
+            <Link style={navStyle} href="/">홈</Link>
+            <Link href="/#repair-items" style={navStyle}>수리품목</Link>
+            <Link style={navStyle} href="/repair-cases">수리사례</Link>
             <button type="button" onClick={() => setIsOpen(true)} style={navButtonStyle}>
               온라인접수
             </button>
-            <a style={navStyle} href="/branches">지점안내</a>
+            <Link style={navStyle} href="/branches">지점안내</Link>
           </nav>
 
           <div className="desktop-phone" style={headerButtonWrapStyle}>
@@ -139,11 +148,11 @@ return (
               <button type="button" onClick={closeMenu} aria-label="메뉴 닫기" style={closeButtonStyle}>×</button>
             </div>
 
-            <a href="/" onClick={closeMenu} style={mobileNavStyle}>홈</a>
-            <a href="/#repair-items" onClick={closeMenu} style={mobileNavStyle}>수리품목</a>
-            <a href="/repair-cases" onClick={closeMenu} style={mobileNavStyle}>수리사례</a>
+            <Link href="/" onClick={closeMenu} style={mobileNavStyle}>홈</Link>
+            <Link href="/#repair-items" onClick={closeMenu} style={mobileNavStyle}>수리품목</Link>
+            <Link href="/repair-cases" onClick={closeMenu} style={mobileNavStyle}>수리사례</Link>
             <button type="button" onClick={openInquiry} style={mobileNavButtonStyle}>온라인접수</button>
-            <a href="/branches" onClick={closeMenu} style={mobileNavStyle}>지점안내</a>
+            <Link href="/branches" onClick={closeMenu} style={mobileNavStyle}>지점안내</Link>
 
             <PhoneContactButton buttonStyle={mobilePhoneButtonStyle} />
           </div>
@@ -165,9 +174,9 @@ return (
 
             <form method="post" onSubmit={handleSubmit} style={{ display: "grid", gap: "10px" }}>
               <label htmlFor="inquiry-name" style={labelStyle}>성함 <span aria-hidden="true">*</span></label>
-              <input ref={nameInputRef} id="inquiry-name" name="customer_name" value={form.customer_name} onChange={handleChange} placeholder="성함" autoComplete="name" required style={inputStyle} />
+              <input ref={nameInputRef} id="inquiry-name" name="customer_name" value={form.customer_name} onChange={handleChange} placeholder="성함" autoComplete="name" required maxLength={40} style={inputStyle} />
               <label htmlFor="inquiry-phone" style={labelStyle}>연락처 <span aria-hidden="true">*</span></label>
-              <input id="inquiry-phone" type="tel" inputMode="tel" name="phone" value={form.phone} onChange={handleChange} placeholder="010-0000-0000" autoComplete="tel" required style={inputStyle} />
+              <input id="inquiry-phone" type="tel" inputMode="tel" name="phone" value={form.phone} onChange={handleChange} placeholder="010-0000-0000" autoComplete="tel" required maxLength={30} style={inputStyle} />
 
               <label htmlFor="inquiry-branch" style={labelStyle}>희망 지점</label>
               <select id="inquiry-branch" name="preferred_branch" value={form.preferred_branch} onChange={handleChange} style={inputStyle}>
@@ -177,16 +186,16 @@ return (
               </select>
 
               <label htmlFor="inquiry-device" style={labelStyle}>기기 종류</label>
-              <input id="inquiry-device" name="device" value={form.device} onChange={handleChange} placeholder="예: 아이폰, 아이패드, 맥북, 서피스" style={inputStyle} />
+              <input id="inquiry-device" name="device" value={form.device} onChange={handleChange} placeholder="예: 아이폰, 아이패드, 맥북, 서피스" maxLength={80} style={inputStyle} />
               <label htmlFor="inquiry-model" style={labelStyle}>모델명</label>
-              <input id="inquiry-model" name="model" value={form.model} onChange={handleChange} placeholder="예: 아이폰15프로, 아이패드프로12.9" style={inputStyle} />
+              <input id="inquiry-model" name="model" value={form.model} onChange={handleChange} placeholder="예: 아이폰15프로, 아이패드프로12.9" maxLength={100} style={inputStyle} />
               <label htmlFor="inquiry-time" style={labelStyle}>연락 가능 시간</label>
-              <input id="inquiry-time" name="contact_time" value={form.contact_time} onChange={handleChange} placeholder="예: 오후 2시 이후" style={inputStyle} />
+              <input id="inquiry-time" name="contact_time" value={form.contact_time} onChange={handleChange} placeholder="예: 오후 2시 이후" maxLength={80} style={inputStyle} />
 
               <label htmlFor="inquiry-symptom" style={labelStyle}>고장 증상 또는 문의 내용 <span aria-hidden="true">*</span></label>
-              <textarea id="inquiry-symptom" name="symptom" value={form.symptom} onChange={handleChange} placeholder="고장 증상 또는 문의 내용을 입력해 주세요." required style={textareaStyle} />
+              <textarea id="inquiry-symptom" name="symptom" value={form.symptom} onChange={handleChange} placeholder="고장 증상 또는 문의 내용을 입력해 주세요." required maxLength={2000} style={textareaStyle} />
               <label htmlFor="inquiry-memo" style={labelStyle}>추가 메모 <span style={optionalStyle}>(선택)</span></label>
-              <textarea id="inquiry-memo" name="memo" value={form.memo} onChange={handleChange} placeholder="추가로 전달할 내용을 입력해 주세요." style={smallTextareaStyle} />
+              <textarea id="inquiry-memo" name="memo" value={form.memo} onChange={handleChange} placeholder="추가로 전달할 내용을 입력해 주세요." maxLength={1000} style={smallTextareaStyle} />
 
               <div aria-hidden="true" style={honeypotStyle}>
                 <label htmlFor="inquiry-website">웹사이트</label>
@@ -195,7 +204,7 @@ return (
 
               <label style={consentLabelStyle}>
                 <input type="checkbox" name="privacy_consent" checked={form.privacy_consent} onChange={handleChange} required />
-                <span><a href="/privacy">개인정보처리방침</a>의 수집·이용 내용에 동의합니다. <span aria-hidden="true">*</span></span>
+                <span><Link href="/privacy">개인정보처리방침</Link>의 수집·이용 내용에 동의합니다. <span aria-hidden="true">*</span></span>
               </label>
 
               <button type="submit" disabled={loading} aria-busy={loading} style={submitButtonStyle}>

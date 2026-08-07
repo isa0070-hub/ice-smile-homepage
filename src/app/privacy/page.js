@@ -1,7 +1,9 @@
 export const metadata = {
     title: "개인정보처리방침 | 아이스마일어게인",
     description: "아이스마일어게인 개인정보처리방침",
-    alternates: { canonical: "/privacy" },
+    alternates: {
+      canonical: "https://www.ismileagain.co.kr/privacy",
+    },
   };
   
   export default function PrivacyPage() {
@@ -17,7 +19,7 @@ export const metadata = {
         <h1 style={{ marginBottom: "30px" }}>개인정보처리방침</h1>
   
         <p>
-          아이스마일어게인(이하 "회사")은 개인정보보호법 등 관련 법령을
+          아이스마일어게인(이하 &quot;회사&quot;)은 개인정보보호법 등 관련 법령을
           준수하며 고객님의 개인정보를 안전하게 보호하고 있습니다.
         </p>
   

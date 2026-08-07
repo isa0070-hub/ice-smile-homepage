@@ -1,8 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import Link from "next/link"
 import { trackNaverLead } from "@/components/NaverConversionTracker"
+import {
+  createInquirySubmissionToken,
+  submitOnlineInquiry,
+} from "@/lib/inquiryClient"
 
 export default function ContactPage() {
   const [form, setForm] = useState({
@@ -19,10 +23,14 @@ export default function ContactPage() {
   })
 
   const [loading, setLoading] = useState(false)
+  const submissionTokenRef = useRef(null)
 
   const handleChange = (e) => {
     const { checked, name, type, value } = e.target
-    setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }))
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }))
   }
 
   const handleSubmit = async (e) => {
@@ -31,41 +39,24 @@ export default function ContactPage() {
     if (!form.customer_name.trim()) return alert("성함을 입력해 주세요.")
     if (!form.phone.trim()) return alert("연락처를 입력해 주세요.")
     if (!form.symptom.trim()) return alert("증상을 입력해 주세요.")
+    if (!form.privacy_consent) return alert("개인정보 수집·이용에 동의해 주세요.")
 
     setLoading(true)
 
-    const response = await fetch("/api/online-inquiries", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    })
-    const result = await response.json()
+    if (!submissionTokenRef.current) {
+      submissionTokenRef.current = createInquirySubmissionToken()
+    }
 
-    setLoading(false)
-
-if (!response.ok) {
-  alert(result.message || "접수 저장에 실패했습니다.")
-  return
-}
-
-alert("온라인 접수가 완료되었습니다. 확인 후 연락드리겠습니다.")
-
-trackNaverLead()
-window.location.href = "/"
-return
-
-    setForm({
-      customer_name: "",
-      phone: "",
-      device: "",
-      model: "",
-      symptom: "",
-      preferred_branch: "강변점",
-      contact_time: "",
-      memo: "",
-      website: "",
-      privacy_consent: false,
-    })
+    try {
+      await submitOnlineInquiry(form, submissionTokenRef.current)
+      alert("온라인 접수가 완료되었습니다. 확인 후 연락드리겠습니다.")
+      trackNaverLead()
+      window.location.assign("/")
+    } catch (error) {
+      alert(error?.message || "접수 저장에 실패했습니다.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -80,9 +71,9 @@ return
 
         <form method="post" onSubmit={handleSubmit} style={styles.form}>
           <label htmlFor="contact-name" style={styles.label}>성함 <span aria-hidden="true">*</span></label>
-          <input id="contact-name" name="customer_name" value={form.customer_name} onChange={handleChange} placeholder="성함" autoComplete="name" required style={styles.input} />
+          <input id="contact-name" name="customer_name" value={form.customer_name} onChange={handleChange} placeholder="성함" autoComplete="name" required maxLength={40} style={styles.input} />
           <label htmlFor="contact-phone" style={styles.label}>연락처 <span aria-hidden="true">*</span></label>
-          <input id="contact-phone" type="tel" inputMode="tel" name="phone" value={form.phone} onChange={handleChange} placeholder="010-0000-0000" autoComplete="tel" required style={styles.input} />
+          <input id="contact-phone" type="tel" inputMode="tel" name="phone" value={form.phone} onChange={handleChange} placeholder="010-0000-0000" autoComplete="tel" required maxLength={30} style={styles.input} />
 
           <label htmlFor="contact-branch" style={styles.label}>희망 지점</label>
           <select id="contact-branch" name="preferred_branch" value={form.preferred_branch} onChange={handleChange} style={styles.input}>
@@ -92,16 +83,16 @@ return
           </select>
 
           <label htmlFor="contact-device" style={styles.label}>기기 종류</label>
-          <input id="contact-device" name="device" value={form.device} onChange={handleChange} placeholder="예: 아이폰, 아이패드, 맥북, 서피스" style={styles.input} />
+          <input id="contact-device" name="device" value={form.device} onChange={handleChange} placeholder="예: 아이폰, 아이패드, 맥북, 서피스" maxLength={80} style={styles.input} />
           <label htmlFor="contact-model" style={styles.label}>모델명</label>
-          <input id="contact-model" name="model" value={form.model} onChange={handleChange} placeholder="예: 아이폰15프로, 아이패드프로12.9" style={styles.input} />
+          <input id="contact-model" name="model" value={form.model} onChange={handleChange} placeholder="예: 아이폰15프로, 아이패드프로12.9" maxLength={100} style={styles.input} />
           <label htmlFor="contact-time" style={styles.label}>연락 가능 시간</label>
-          <input id="contact-time" name="contact_time" value={form.contact_time} onChange={handleChange} placeholder="예: 오후 2시 이후" style={styles.input} />
+          <input id="contact-time" name="contact_time" value={form.contact_time} onChange={handleChange} placeholder="예: 오후 2시 이후" maxLength={80} style={styles.input} />
 
           <label htmlFor="contact-symptom" style={styles.label}>고장 증상 또는 문의 내용 <span aria-hidden="true">*</span></label>
-          <textarea id="contact-symptom" name="symptom" value={form.symptom} onChange={handleChange} placeholder="고장 증상 또는 문의 내용을 입력해 주세요." required style={styles.textarea} />
+          <textarea id="contact-symptom" name="symptom" value={form.symptom} onChange={handleChange} placeholder="고장 증상 또는 문의 내용을 입력해 주세요." required maxLength={2000} style={styles.textarea} />
           <label htmlFor="contact-memo" style={styles.label}>추가 메모 <span style={styles.optional}>(선택)</span></label>
-          <textarea id="contact-memo" name="memo" value={form.memo} onChange={handleChange} placeholder="추가로 전달할 내용을 입력해 주세요." style={styles.textareaSmall} />
+          <textarea id="contact-memo" name="memo" value={form.memo} onChange={handleChange} placeholder="추가로 전달할 내용을 입력해 주세요." maxLength={1000} style={styles.textareaSmall} />
 
           <div aria-hidden="true" style={styles.honeypot}>
             <label htmlFor="contact-website">웹사이트</label>

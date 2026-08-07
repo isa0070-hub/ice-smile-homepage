@@ -2,10 +2,12 @@ import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 import {
   branchSeo,
+  getBranchDisplayData,
   getBranchLocalBusinessJsonLd,
+  getBranchSeoForRecord,
 } from "@/lib/branchSeo"
 
-export const dynamic = "force-dynamic"
+export const revalidate = 3600
 
 export const metadata = {
   title: {
@@ -37,24 +39,35 @@ export const metadata = {
   },
 }
 
-const branchSlugByPhone = {
-  "02-3424-5295": "gangbyeon",
-  "02-554-5295": "seolleung",
-  "02-2111-8899": "sindorim",
-}
-
 export default async function BranchesPage() {
-  const { data: branches } = await supabase
+  const { data: branchRows, error } = await supabase
     .from("branches")
-    .select("*")
-    .eq("is_active", true)
+    .select(
+      "id,name,phone,address1,address2,visit_info,naver_map,map_image,is_active,sort_order",
+    )
     .order("sort_order", { ascending: true })
 
-  const localBusinesses = (branches || []).flatMap((branch) => {
-    const slug = branchSlugByPhone[branch.phone]
-    const seo = slug ? branchSeo[slug] : null
-    return seo ? [getBranchLocalBusinessJsonLd(seo, branch)] : []
-  })
+  const rowsBySlug = new Map(
+    (error ? [] : branchRows || []).flatMap((branch) => {
+      const seo = getBranchSeoForRecord(branch)
+      return seo ? [[seo.slug, branch]] : []
+    }),
+  )
+
+  const branches = Object.values(branchSeo)
+    .filter((seo) => {
+      const databaseBranch = rowsBySlug.get(seo.slug)
+
+      // A database outage or a missing row should not erase a verified branch
+      // from this index. Only an explicit inactive flag hides it.
+      return error || databaseBranch?.is_active !== false
+    })
+    .map((seo) => getBranchDisplayData(seo, rowsBySlug.get(seo.slug)))
+    .sort((left, right) => left.sort_order - right.sort_order)
+
+  const localBusinesses = branches.map((branch) =>
+    getBranchLocalBusinessJsonLd(branchSeo[branch.slug]),
+  )
 
   const branchesJsonLd = {
     "@context": "https://schema.org",
@@ -108,10 +121,9 @@ export default async function BranchesPage() {
       </section>
 
       <section style={styles.list}>
-        {(branches || []).map((branch) => {
-          const slug = branchSlugByPhone[branch.phone]
-          const detailUrl = slug ? `/branches/${slug}` : null
-          const displayName = slug ? branchSeo[slug].shortName : branch.name
+        {branches.map((branch) => {
+          const detailUrl = `/branches/${branch.slug}`
+          const displayName = branch.name
 
           return (
             <article

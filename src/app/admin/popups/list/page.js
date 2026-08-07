@@ -1,10 +1,7 @@
-import { supabase } from "@/lib/supabase";
+import { listAdminResourceForPage } from "@/lib/adminContent";
 
 export default async function PopupListPage() {
-  const { data: popups } = await supabase
-    .from("popup_notices")
-    .select("*")
-    .order("created_at", { ascending: false });
+  const popups = await listAdminResourceForPage("popups");
 
   return (
     <main

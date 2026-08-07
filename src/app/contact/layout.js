@@ -1,13 +1,20 @@
 export const metadata = {
-  title: "온라인 수리 접수 | 아이스마일어게인",
-  description:
-    "아이폰·아이패드·맥북·서피스 수리 기종과 증상을 남기면 가까운 지점에서 수리 가능 여부와 예상 소요 시간을 안내합니다.",
-  alternates: {
-    canonical: "/contact",
+  title: {
+    absolute: "아이폰·아이패드·노트북 수리 온라인 문의 | 아이스마일어게인",
   },
-  robots: {
-    index: true,
-    follow: true,
+  description:
+    "강변·선릉·신도림 아이스마일어게인에 기기 모델명과 고장 증상을 남겨 주세요. 방문 또는 택배 접수 가능 여부와 부품 재고를 확인해 안내합니다.",
+  alternates: {
+    canonical: "https://www.ismileagain.co.kr/contact",
+  },
+  openGraph: {
+    title: "스마트기기 수리 온라인 문의 | 아이스마일어게인",
+    description:
+      "기기 모델명과 증상을 남기면 강변·선릉·신도림 지점의 수리 가능 여부와 접수 방법을 안내합니다.",
+    url: "https://www.ismileagain.co.kr/contact",
+    siteName: "아이스마일어게인",
+    locale: "ko_KR",
+    type: "website",
   },
 };
 
