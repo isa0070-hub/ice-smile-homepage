@@ -1,0 +1,46 @@
+name: Apply verified SEO and security update
+
+on:
+  push:
+    branches:
+      - codex-seo-security-clean-20260807
+
+permissions:
+  contents: write
+
+jobs:
+  apply-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+
+      - name: Verify update package
+        run: |
+          echo "7f47f13aa78c7294cd0449cf95b8a287c56cba8045c2891d17a4a96f2ab787a2  ismile-clean-update-20260807.tar.gz" | sha256sum -c -
+          if tar -tzf ismile-clean-update-20260807.tar.gz | grep -Eq '(^|/)\._|\.DS_Store$'; then
+            echo "Unexpected macOS metadata found"
+            exit 1
+          fi
+
+      - name: Apply verified files
+        run: |
+          tar --no-same-owner -xzf ismile-clean-update-20260807.tar.gz
+          rm -f ismile-clean-update-20260807.tar.gz
+          rm -f middleware.js
+          rm -f src/app/admin/page_backup_before_repair_cases.js
+          rm -f src/app/api/send-telegram/route.js
+          rm -f src/lib/sendTelegramInquiry.js
+          rm -f .github/workflows/codex-apply-clean-update.yml
+
+      - name: Commit applied update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No update to commit"
+          else
+            git commit -m "Apply verified SEO, local search, performance, and security update"
+            git push
+          fi
