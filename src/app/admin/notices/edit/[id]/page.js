@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { adminFetch } from "@/lib/adminClient";
 
 export default function AdminNoticeEditPage() {
   const params = useParams();
@@ -13,24 +13,22 @@ export default function AdminNoticeEditPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    loadNotice();
-  }, []);
+    let active = true;
 
-  async function loadNotice() {
-    const { data, error } = await supabase
-      .from("notices")
-      .select("*")
-      .eq("id", params.id)
-      .single();
+    adminFetch(`/api/admin/content/notices/${params.id}`)
+      .then((result) => {
+        if (active) setForm(result.data);
+      })
+      .catch((error) => {
+        if (!active) return;
+        console.error(error);
+        setMessage(error.message || "공지사항을 불러오지 못했습니다.");
+      });
 
-    if (error) {
-      console.error(error);
-      setMessage("공지사항을 불러오지 못했습니다.");
-      return;
-    }
-
-    setForm(data);
-  }
+    return () => {
+      active = false;
+    };
+  }, [params.id]);
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target;
@@ -46,28 +44,27 @@ export default function AdminNoticeEditPage() {
     setSaving(true);
     setMessage("");
 
-    const { error } = await supabase
-      .from("notices")
-      .update({
+    try {
+      await adminFetch(`/api/admin/content/notices/${params.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
         title: form.title,
         content: form.content,
         is_pinned: form.is_pinned,
-      })
-      .eq("id", params.id);
+        }),
+      });
 
-    setSaving(false);
+      setMessage("공지사항이 수정되었습니다.");
 
-    if (error) {
+      setTimeout(() => {
+        router.push("/admin/notices/list");
+      }, 700);
+    } catch (error) {
       console.error(error);
-      setMessage("공지사항 수정 중 오류가 발생했습니다.");
-      return;
+      setMessage(error.message || "공지사항 수정 중 오류가 발생했습니다.");
+    } finally {
+      setSaving(false);
     }
-
-    setMessage("공지사항이 수정되었습니다.");
-
-    setTimeout(() => {
-      router.push("/admin/notices/list");
-    }, 700);
   }
 
   if (!form) {

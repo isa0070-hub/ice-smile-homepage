@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { adminFetch } from "@/lib/adminClient";
 import { useRouter } from "next/navigation";
 
 export default function PopupCreatePage() {
@@ -41,32 +41,23 @@ export default function PopupCreatePage() {
       setUploading(true);
       setMessage("");
 
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}-${Math.random()
-        .toString(36)
-        .substring(2)}.${fileExt}`;
-      const filePath = `popups/${fileName}`;
-
-      const { error } = await supabase.storage
-        .from("popup-images")
-        .upload(filePath, file);
-
-      if (error) {
-        console.error(error);
-        setMessage("이미지 업로드 실패: popup-images 버킷/권한을 확인해 주세요.");
-        return;
-      }
-
-      const { data } = supabase.storage
-        .from("popup-images")
-        .getPublicUrl(filePath);
+      const uploadData = new FormData();
+      uploadData.set("purpose", "popup");
+      uploadData.set("file", file);
+      const result = await adminFetch("/api/admin/uploads", {
+        method: "POST",
+        body: uploadData,
+      });
 
       setForm((prev) => ({
         ...prev,
-        image_url: data.publicUrl,
+        image_url: result.publicUrl,
       }));
 
       setMessage("이미지 업로드 완료");
+    } catch (error) {
+      console.error(error);
+      setMessage(error.message || "이미지 업로드에 실패했습니다.");
     } finally {
       setUploading(false);
     }
@@ -76,8 +67,10 @@ export default function PopupCreatePage() {
     e.preventDefault();
     setMessage("");
 
-    const { error } = await supabase.from("popup_notices").insert([
-      {
+    try {
+      await adminFetch("/api/admin/content/popups", {
+        method: "POST",
+        body: JSON.stringify({
         title: form.title,
         content: form.content,
         image_url: form.image_url,
@@ -89,20 +82,18 @@ export default function PopupCreatePage() {
         is_active: form.is_active,
         show_today_close: form.show_today_close,
         sort_order: Number(form.sort_order || 0),
-      },
-    ]);
+        }),
+      });
 
-    if (error) {
+      setMessage("팝업 등록 완료");
+
+      setTimeout(() => {
+        router.push("/admin/popups/list");
+      }, 700);
+    } catch (error) {
       console.error(error);
-      setMessage("팝업 등록 실패");
-      return;
+      setMessage(error.message || "팝업 등록 실패");
     }
-
-    setMessage("팝업 등록 완료");
-
-    setTimeout(() => {
-      router.push("/admin/popups/list");
-    }, 700);
   }
 
   return (

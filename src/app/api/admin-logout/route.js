@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { isSameOriginRequest } from "@/lib/adminSession";
+import {
+  ADMIN_SESSION_COOKIE,
+  isSameOriginRequest,
+} from "@/lib/adminSession";
 
 export async function POST(request) {
   if (!isSameOriginRequest(request)) {
@@ -8,12 +11,13 @@ export async function POST(request) {
 
   const response = NextResponse.json({ success: true });
 
-  response.cookies.set("admin_auth", "", {
+  response.cookies.set(ADMIN_SESSION_COOKIE, "", {
     httpOnly: true,
     secure: true,
     sameSite: "lax",
     path: "/",
     maxAge: 0,
+    expires: new Date(0),
   });
 
   return response;

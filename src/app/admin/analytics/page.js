@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { hasAdminServerSession } from "@/lib/adminApi";
 import { getSearchTrafficSummary } from "@/lib/ga4Analytics";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -1104,6 +1106,10 @@ function NaverAdClickPanel({
 export default async function AdminAnalyticsPage({
   searchParams,
 }) {
+  if (!(await hasAdminServerSession())) {
+    redirect("/login");
+  }
+
   const resolvedSearchParams =
     await searchParams;
 

@@ -13,13 +13,15 @@
  * ===========================================================
  */
 
-import { supabase } from "@/lib/supabase";
+import "server-only";
+
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { logInfo, logSuccess, logError } from "./logger";
 
 export async function getLatestMorningBrief() {
   logInfo("📖 최신 Morning Brief 조회 시작");
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("gm_morning_notes")
     .select("*")
     .eq("is_published", true)

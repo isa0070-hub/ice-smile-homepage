@@ -1,6 +1,16 @@
 import { supabase } from "@/lib/supabase";
+import Image from "next/image";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import {
+  getPublicRepairCasePath,
+  isPublicRepairCaseSlug,
+} from "@/lib/publicRepairCases";
+import { ORGANIZATION_ID } from "@/lib/branchSeo";
 
 const BASE_URL = "https://www.ismileagain.co.kr";
+const PAGE_SIZE = 18;
+const MAX_PAGE = 10000;
 
 const categories = ["전체", "애플", "마이크로소프트 서피스", "노트북 및 태블릿"];
 
@@ -42,14 +52,76 @@ function getCategoryDescription(category) {
   return categoryMetadata[normalizeCategory(category)].description;
 }
 
-function getCanonicalUrl(category) {
-  const safeCategory = normalizeCategory(category);
+function normalizePage(value) {
+  const rawValue = Array.isArray(value) ? value[0] : value;
 
-  if (safeCategory === "전체") {
-    return `${BASE_URL}/repair-cases`;
+  if (!/^\d+$/.test(String(rawValue || ""))) {
+    return 1;
   }
 
-  return `${BASE_URL}/repair-cases?category=${encodeURIComponent(safeCategory)}`;
+  const page = Number.parseInt(rawValue, 10);
+  return Number.isSafeInteger(page) && page > 0 && page <= MAX_PAGE ? page : 1;
+}
+
+function getArchivePath(category, page = 1) {
+  const safeCategory = normalizeCategory(category);
+  const params = new URLSearchParams();
+
+  if (safeCategory !== "전체") {
+    params.set("category", safeCategory);
+  }
+
+  if (page > 1) {
+    params.set("page", String(page));
+  }
+
+  const query = params.toString();
+  return `/repair-cases${query ? `?${query}` : ""}`;
+}
+
+function getCanonicalUrl(category, page = 1) {
+  return `${BASE_URL}${getArchivePath(category, page)}`;
+}
+
+function getPageTitle(category, page) {
+  const title = getCategoryTitle(category);
+  return page > 1 ? `${title} - ${page}페이지` : title;
+}
+
+function getPageDescription(category, page) {
+  const description = getCategoryDescription(category);
+  return page > 1 ? `${description} 현재 ${page}페이지입니다.` : description;
+}
+
+function getPaginationItems(currentPage, totalPages) {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const pageSet = new Set([1, totalPages]);
+
+  for (
+    let page = Math.max(2, currentPage - 2);
+    page <= Math.min(totalPages - 1, currentPage + 2);
+    page += 1
+  ) {
+    pageSet.add(page);
+  }
+
+  const pages = Array.from(pageSet).sort((a, b) => a - b);
+  const items = [];
+
+  pages.forEach((page, index) => {
+    const previousPage = pages[index - 1];
+
+    if (previousPage && page - previousPage > 1) {
+      items.push(`ellipsis-${previousPage}-${page}`);
+    }
+
+    items.push(page);
+  });
+
+  return items;
 }
 
 function toAbsoluteUrl(url) {
@@ -62,15 +134,21 @@ function toAbsoluteUrl(url) {
   return `${BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 
-function makeJsonLd({ cases = [], category = "전체" }) {
-  const title = getCategoryTitle(category);
-  const description = getCategoryDescription(category);
-  const canonicalUrl = getCanonicalUrl(category);
+function makeJsonLd({
+  cases = [],
+  category = "전체",
+  page = 1,
+  totalCount = 0,
+}) {
+  const title = getPageTitle(category, page);
+  const description = getPageDescription(category, page);
+  const canonicalUrl = getCanonicalUrl(category, page);
+  const firstPosition = (page - 1) * PAGE_SIZE;
 
-  const itemListElement = cases.slice(0, 20).map((item, index) => ({
+  const itemListElement = cases.map((item, index) => ({
     "@type": "ListItem",
-    position: index + 1,
-    url: `${BASE_URL}/repair-cases/${item.slug}`,
+    position: firstPosition + index + 1,
+    url: `${BASE_URL}${getPublicRepairCasePath(item.slug)}`,
     name: item.title,
   }));
 
@@ -79,20 +157,10 @@ function makeJsonLd({ cases = [], category = "전체" }) {
     "@graph": [
       {
         "@type": "Organization",
-        "@id": `${BASE_URL}/#organization`,
+        "@id": ORGANIZATION_ID,
         name: "아이스마일어게인",
         url: BASE_URL,
-        telephone: "02-3424-5295",
         image: toAbsoluteUrl(cases?.[0]?.image_url) || `${BASE_URL}/favicon.ico`,
-        address: {
-          "@type": "PostalAddress",
-          streetAddress:
-            "서울 광진구 광나루로56길 85 강변테크노마트 5층 B-20호",
-          addressLocality: "광진구",
-          addressRegion: "서울",
-          postalCode: "05116",
-          addressCountry: "KR",
-        },
         sameAs: ["https://talk.naver.com/WCH5S2X"],
       },
       {
@@ -130,7 +198,7 @@ function makeJsonLd({ cases = [], category = "전체" }) {
             ? "전체 수리사례 목록"
             : `${category} 수리사례 목록`,
         itemListOrder: "https://schema.org/ItemListOrderDescending",
-        numberOfItems: cases.length,
+        numberOfItems: totalCount,
         itemListElement,
       },
       {
@@ -165,10 +233,11 @@ function makeJsonLd({ cases = [], category = "전체" }) {
 export async function generateMetadata({ searchParams }) {
   const currentParams = await searchParams;
   const category = normalizeCategory(currentParams?.category);
+  const page = normalizePage(currentParams?.page);
 
-  const title = getCategoryTitle(category);
-  const description = getCategoryDescription(category);
-  const canonicalUrl = getCanonicalUrl(category);
+  const title = getPageTitle(category, page);
+  const description = getPageDescription(category, page);
+  const canonicalUrl = getCanonicalUrl(category, page);
 
   return {
     title,
@@ -195,19 +264,51 @@ export async function generateMetadata({ searchParams }) {
 export default async function RepairCasesPage({ searchParams }) {
   const currentParams = await searchParams;
   const category = normalizeCategory(currentParams?.category);
+  const currentPage = normalizePage(currentParams?.page);
+  const firstRow = (currentPage - 1) * PAGE_SIZE;
 
   let query = supabase
     .from("repair_cases")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select(
+      "id, slug, image_url, alt_text, title, branch, category, device, model, symptom, seo_keyword, repair_content, created_at",
+      { count: "exact" },
+    )
+    .not("slug", "is", null)
+    .neq("slug", "")
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false });
 
   if (category !== "전체") {
     query = query.eq("category", category);
   }
 
-  const { data: cases } = await query;
-  const safeCases = cases || [];
-  const jsonLd = makeJsonLd({ cases: safeCases, category });
+  const { data: cases, count, error } = await query.range(
+    firstRow,
+    firstRow + PAGE_SIZE - 1,
+  );
+
+  if (error) {
+    console.error("repair_cases archive error:", error);
+    throw new Error("수리사례 목록을 불러오지 못했습니다.");
+  }
+
+  const safeCases = (cases || []).filter((item) =>
+    isPublicRepairCaseSlug(item?.slug),
+  );
+  const totalCount = typeof count === "number" ? count : safeCases.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  if (!error && currentPage > totalPages) {
+    notFound();
+  }
+
+  const paginationItems = getPaginationItems(currentPage, totalPages);
+  const jsonLd = makeJsonLd({
+    cases: safeCases,
+    category,
+    page: currentPage,
+    totalCount,
+  });
 
   return (
     <main style={{ maxWidth: "1180px", margin: "70px auto", padding: "24px" }}>
@@ -219,9 +320,9 @@ export default async function RepairCasesPage({ searchParams }) {
       />
 
       <nav aria-label="breadcrumb" style={breadcrumbStyle}>
-        <a href="/" style={breadcrumbLinkStyle}>
+        <Link href="/" style={breadcrumbLinkStyle}>
           홈
-        </a>
+        </Link>
 
         <span style={breadcrumbSeparatorStyle}>›</span>
         <span style={breadcrumbCurrentStyle}>수리사례</span>
@@ -280,11 +381,7 @@ export default async function RepairCasesPage({ searchParams }) {
         {categories.map((item) => (
           <a
             key={item}
-            href={
-              item === "전체"
-                ? "/repair-cases"
-                : `/repair-cases?category=${encodeURIComponent(item)}`
-            }
+            href={getArchivePath(item)}
             style={{
               ...categoryButtonStyle,
               background: category === item ? "#1e3a8a" : "white",
@@ -302,7 +399,7 @@ export default async function RepairCasesPage({ searchParams }) {
         </h2>
 
         <p style={currentListTextStyle}>
-          총 {safeCases.length}개의 수리사례가 등록되어 있습니다. 각
+          총 {totalCount}개의 수리사례 중 {currentPage}페이지입니다. 각
           사례에서 기기 상태, 모델명, 증상, 수리 과정, 관련 키워드를 함께
           확인할 수 있습니다.
         </p>
@@ -310,61 +407,114 @@ export default async function RepairCasesPage({ searchParams }) {
 
       <div style={gridStyle}>
         {safeCases.length > 0 ? (
-          safeCases.map((item) => (
-            <article key={item.id} style={cardStyle}>
-              {item.image_url ? (
-                <a href={`/repair-cases/${item.slug}`}>
-                  <img
-                    src={item.image_url}
-                    alt={item.alt_text || item.title || "수리사례 이미지"}
-                    style={imageStyle}
-                  />
+          safeCases.map((item) => {
+            const detailPath = getPublicRepairCasePath(item.slug);
+
+            return (
+              <article key={item.id} style={cardStyle}>
+                {item.image_url ? (
+                  <a href={detailPath} style={imageLinkStyle}>
+                    <Image
+                      src={item.image_url}
+                      alt={item.alt_text || item.title || "수리사례 이미지"}
+                      fill
+                      sizes="(max-width: 680px) 100vw, (max-width: 1040px) 50vw, 33vw"
+                      quality={72}
+                      loading="lazy"
+                      style={imageStyle}
+                    />
+                  </a>
+                ) : (
+                  <div style={noImageStyle}>이미지 없음</div>
+                )}
+
+                <p style={cardMetaStyle}>
+                  {item.branch || "지점"} · {item.category || "카테고리"}
+                </p>
+
+                <a
+                  href={detailPath}
+                  style={{ color: "#111827", textDecoration: "none" }}
+                >
+                  <h2 style={cardTitleStyle}>{item.title || "제목 없음"}</h2>
                 </a>
-              ) : (
-                <div style={noImageStyle}>이미지 없음</div>
-              )}
 
-              <p style={cardMetaStyle}>
-                {item.branch || "지점"} · {item.category || "카테고리"}
-              </p>
+                <p style={deviceTextStyle}>
+                  {item.device || "기기"} · {item.model || "모델명"}
+                </p>
 
-              <a
-                href={`/repair-cases/${item.slug}`}
-                style={{ color: "#111827", textDecoration: "none" }}
-              >
-                <h2 style={cardTitleStyle}>{item.title || "제목 없음"}</h2>
-              </a>
+                <p style={symptomTextStyle}>
+                  증상 : {item.symptom || "증상 확인중"}
+                </p>
 
-              <p style={deviceTextStyle}>
-                {item.device || "기기"} · {item.model || "모델명"}
-              </p>
+                <p style={keywordTextStyle}>
+                  대표 키워드 : {item.seo_keyword || "키워드 없음"}
+                </p>
 
-              <p style={symptomTextStyle}>
-                증상 : {item.symptom || "증상 확인중"}
-              </p>
+                <p style={excerptTextStyle}>
+                  {item.repair_content
+                    ? `${item.repair_content.slice(0, 90)}...`
+                    : "수리 내용 준비중입니다."}
+                </p>
 
-              <p style={keywordTextStyle}>
-                대표 키워드 : {item.seo_keyword || "키워드 없음"}
-              </p>
-
-              <p style={excerptTextStyle}>
-                {item.repair_content
-                  ? `${item.repair_content.slice(0, 90)}...`
-                  : "수리 내용 준비중입니다."}
-              </p>
-
-              <a
-                href={`/repair-cases/${item.slug}`}
-                style={detailButtonStyle}
-              >
-                자세히 보기
-              </a>
-            </article>
-          ))
+                <a href={detailPath} style={detailButtonStyle}>
+                  자세히 보기
+                </a>
+              </article>
+            );
+          })
         ) : (
           <p>등록된 수리사례가 없습니다.</p>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <nav aria-label="수리사례 페이지" style={paginationStyle}>
+          {currentPage > 1 && (
+            <a
+              href={getArchivePath(category, currentPage - 1)}
+              rel="prev"
+              style={paginationLinkStyle}
+            >
+              이전
+            </a>
+          )}
+
+          {paginationItems.map((item) =>
+            typeof item === "number" ? (
+              <a
+                key={item}
+                href={getArchivePath(category, item)}
+                aria-current={item === currentPage ? "page" : undefined}
+                style={{
+                  ...paginationLinkStyle,
+                  ...(item === currentPage ? paginationCurrentStyle : {}),
+                }}
+              >
+                {item}
+              </a>
+            ) : (
+              <span
+                key={item}
+                aria-hidden="true"
+                style={paginationEllipsisStyle}
+              >
+                …
+              </span>
+            ),
+          )}
+
+          {currentPage < totalPages && (
+            <a
+              href={getArchivePath(category, currentPage + 1)}
+              rel="next"
+              style={paginationLinkStyle}
+            >
+              다음
+            </a>
+          )}
+        </nav>
+      )}
 
       <section style={bottomSeoBoxStyle}>
         <h2 style={bottomSeoTitleStyle}>방문 수리와 택배 수리 상담 안내</h2>
@@ -553,9 +703,15 @@ const cardStyle = {
 };
 
 const imageStyle = {
+  objectFit: "cover",
+};
+
+const imageLinkStyle = {
+  position: "relative",
+  display: "block",
   width: "100%",
   height: "190px",
-  objectFit: "cover",
+  overflow: "hidden",
   borderRadius: "14px",
   marginBottom: "16px",
 };
@@ -610,6 +766,44 @@ const detailButtonStyle = {
   color: "white",
   borderRadius: "999px",
   textDecoration: "none",
+  fontWeight: "800",
+};
+
+const paginationStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexWrap: "wrap",
+  gap: "8px",
+  marginTop: "36px",
+};
+
+const paginationLinkStyle = {
+  minWidth: "42px",
+  minHeight: "42px",
+  padding: "10px 13px",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  border: "1px solid #cbd5e1",
+  borderRadius: "10px",
+  background: "#ffffff",
+  color: "#1e3a8a",
+  textDecoration: "none",
+  fontWeight: "800",
+  boxSizing: "border-box",
+};
+
+const paginationCurrentStyle = {
+  background: "#1e3a8a",
+  borderColor: "#1e3a8a",
+  color: "#ffffff",
+};
+
+const paginationEllipsisStyle = {
+  minWidth: "24px",
+  textAlign: "center",
+  color: "#64748b",
   fontWeight: "800",
 };
 

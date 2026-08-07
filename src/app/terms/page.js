@@ -1,7 +1,9 @@
 export const metadata = {
     title: "이용약관 | 아이스마일어게인",
     description: "아이스마일어게인 이용약관",
-    alternates: { canonical: "/terms" },
+    alternates: {
+      canonical: "https://www.ismileagain.co.kr/terms",
+    },
   };
   
   export default function TermsPage() {
@@ -19,7 +21,7 @@ export const metadata = {
         <h2>제1조 (목적)</h2>
   
         <p>
-          본 약관은 아이스마일어게인(이하 "회사")이 제공하는 홈페이지 서비스의
+          본 약관은 아이스마일어게인(이하 &quot;회사&quot;)이 제공하는 홈페이지 서비스의
           이용과 관련하여 회사와 이용자의 권리, 의무 및 책임사항을 규정함을
           목적으로 합니다.
         </p>

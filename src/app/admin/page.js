@@ -2,46 +2,47 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import Link from "next/link";
+import { adminFetch } from "@/lib/adminClient";
 
 export default function AdminPage() {
   const router = useRouter();
 
-  const [contacts, setContacts] = useState([]);
+  const [counts, setCounts] = useState({
+    onlineInquiries: 0,
+    repairCases: 0,
+    notices: 0,
+    popups: 0,
+  });
   const [cases, setCases] = useState([]);
   const [notices, setNotices] = useState([]);
-  const [popups, setPopups] = useState([]);
+  const [contacts, setContacts] = useState([]);
 
   useEffect(() => {
-    loadData();
+    let active = true;
+
+    Promise.all([
+        adminFetch("/api/admin/dashboard"),
+        adminFetch("/api/online-inquiries"),
+      ])
+      .then(([dashboardResult, inquiryResult]) => {
+        if (!active) return;
+
+        setCounts(dashboardResult.counts);
+        setCases(dashboardResult.recentRepairCases || []);
+        setNotices(dashboardResult.recentNotices || []);
+        setContacts(inquiryResult.items || []);
+      })
+      .catch((error) => {
+        if (active) {
+          console.error("관리자 현황 조회 오류:", error);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
-
-  async function loadData() {
-    const { data: contactData } = await supabase
-      .from("contacts")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    const { data: caseData } = await supabase
-      .from("repair_cases")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    const { data: noticeData } = await supabase
-      .from("notices")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    const { data: popupData } = await supabase
-      .from("popup_notices")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    setContacts(contactData || []);
-    setCases(caseData || []);
-    setNotices(noticeData || []);
-    setPopups(popupData || []);
-  }
 
   function go(path) {
     router.push(path);
@@ -69,9 +70,9 @@ export default function AdminPage() {
         </div>
 
         <div style={topButtonWrapStyle}>
-          <a href="/" style={homeButtonStyle}>
+          <Link href="/" style={homeButtonStyle}>
             홈페이지 보기
-          </a>
+          </Link>
 
           <button
             type="button"
@@ -86,22 +87,22 @@ export default function AdminPage() {
       <div style={summaryGridStyle}>
         <div style={summaryCardStyle}>
           <strong>온라인 접수</strong>
-          <p>{contacts.length}건</p>
+          <p>{counts.onlineInquiries}건</p>
         </div>
 
         <div style={summaryCardStyle}>
           <strong>등록된 수리사례</strong>
-          <p>{cases.length}건</p>
+          <p>{counts.repairCases}건</p>
         </div>
 
         <div style={summaryCardStyle}>
           <strong>공지사항</strong>
-          <p>{notices.length}건</p>
+          <p>{counts.notices}건</p>
         </div>
 
         <div style={summaryCardStyle}>
           <strong>팝업</strong>
-          <p>{popups.length}건</p>
+          <p>{counts.popups}건</p>
         </div>
       </div>
 
@@ -401,20 +402,20 @@ export default function AdminPage() {
                 <th style={thStyle}>기기</th>
                 <th style={thStyle}>모델명</th>
                 <th style={thStyle}>증상</th>
-                <th style={thStyle}>접수방식</th>
+                <th style={thStyle}>연락 희망시간</th>
               </tr>
             </thead>
 
             <tbody>
               {contacts.slice(0, 10).map((item) => (
                 <tr key={item.id}>
-                  <td style={tdStyle}>{item.name}</td>
+                  <td style={tdStyle}>{item.customer_name}</td>
                   <td style={tdStyle}>{item.phone}</td>
-                  <td style={tdStyle}>{item.branch}</td>
+                  <td style={tdStyle}>{item.preferred_branch}</td>
                   <td style={tdStyle}>{item.device}</td>
                   <td style={tdStyle}>{item.model}</td>
                   <td style={tdStyle}>{item.symptom}</td>
-                  <td style={tdStyle}>{item.visit_type}</td>
+                  <td style={tdStyle}>{item.contact_time || "-"}</td>
                 </tr>
               ))}
 

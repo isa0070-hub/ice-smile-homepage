@@ -1,14 +1,27 @@
 import { supabase } from "@/lib/supabase";
 
 export const metadata = {
-  title: "공지사항 | 수리전문 공식서비스센터",
-  description: "아이스마일어게인 수리전문 공식서비스센터 공지사항입니다.",
+  title: "공지사항 | 아이스마일어게인",
+  description:
+    "아이스마일어게인 독립 스마트기기 수리센터의 지점 운영, 접수, 휴무 및 서비스 관련 안내를 확인하세요.",
+  alternates: {
+    canonical: "/notices",
+  },
+  openGraph: {
+    title: "공지사항 | 아이스마일어게인",
+    description:
+      "아이스마일어게인의 지점 운영, 접수, 휴무 및 서비스 관련 안내를 확인하세요.",
+    url: "/notices",
+    siteName: "아이스마일어게인",
+    locale: "ko_KR",
+    type: "website",
+  },
 };
 
 export default async function NoticesPage() {
   const { data: notices } = await supabase
     .from("notices")
-    .select("*")
+    .select("id, title, is_pinned, created_at")
     .order("is_pinned", { ascending: false })
     .order("created_at", { ascending: false });
 
@@ -17,7 +30,8 @@ export default async function NoticesPage() {
       <h1 style={{ fontSize: "42px", marginBottom: "14px" }}>공지사항</h1>
 
       <p style={{ color: "#475569", fontSize: "18px", marginBottom: "34px" }}>
-        수리전문 공식서비스센터의 운영 안내와 중요한 소식을 확인하실 수 있습니다.
+        독립 스마트기기 수리센터의 운영 안내와 중요한 소식을 확인하실 수
+        있습니다.
       </p>
 
       <div style={listStyle}>

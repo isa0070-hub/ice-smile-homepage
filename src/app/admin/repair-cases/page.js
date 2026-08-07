@@ -11,7 +11,7 @@ import {
   generateAltFromDescription,
 } from "@/lib/seoEngine";
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { adminFetch } from "@/lib/adminClient";
 const SITE_URL = "https://www.ismileagain.co.kr";
 const NAVER_SEARCH_ADVISOR_URL =
   "https://searchadvisor.naver.com/console/site/request/crawl?site=https%3A%2F%2Fwww.ismileagain.co.kr";
@@ -46,28 +46,6 @@ function normalizeSlugForAdmin(value = "") {
     .slice(0, 90)
     .replace(/-[^-]*$/g, "")
     .replace(/^-|-$/g, "");
-}
-
-function makeUniqueSlugForAdmin(baseSlug, existingSlugs = []) {
-  const safeBaseSlug = normalizeSlugForAdmin(baseSlug) || "repair-case";
-
-  const usedSlugs = new Set(
-    existingSlugs.filter(Boolean).map((slug) => normalizeSlugForAdmin(slug)),
-  );
-
-  if (!usedSlugs.has(safeBaseSlug)) {
-    return safeBaseSlug;
-  }
-
-  let number = 2;
-  let nextSlug = `${safeBaseSlug}-${number}`;
-
-  while (usedSlugs.has(nextSlug)) {
-    number += 1;
-    nextSlug = `${safeBaseSlug}-${number}`;
-  }
-
-  return nextSlug;
 }
 
 function hasKeyword(text, keyword) {
@@ -1109,66 +1087,30 @@ export default function AdminRepairCasesPage() {
     try {
       const baseSlug = normalizeSlugForAdmin(
         form.slug || generateEnglishSlug(form),
-      );
-
-      const { data: slugRows, error: slugSearchError } = await supabase
-        .from("repair_cases")
-        .select("slug")
-        .ilike("slug", `${baseSlug}%`);
-
-      if (slugSearchError) {
-        throw slugSearchError;
-      }
-
-      const finalSlug = makeUniqueSlugForAdmin(
-        baseSlug,
-        (slugRows || []).map((row) => row.slug),
-      );
+      ) || "repair-case";
 
       const finalForm = {
         ...form,
-        slug: finalSlug,
+        slug: baseSlug,
         seo_keyword: form.seo_keyword || generateSeoKeyword(form),
         alt_text: form.alt_text || generateAltText(form),
         content_sections:
           contentSectionsForSave.length > 0 ? contentSectionsForSave : null,
       };
 
-      const { data: insertedCase, error } = await supabase
-        .from("repair_cases")
-        .insert([finalForm])
-        .select()
-        .single();
-
-      if (error) {
-        console.error(error);
-        setMessage(
-          "등록 중 오류가 발생했습니다. SEO 주소 중복 또는 입력값을 확인해주세요.",
-        );
-        return;
-      }
-
-      if (detailImages.length > 0) {
-        const imageRows = detailImages.map((image, index) => ({
-          repair_case_id: insertedCase.id,
-          image_url: image.image_url,
-          alt_text: image.alt_text,
-          description: image.description || "",
-          sort_order: index,
-        }));
-
-        const { error: imageError } = await supabase
-          .from("repair_case_images")
-          .insert(imageRows);
-
-        if (imageError) {
-          console.error(imageError);
-          setMessage(
-            "수리사례는 등록됐지만 상세 이미지 저장 중 오류가 발생했습니다.",
-          );
-          return;
-        }
-      }
+      const result = await adminFetch("/api/admin/content/repair-cases", {
+        method: "POST",
+        body: JSON.stringify({
+          data: finalForm,
+          detailImages: detailImages.map((image, index) => ({
+            image_url: image.image_url,
+            alt_text: image.alt_text,
+            description: image.description || "",
+            sort_order: index,
+          })),
+        }),
+      });
+      const finalSlug = result.data.slug;
       const newCaseUrl = `https://www.ismileagain.co.kr/repair-cases/${finalSlug}`;
       setRegisteredCaseUrl(newCaseUrl);
 
@@ -1199,7 +1141,8 @@ export default function AdminRepairCasesPage() {
     } catch (error) {
       console.error(error);
       setMessage(
-        "등록 중 오류가 발생했습니다. 입력값 또는 네트워크 상태를 확인해주세요.",
+        error.message ||
+          "등록 중 오류가 발생했습니다. 입력값 또는 네트워크 상태를 확인해주세요.",
       );
     } finally {
       setSaving(false);

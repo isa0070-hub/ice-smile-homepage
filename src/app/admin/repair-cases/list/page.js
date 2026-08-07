@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { listAdminResourceForPage } from "@/lib/adminContent";
 
 export const dynamic = "force-dynamic";
 
@@ -55,10 +55,7 @@ function AdminBackButtons() {
 
 
 export default async function RepairCaseListPage() {
-  const { data: cases } = await supabase
-    .from("repair_cases")
-    .select("*")
-    .order("created_at", { ascending: false });
+  const cases = await listAdminResourceForPage("repair-cases");
 
   return (
     <main style={{ maxWidth: "1200px", margin: "60px auto", padding: "20px" }}>

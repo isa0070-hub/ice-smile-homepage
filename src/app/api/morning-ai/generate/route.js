@@ -24,12 +24,29 @@
 
 import { NextResponse } from "next/server";
 import { runMorningAI } from "@/lib/morning-ai";
-import { isSameOriginRequest, verifyAdminSessionToken } from "@/lib/adminSession";
+import {
+  ADMIN_SESSION_COOKIE,
+  isSameOriginRequest,
+  verifyAdminSessionToken,
+} from "@/lib/adminSession";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(request) {
-  const token = request.cookies.get("admin_auth")?.value;
-  if (!(await verifyAdminSessionToken(token)) || !isSameOriginRequest(request)) {
-    return NextResponse.json({ ok: false, message: "관리자 인증이 필요합니다." }, { status: 401 });
+  const session = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
+
+  if (!verifyAdminSessionToken(session)) {
+    return NextResponse.json(
+      { ok: false, message: "관리자 인증이 필요합니다." },
+      { status: 401 },
+    );
+  }
+
+  if (!isSameOriginRequest(request)) {
+    return NextResponse.json(
+      { ok: false, message: "허용되지 않은 요청입니다." },
+      { status: 403 },
+    );
   }
 
   try {
@@ -49,7 +66,7 @@ export async function POST(request) {
         message: "Morning AI 브리핑 생성 중 오류가 발생했습니다.",
         error: error?.message || String(error),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
