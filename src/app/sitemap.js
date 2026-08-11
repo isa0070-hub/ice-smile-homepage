@@ -1,7 +1,10 @@
 import { supabase } from "@/lib/supabase";
 import { isPublicRepairCaseSlug } from "@/lib/publicRepairCases";
+import { getRepairServiceSlugs } from "@/lib/repairServices";
 
-export const revalidate = 3600;
+// Metadata routes are cached by default. The sitemap must reflect a repair
+// case immediately after an administrator creates, edits, or deletes it.
+export const dynamic = "force-dynamic";
 
 const baseUrl = "https://www.ismileagain.co.kr";
 
@@ -96,23 +99,6 @@ export default async function sitemap() {
       priority: 0.85,
     },
     
-    // 16순위: 수리품목별 독립 검색 페이지
-    {
-      url: `${baseUrl}/repair-services/apple`,
-      changeFrequency: "monthly",
-      priority: 0.85,
-    },
-    {
-      url: `${baseUrl}/repair-services/surface`,
-      changeFrequency: "monthly",
-      priority: 0.85,
-    },
-    {
-      url: `${baseUrl}/repair-services/notebook-tablet`,
-      changeFrequency: "monthly",
-      priority: 0.85,
-    },
-
     {
       url: `${baseUrl}/contact`,
       changeFrequency: "monthly",
@@ -135,6 +121,12 @@ export default async function sitemap() {
     },
   ];
 
+  const repairServicePages = getRepairServiceSlugs().map((slug) => ({
+    url: `${baseUrl}/repair-services/${slug}`,
+    changeFrequency: "monthly",
+    priority: 0.85,
+  }));
+
   const repairCasePages = safeCases.map((item) => {
     const modifiedDate = getCaseModifiedDate(item);
 
@@ -146,5 +138,5 @@ export default async function sitemap() {
     };
   });
 
-  return [...staticPages, ...repairCasePages];
+  return [...staticPages, ...repairServicePages, ...repairCasePages];
 }

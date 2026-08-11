@@ -130,6 +130,11 @@ function normalizePhone(value) {
   return String(value || "").replace(/\D/g, "")
 }
 
+function toInternationalPhone(value) {
+  const phone = String(value || "").trim()
+  return phone.startsWith("0") ? `+82-${phone.slice(1)}` : phone
+}
+
 function normalizeBranchName(value) {
   return String(value || "")
     .toLowerCase()
@@ -206,7 +211,7 @@ export function getBranchLocalBusinessJsonLd(seo) {
     name: seo.name,
     ...(seo.alternateName ? { alternateName: seo.alternateName } : {}),
     url: canonicalUrl,
-    telephone: seo.phone,
+    telephone: toInternationalPhone(seo.phone),
     parentOrganization: {
       "@id": ORGANIZATION_ID,
     },

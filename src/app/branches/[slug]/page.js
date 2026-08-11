@@ -12,6 +12,18 @@ import {
 
 export const revalidate = 3600
 
+const serviceHubLinks = [
+  { href: "/repair-services/iphone", label: "아이폰 수리 안내" },
+  { href: "/repair-services/ipad", label: "아이패드 수리 안내" },
+  { href: "/repair-services/macbook", label: "맥북 수리 안내" },
+  { href: "/repair-services/surface", label: "서피스 수리 안내" },
+  { href: "/repair-services/lenovo", label: "레노버 수리 안내" },
+  {
+    href: "/repair-services/notebook-tablet",
+    label: "ASUS·HP·LG 노트북 수리 안내",
+  },
+]
+
 export function generateStaticParams() {
   return branchSlugs.map((slug) => ({ slug }))
 }
@@ -71,6 +83,12 @@ export async function generateMetadata({ params }) {
       siteName: "아이스마일어게인",
       locale: "ko_KR",
       type: "website",
+      images: [
+        {
+          url: new URL(seo.image, canonicalUrl).href,
+          alt: `${seo.name} 위치 및 수리 안내`,
+        },
+      ],
     },
 
     robots: {
@@ -277,6 +295,17 @@ export default async function BranchDetailPage({ params }) {
               </li>
             ))}
           </ul>
+
+          <nav
+            aria-label={`${seo.shortName} 기기별 수리 안내`}
+            style={styles.serviceHubLinks}
+          >
+            {serviceHubLinks.map((item) => (
+              <Link key={item.href} href={item.href} style={styles.serviceHubLink}>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
         </article>
 
         <article style={styles.textCard}>
@@ -506,6 +535,24 @@ const styles = {
     color: "#1f2937",
     fontSize: "16px",
     lineHeight: 1.7,
+  },
+
+  serviceHubLinks: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "10px",
+    marginTop: "24px",
+  },
+
+  serviceHubLink: {
+    display: "inline-block",
+    padding: "10px 14px",
+    border: "1px solid #bfdbfe",
+    borderRadius: "999px",
+    color: "#1d4ed8",
+    backgroundColor: "#eff6ff",
+    textDecoration: "none",
+    fontWeight: 800,
   },
 
   caseButton: {

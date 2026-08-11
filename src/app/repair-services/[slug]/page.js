@@ -10,10 +10,24 @@ import {
   getPublicRepairCasePath,
   isPublicRepairCaseSlug,
 } from "@/lib/publicRepairCases";
+import { getOrganizationJsonLd } from "@/lib/siteSeo";
 
 export const revalidate = 1800;
 
 const baseUrl = "https://www.ismileagain.co.kr";
+
+function matchesServiceCase(item, caseTerms = []) {
+  if (caseTerms.length === 0) return true;
+
+  const searchableText = [item?.title, item?.device, item?.model, item?.symptom]
+    .filter(Boolean)
+    .join(" ")
+    .toLocaleLowerCase("ko-KR");
+
+  return caseTerms.some((term) =>
+    searchableText.includes(String(term).toLocaleLowerCase("ko-KR"))
+  );
+}
 
 export function generateStaticParams() {
   return getRepairServiceSlugs().map((slug) => ({
@@ -83,13 +97,13 @@ export default async function RepairServicePage({ params }) {
   const { data: repairCases, error } = await supabase
     .from("repair_cases")
     .select(
-      "id, slug, title, image_url, alt_text, branch, model, symptom, created_at"
+      "id, slug, title, image_url, alt_text, branch, device, model, symptom, created_at"
     )
     .eq("category", service.category)
     .not("slug", "is", null)
     .neq("slug", "")
     .order("created_at", { ascending: false })
-    .limit(12);
+    .limit(120);
 
   if (error) {
     console.error("repair service cases error:", error);
@@ -98,27 +112,53 @@ export default async function RepairServicePage({ params }) {
 
   const canonicalUrl = `${baseUrl}/repair-services/${service.slug}`;
 
-  const breadcrumbJsonLd = {
+  const pageJsonLd = {
     "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
+    "@graph": [
       {
-        "@type": "ListItem",
-        position: 1,
-        name: "홈",
-        item: baseUrl,
+        "@type": "BreadcrumbList",
+        "@id": `${canonicalUrl}#breadcrumb`,
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "홈",
+            item: baseUrl,
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: service.name,
+            item: canonicalUrl,
+          },
+        ],
       },
+      getOrganizationJsonLd(),
       {
-        "@type": "ListItem",
-        position: 2,
+        "@type": "Service",
+        "@id": `${canonicalUrl}#service`,
+        url: canonicalUrl,
         name: service.name,
-        item: canonicalUrl,
+        description: service.description,
+        serviceType: service.name,
+        image: `${baseUrl}${service.image}`,
+        areaServed: {
+          "@type": "Country",
+          name: "대한민국",
+        },
+        provider: {
+          "@id": `${baseUrl}/#organization`,
+        },
       },
     ],
   };
 
   const cases = (repairCases || [])
-    .filter((item) => isPublicRepairCaseSlug(item?.slug))
+    .filter(
+      (item) =>
+        isPublicRepairCaseSlug(item?.slug) &&
+        matchesServiceCase(item, service.caseTerms)
+    )
     .slice(0, 6);
 
   return (
@@ -126,7 +166,7 @@ export default async function RepairServicePage({ params }) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(breadcrumbJsonLd).replace(
+          __html: JSON.stringify(pageJsonLd).replace(
             /</g,
             "\\u003c"
           ),

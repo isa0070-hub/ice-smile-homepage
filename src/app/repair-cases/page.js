@@ -6,7 +6,11 @@ import {
   getPublicRepairCasePath,
   isPublicRepairCaseSlug,
 } from "@/lib/publicRepairCases";
-import { ORGANIZATION_ID } from "@/lib/branchSeo";
+import {
+  getOrganizationJsonLd,
+  getWebSiteJsonLd,
+  WEBSITE_ID,
+} from "@/lib/siteSeo";
 
 const BASE_URL = "https://www.ismileagain.co.kr";
 const PAGE_SIZE = 18;
@@ -124,16 +128,6 @@ function getPaginationItems(currentPage, totalPages) {
   return items;
 }
 
-function toAbsoluteUrl(url) {
-  if (!url) return "";
-
-  if (url.startsWith("http://") || url.startsWith("https://")) {
-    return url;
-  }
-
-  return `${BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
-}
-
 function makeJsonLd({
   cases = [],
   category = "전체",
@@ -155,23 +149,8 @@ function makeJsonLd({
   return {
     "@context": "https://schema.org",
     "@graph": [
-      {
-        "@type": "Organization",
-        "@id": ORGANIZATION_ID,
-        name: "아이스마일어게인",
-        url: BASE_URL,
-        image: toAbsoluteUrl(cases?.[0]?.image_url) || `${BASE_URL}/favicon.ico`,
-        sameAs: ["https://talk.naver.com/WCH5S2X"],
-      },
-      {
-        "@type": "WebSite",
-        "@id": `${BASE_URL}/#website`,
-        url: BASE_URL,
-        name: "아이스마일어게인",
-        publisher: {
-          "@id": `${BASE_URL}/#organization`,
-        },
-      },
+      getOrganizationJsonLd(),
+      getWebSiteJsonLd(),
       {
         "@type": "BreadcrumbList",
         "@id": `${canonicalUrl}#breadcrumb`,
@@ -208,7 +187,7 @@ function makeJsonLd({
         name: title,
         description,
         isPartOf: {
-          "@id": `${BASE_URL}/#website`,
+          "@id": WEBSITE_ID,
         },
         about: [
           "아이폰수리",
@@ -252,11 +231,18 @@ export async function generateMetadata({ searchParams }) {
       siteName: "아이스마일어게인",
       locale: "ko_KR",
       type: "website",
+      images: [
+        {
+          url: `${BASE_URL}/opengraph-image.jpg`,
+          alt: "아이스마일어게인 실제 수리사례",
+        },
+      ],
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title,
       description,
+      images: [`${BASE_URL}/opengraph-image.jpg`],
     },
   };
 }

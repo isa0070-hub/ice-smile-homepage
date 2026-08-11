@@ -613,6 +613,46 @@ function getRelatedBadge(item, related) {
   return "추천 사례";
 }
 
+function getServiceHubForCase(item) {
+  const searchableText = [item?.device, item?.model, item?.title]
+    .filter(Boolean)
+    .join(" ")
+    .toLocaleLowerCase("ko-KR");
+
+  if (item?.category === "애플") {
+    if (searchableText.includes("아이폰") || searchableText.includes("iphone")) {
+      return { href: "/repair-services/iphone", label: "아이폰 수리 안내" };
+    }
+
+    if (searchableText.includes("아이패드") || searchableText.includes("ipad")) {
+      return { href: "/repair-services/ipad", label: "아이패드 수리 안내" };
+    }
+
+    if (searchableText.includes("맥북") || searchableText.includes("macbook")) {
+      return { href: "/repair-services/macbook", label: "맥북 수리 안내" };
+    }
+
+    return { href: "/repair-services/apple", label: "애플 제품 수리 안내" };
+  }
+
+  if (item?.category === "마이크로소프트 서피스") {
+    return { href: "/repair-services/surface", label: "서피스 수리 안내" };
+  }
+
+  if (item?.category === "노트북 및 태블릿") {
+    if (searchableText.includes("레노버") || searchableText.includes("lenovo")) {
+      return { href: "/repair-services/lenovo", label: "레노버 수리 안내" };
+    }
+
+    return {
+      href: "/repair-services/notebook-tablet",
+      label: "노트북·태블릿 수리 안내",
+    };
+  }
+
+  return null;
+}
+
 async function getRelatedCases(item) {
   if (!item) return [];
 
@@ -796,6 +836,7 @@ export default async function RepairCaseDetailPage({ params }) {
   const displayTitle = makeDisplayTitle(item);
   const deviceModel = makeDeviceModelText(item);
   const displayKeyword = makeMetaKeyword(item);
+  const serviceHub = getServiceHubForCase(item);
   const normalizedSections = normalizeContentSections(item.content_sections);
   const processSections = normalizedSections.filter(
     (section) => section.type === "process",
@@ -988,6 +1029,15 @@ export default async function RepairCaseDetailPage({ params }) {
           )}
         </div>
       </section>
+
+      {serviceHub && (
+        <aside style={serviceHubCalloutStyle} aria-label="기기별 수리 안내">
+          <span>같은 기기군의 점검 범위와 접수 방법</span>
+          <Link href={serviceHub.href} style={serviceHubLinkStyle}>
+            {serviceHub.label}
+          </Link>
+        </aside>
+      )}
 
       {item.repair_content && (
         <section style={contentStyle}>{item.repair_content}</section>
@@ -1445,6 +1495,31 @@ const phoneLinkStyle = {
   color: "#1e3a8a",
   fontWeight: "900",
   textDecoration: "none",
+};
+
+const serviceHubCalloutStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "16px",
+  flexWrap: "wrap",
+  margin: "22px 0",
+  padding: "18px 20px",
+  border: "1px solid #bfdbfe",
+  borderRadius: "16px",
+  background: "#eff6ff",
+  color: "#334155",
+  fontWeight: 700,
+};
+
+const serviceHubLinkStyle = {
+  display: "inline-block",
+  padding: "10px 14px",
+  borderRadius: "999px",
+  background: "#1d4ed8",
+  color: "#ffffff",
+  textDecoration: "none",
+  fontWeight: 900,
 };
 
 const contentStyle = {

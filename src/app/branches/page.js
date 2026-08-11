@@ -31,6 +31,12 @@ export const metadata = {
     siteName: "아이스마일어게인",
     locale: "ko_KR",
     type: "website",
+    images: [
+      {
+        url: "https://www.ismileagain.co.kr/opengraph-image.jpg",
+        alt: "아이스마일어게인 강변·선릉·신도림 지점 안내",
+      },
+    ],
   },
 
   robots: {

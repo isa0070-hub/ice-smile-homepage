@@ -64,11 +64,18 @@ export async function generateMetadata({ params }) {
       locale: "ko_KR",
       type: "article",
       publishedTime: notice.created_at || undefined,
+      images: [
+        {
+          url: `${BASE_URL}/opengraph-image.jpg`,
+          alt: "아이스마일어게인 공지사항",
+        },
+      ],
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title,
       description,
+      images: [`${BASE_URL}/opengraph-image.jpg`],
     },
   };
 }
