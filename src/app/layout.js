@@ -4,6 +4,7 @@ import PopupNotice from "@/components/PopupNotice";
 import GoogleAnalyticsTracker from "@/components/GoogleAnalyticsTracker";
 import AdClickTracker from "@/components/AdClickTracker";
 import NaverConversionTracker from "@/components/NaverConversionTracker";
+import Link from "next/link";
 
 export const metadata = {
   metadataBase: new URL("https://www.ismileagain.co.kr"),
@@ -13,27 +14,6 @@ export const metadata = {
 
   description:
     "강변·선릉·신도림에서 아이패드, 아이폰, 맥북, 마이크로소프트 서피스, 레노버, HP, ASUS 노트북을 점검·수리하는 아이스마일어게인 홈페이지입니다.",
-
-  keywords: [
-    "아이스마일어게인",
-    "강남아이폰수리",
-    "선릉아이폰수리",
-    "강남서피스수리",
-    "강변아이패드수리",
-    "서피스배터리교체",
-    "HP노트북수리",
-    "아수스노트북수리",
-    "애플워치액정수리",
-    "아이폰액정수리",
-    "아이폰배터리교체",
-    "아이패드수리",
-    "맥북수리",
-    "LG그램수리",
-    "레노버노트북수리",
-    "맥북액정수리",
-    "맥북배터리교체",
-    "노트북배터리수리",
-  ],
 
   verification: {
     other: {
@@ -86,6 +66,36 @@ export default function RootLayout({ children }) {
               신도림점 : 서울 구로구 새말로 97 신도림테크노마트
               9층 57-1번 기둥 / 02-2111-8899
             </p>
+
+            <nav aria-label="주요 수리 서비스" style={footerServiceNavStyle}>
+              <Link href="/repair-services/iphone" style={footerLinkStyle}>
+                아이폰 수리
+              </Link>
+              <Link href="/repair-services/ipad" style={footerLinkStyle}>
+                아이패드 수리
+              </Link>
+              <Link href="/repair-services/macbook" style={footerLinkStyle}>
+                맥북 수리
+              </Link>
+              <Link href="/repair-services/surface" style={footerLinkStyle}>
+                서피스 수리
+              </Link>
+              <Link href="/repair-services/lenovo" style={footerLinkStyle}>
+                레노버 수리
+              </Link>
+              <Link
+                href="/repair-services/notebook-tablet"
+                style={footerLinkStyle}
+              >
+                ASUS·HP·LG 노트북 수리
+              </Link>
+              <Link href="/branches/seolleung" style={footerLinkStyle}>
+                강남 아이폰 수리 선릉점
+              </Link>
+              <Link href="/contact" style={footerLinkStyle}>
+                온라인 수리 문의
+              </Link>
+            </nav>
 
             <p>
               네이버 톡톡 :{" "}
@@ -141,4 +151,11 @@ const footerTalkLinkStyle = {
   color: "#ffffff",
   textDecoration: "underline",
   fontWeight: "800",
+};
+
+const footerServiceNavStyle = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: "10px 18px",
+  marginTop: "18px",
 };

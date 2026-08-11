@@ -10,6 +10,10 @@ import {
   branchSeo,
   getBranchLocalBusinessJsonLd,
 } from "@/lib/branchSeo";
+import {
+  getOrganizationJsonLd,
+  getWebSiteJsonLd,
+} from "@/lib/siteSeo";
 
 export const revalidate = 900;
 
@@ -30,6 +34,12 @@ export const metadata = {
     siteName: "아이스마일어게인",
     locale: "ko_KR",
     type: "website",
+    images: [
+      {
+        url: "/opengraph-image.jpg",
+        alt: "아이스마일어게인 스마트기기 수리센터",
+      },
+    ],
   },
 
   twitter: {
@@ -39,6 +49,25 @@ export const metadata = {
       "강변·선릉·신도림 3개 지점의 스마트기기 수리 안내와 실제 수리사례를 확인하세요.",
   },
 };
+
+const deviceServiceLinks = [
+  {
+    href: "/repair-services/iphone",
+    label: "아이폰 액정·배터리·침수 수리",
+  },
+  {
+    href: "/repair-services/ipad",
+    label: "아이패드 액정·유리·배터리 수리",
+  },
+  {
+    href: "/repair-services/macbook",
+    label: "맥북 액정·배터리·침수 수리",
+  },
+  {
+    href: "/repair-services/lenovo",
+    label: "레노버 노트북 수리",
+  },
+];
 
 function OptimizedImage({
   src,
@@ -85,15 +114,8 @@ export default async function Home() {
   const homeLocalBusinessJsonLd = {
     "@context": "https://schema.org",
     "@graph": [
-      {
-        "@type": "Organization",
-        "@id": "https://www.ismileagain.co.kr/#organization",
-        name: "아이스마일어게인",
-        url: "https://www.ismileagain.co.kr/",
-        department: Object.values(branchSeo).map((seo) => ({
-          "@id": `https://www.ismileagain.co.kr/branches/${seo.slug}#localbusiness`,
-        })),
-      },
+      getWebSiteJsonLd(),
+      getOrganizationJsonLd(),
       ...Object.values(branchSeo).map((seo) =>
         getBranchLocalBusinessJsonLd(seo)
       ),
@@ -258,17 +280,44 @@ export default async function Home() {
             <div style={cardStyle}>
               <OptimizedImage
                 src="/images/notebook-tablet.jpg"
-                alt="레노버 LG 노트북 태블릿 수리 이미지"
+                alt="레노버 ASUS HP LG 노트북 태블릿 수리 이미지"
               />
 
-              <h3>레노버 LG 노트북 태블릿 수리</h3>
+              <h3>레노버 ASUS HP LG 노트북 수리</h3>
               <p>레노버 노트북 수리</p>
-              <p>LG그램 수리</p>
-              <p>삼성 노트북 수리</p>
+              <p>ASUS·HP 노트북 수리</p>
+              <p>LG그램·삼성 노트북 수리</p>
               <p>액정교체 / 배터리교체 / 전원불량 점검</p>
             </div>
           </Link>
         </div>
+      </section>
+
+      <section
+        aria-labelledby="device-service-title"
+        style={{ ...sectionStyle, paddingTop: "8px" }}
+      >
+        <div style={trustIntroStyle}>
+          <p style={eyebrowStyle}>기기별 상세 안내</p>
+          <h2
+            id="device-service-title"
+            style={{ ...titleStyle, marginBottom: "16px" }}
+          >
+            모델과 증상에 맞는 수리 정보를 확인하세요
+          </h2>
+          <p style={sectionDescriptionStyle}>
+            기기별 주요 증상, 점검 범위, 실제 수리사례와 방문·택배 접수
+            방법을 한 페이지에서 확인할 수 있습니다.
+          </p>
+        </div>
+
+        <nav aria-label="기기별 수리 안내" style={trustLinkRowStyle}>
+          {deviceServiceLinks.map((item) => (
+            <Link key={item.href} href={item.href} style={trustLinkStyle}>
+              {item.label}
+            </Link>
+          ))}
+        </nav>
       </section>
 
       <section

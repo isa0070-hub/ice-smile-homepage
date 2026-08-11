@@ -15,6 +15,12 @@ export const metadata = {
     siteName: "아이스마일어게인",
     locale: "ko_KR",
     type: "website",
+    images: [
+      {
+        url: "/opengraph-image.jpg",
+        alt: "아이스마일어게인 공지사항",
+      },
+    ],
   },
 };
 
