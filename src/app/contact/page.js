@@ -48,8 +48,12 @@ export default function ContactPage() {
     }
 
     try {
-      await submitOnlineInquiry(form, submissionTokenRef.current)
-      trackNaverLead()
+      const result = await submitOnlineInquiry(form, submissionTokenRef.current)
+
+      if (result?.inserted === true) {
+        await trackNaverLead()
+      }
+
       alert("온라인 접수가 완료되었습니다. 확인 후 연락드리겠습니다.")
       window.location.assign("/")
     } catch (error) {

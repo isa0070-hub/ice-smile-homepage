@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 
 const NAVER_ACCOUNT_ID = "s_2da30a0ee568";
 const NAVER_COOKIE_DOMAIN = "ismileagain.co.kr";
+const LEAD_RETRY_DELAY_MS = 150;
+const LEAD_MAX_ATTEMPTS = 8;
 
 const EXCLUDED_PATHS = ["/admin", "/morning", "/api"];
 
@@ -26,32 +28,55 @@ function isExcludedPath(pathname = "") {
 }
 
 function initializeNaverTracking() {
-  if (typeof window === "undefined" || !window.wcs) {
+  if (
+    typeof window === "undefined" ||
+    !window.wcs ||
+    typeof window.wcs.inflow !== "function"
+  ) {
     return false;
   }
 
-  window.wcs_add = window.wcs_add || {};
-  window.wcs_add.wa = NAVER_ACCOUNT_ID;
-  window.wcs.inflow(NAVER_COOKIE_DOMAIN);
-  return true;
+  try {
+    window.wcs_add = window.wcs_add || {};
+    window.wcs_add.wa = NAVER_ACCOUNT_ID;
+    window.wcs.inflow(NAVER_COOKIE_DOMAIN);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function sendPageView() {
-  if (!initializeNaverTracking()) {
+  if (
+    !initializeNaverTracking() ||
+    typeof window.wcs_do !== "function"
+  ) {
     return false;
   }
 
-  window.wcs_do();
-  return true;
+  try {
+    window.wcs_do();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function sendConversion(type) {
-  if (!initializeNaverTracking() || !type) {
+  if (
+    !initializeNaverTracking() ||
+    !type ||
+    typeof window.wcs.trans !== "function"
+  ) {
     return false;
   }
 
-  window.wcs.trans({ type });
-  return true;
+  try {
+    const result = window.wcs.trans({ type });
+    return result !== false;
+  } catch {
+    return false;
+  }
 }
 
 function classifyContactConversion(element) {
@@ -111,8 +136,28 @@ function classifyContactConversion(element) {
   return null;
 }
 
-export function trackNaverLead() {
-  return sendConversion("lead");
+export async function trackNaverLead() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    for (let attempt = 0; attempt < LEAD_MAX_ATTEMPTS; attempt += 1) {
+      if (sendConversion("lead")) {
+        return true;
+      }
+
+      if (attempt < LEAD_MAX_ATTEMPTS - 1) {
+        await new Promise((resolve) => {
+          window.setTimeout(resolve, LEAD_RETRY_DELAY_MS);
+        });
+      }
+    }
+  } catch {
+    return false;
+  }
+
+  return false;
 }
 
 export default function NaverConversionTracker() {

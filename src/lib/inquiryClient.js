@@ -40,5 +40,14 @@ export async function submitOnlineInquiry(form, submissionToken) {
     );
   }
 
+  if (
+    result?.ok !== true ||
+    typeof result.inserted !== "boolean"
+  ) {
+    throw new Error(
+      "접수 저장 결과를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    );
+  }
+
   return result;
 }

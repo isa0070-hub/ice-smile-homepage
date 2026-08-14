@@ -18,6 +18,7 @@ const serviceHubLinks = [
   { href: "/repair-services/macbook", label: "맥북 수리 안내" },
   { href: "/repair-services/surface", label: "서피스 수리 안내" },
   { href: "/repair-services/lenovo", label: "레노버 수리 안내" },
+  { href: "/repair-services/apple", label: "애플 제품 수리 안내" },
   {
     href: "/repair-services/notebook-tablet",
     label: "ASUS·HP·LG 노트북 수리 안내",
@@ -264,6 +265,26 @@ export default async function BranchDetailPage({ params }) {
               <p>{branch.visit_info}</p>
             </div>
 
+            {branch.business_hours && (
+              <div style={styles.infoRow}>
+                <strong>영업시간</strong>
+                <p>
+                  {branch.business_hours.weekdays}
+                  <br />
+                  {branch.business_hours.closed}
+                  <br />
+                  {branch.business_hours.breakTime}
+                </p>
+              </div>
+            )}
+
+            {branch.parking_info && (
+              <div style={styles.infoRow}>
+                <strong>주차안내</strong>
+                <p>{branch.parking_info}</p>
+              </div>
+            )}
+
             <div className="branch-buttons" style={styles.buttons}>
               {branch.naver_map && (
                 <a
@@ -306,6 +327,11 @@ export default async function BranchDetailPage({ params }) {
               </Link>
             ))}
           </nav>
+
+          <p style={styles.independentNotice}>
+            아이스마일어게인은 제조사가 직접 운영하거나 공인한 공식 서비스센터가
+            아닌 독립 스마트기기 전문 수리센터입니다.
+          </p>
         </article>
 
         <article style={styles.textCard}>
@@ -553,6 +579,16 @@ const styles = {
     backgroundColor: "#eff6ff",
     textDecoration: "none",
     fontWeight: 800,
+  },
+
+  independentNotice: {
+    margin: "24px 0 0",
+    padding: "14px 16px",
+    borderRadius: "14px",
+    backgroundColor: "#f8fafc",
+    color: "#475569",
+    fontSize: "14px",
+    lineHeight: 1.7,
   },
 
   caseButton: {

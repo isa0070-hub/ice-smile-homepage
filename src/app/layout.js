@@ -83,6 +83,9 @@ export default function RootLayout({ children }) {
               <Link href="/repair-services/lenovo" style={footerLinkStyle}>
                 레노버 수리
               </Link>
+              <Link href="/repair-services/apple" style={footerLinkStyle}>
+                애플 제품 수리 안내
+              </Link>
               <Link
                 href="/repair-services/notebook-tablet"
                 style={footerLinkStyle}
