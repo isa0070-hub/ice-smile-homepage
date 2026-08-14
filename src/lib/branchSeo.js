@@ -71,6 +71,21 @@ export const branchSeo = deepFreeze({
     mapImage: "/images/map-seolleung.svg",
     visitInfo:
       "선릉역 1번 출구에서 나오자마자 바로 옆 1분 거리에 위치하고 있습니다.",
+    businessHours: {
+      weekdays: "월요일~금요일 10:30~19:30",
+      closed: "토요일·일요일, 공휴일·대체공휴일 휴무",
+      breakTime: "브레이크타임 없음",
+    },
+    parkingInfo:
+      "매장 등록 시 1시간 무료주차가 가능하며, 주차장 차량 높이는 2.3m로 제한됩니다.",
+    openingHoursSpecification: [
+      {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+        opens: "10:30",
+        closes: "19:30",
+      },
+    ],
     h1: "강남아이폰수리·강남아이패드수리",
     title:
       "강남아이폰수리·강남아이패드수리 | 아이스마일어게인 선릉점",
@@ -195,6 +210,8 @@ export function getBranchDisplayData(seo, branch = {}) {
     address1: seo.address1,
     address2: seo.address2,
     visit_info: branch.visit_info || seo.visitInfo,
+    business_hours: seo.businessHours || null,
+    parking_info: seo.parkingInfo || null,
     naver_map: seo.naverMap,
     map_image: branch.map_image || seo.mapImage,
     is_active: branch.is_active ?? true,
@@ -231,5 +248,8 @@ export function getBranchLocalBusinessJsonLd(seo) {
     image: new URL(seo.image, BASE_URL).href,
     hasMap: seo.naverMap,
     sameAs: [seo.naverMap],
+    ...(seo.openingHoursSpecification
+      ? { openingHoursSpecification: seo.openingHoursSpecification }
+      : {}),
   }
 }
