@@ -117,7 +117,7 @@ export async function POST(request) {
   const validation = validateInquirySubmission(parsedBody.value);
 
   if (validation.bot) {
-    return publicResponse({ ok: true });
+    return publicResponse({ ok: true, inserted: false });
   }
 
   if (validation.error) {
@@ -161,7 +161,7 @@ export async function POST(request) {
   }
 
   if (!insertion.inserted) {
-    return publicResponse({ ok: true, duplicate: true });
+    return publicResponse({ ok: true, inserted: false, duplicate: true });
   }
 
   try {
@@ -173,5 +173,5 @@ export async function POST(request) {
     );
   }
 
-  return publicResponse({ ok: true }, 201);
+  return publicResponse({ ok: true, inserted: true }, 201);
 }
