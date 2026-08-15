@@ -8,6 +8,9 @@ const NAVER_ACCOUNT_ID = "s_2da30a0ee568";
 const NAVER_COOKIE_DOMAIN = "ismileagain.co.kr";
 const LEAD_RETRY_DELAY_MS = 150;
 const LEAD_MAX_ATTEMPTS = 8;
+const PHONE_LIST_OPEN_SESSION_KEY = "ismile_phone_list_open_naver";
+let phoneListOpenSentInMemory = false;
+let phoneListOpenPendingPromise = null;
 
 const EXCLUDED_PATHS = ["/admin", "/morning", "/api"];
 
@@ -18,6 +21,7 @@ const CUSTOM_CONVERSIONS = {
   kakao_talk: "custom004",
   naver_talk: "custom005",
   online_inquiry_click: "custom006",
+  phone_list_open: "custom007",
 };
 
 function isExcludedPath(pathname = "") {
@@ -79,9 +83,87 @@ function sendConversion(type) {
   }
 }
 
+function hasPhoneListOpenInSession() {
+  if (phoneListOpenSentInMemory) {
+    return true;
+  }
+
+  try {
+    return window.sessionStorage.getItem(PHONE_LIST_OPEN_SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markPhoneListOpenInSession() {
+  phoneListOpenSentInMemory = true;
+
+  try {
+    window.sessionStorage.setItem(PHONE_LIST_OPEN_SESSION_KEY, "1");
+  } catch {
+    // 저장소를 사용할 수 없어도 전환 이벤트 전송은 계속합니다.
+  }
+}
+
+async function sendConversionWithRetry(type) {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    for (let attempt = 0; attempt < LEAD_MAX_ATTEMPTS; attempt += 1) {
+      if (sendConversion(type)) {
+        return true;
+      }
+
+      if (attempt < LEAD_MAX_ATTEMPTS - 1) {
+        await new Promise((resolve) => {
+          window.setTimeout(resolve, LEAD_RETRY_DELAY_MS);
+        });
+      }
+    }
+  } catch {
+    return false;
+  }
+
+  return false;
+}
+
+function trackPhoneListOpenOnce() {
+  if (hasPhoneListOpenInSession()) {
+    return Promise.resolve(false);
+  }
+
+  if (phoneListOpenPendingPromise) {
+    return phoneListOpenPendingPromise;
+  }
+
+  phoneListOpenPendingPromise = sendConversionWithRetry(
+    CUSTOM_CONVERSIONS.phone_list_open
+  )
+    .then((sent) => {
+      if (sent) {
+        markPhoneListOpenInSession();
+      }
+      return sent;
+    })
+    .finally(() => {
+      phoneListOpenPendingPromise = null;
+    });
+
+  return phoneListOpenPendingPromise;
+}
+
 function classifyContactConversion(element) {
   if (!element || typeof window === "undefined") {
     return null;
+  }
+
+  const dataElement = element.closest("[data-naver-conversion]");
+  const dataConversion = dataElement?.getAttribute("data-naver-conversion");
+
+  if (dataConversion === "phone_list_open") {
+    return CUSTOM_CONVERSIONS.phone_list_open;
   }
 
   const anchor = element.closest("a[href]");
@@ -137,27 +219,7 @@ function classifyContactConversion(element) {
 }
 
 export async function trackNaverLead() {
-  if (typeof window === "undefined") {
-    return false;
-  }
-
-  try {
-    for (let attempt = 0; attempt < LEAD_MAX_ATTEMPTS; attempt += 1) {
-      if (sendConversion("lead")) {
-        return true;
-      }
-
-      if (attempt < LEAD_MAX_ATTEMPTS - 1) {
-        await new Promise((resolve) => {
-          window.setTimeout(resolve, LEAD_RETRY_DELAY_MS);
-        });
-      }
-    }
-  } catch {
-    return false;
-  }
-
-  return false;
+  return sendConversionWithRetry("lead");
 }
 
 export default function NaverConversionTracker() {
@@ -175,7 +237,7 @@ export default function NaverConversionTracker() {
   }, [pathname, excluded, isReady]);
 
   useEffect(() => {
-    if (!isReady || excluded) {
+    if (excluded) {
       return;
     }
 
@@ -194,9 +256,16 @@ export default function NaverConversionTracker() {
 
       const conversionType = classifyContactConversion(clickedElement);
 
-      if (conversionType) {
-        sendConversion(conversionType);
+      if (!conversionType) {
+        return;
       }
+
+      if (conversionType === CUSTOM_CONVERSIONS.phone_list_open) {
+        void trackPhoneListOpenOnce();
+        return;
+      }
+
+      sendConversion(conversionType);
     }
 
     document.addEventListener("click", handleContactClick, true);
@@ -204,7 +273,7 @@ export default function NaverConversionTracker() {
     return () => {
       document.removeEventListener("click", handleContactClick, true);
     };
-  }, [excluded, isReady]);
+  }, [excluded]);
 
   if (excluded) {
     return null;

@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const GA_MEASUREMENT_ID = "G-YELJDXWV3G";
+const PHONE_LIST_OPEN_SESSION_KEY = "ismile_phone_list_open_ga";
+let phoneListOpenSentInMemory = false;
 
 const EXCLUDED_PATHS = [
   "/admin",
@@ -27,6 +29,28 @@ function cleanLabel(value = "") {
     .slice(0, 100);
 }
 
+function hasPhoneListOpenInSession() {
+  if (phoneListOpenSentInMemory) {
+    return true;
+  }
+
+  try {
+    return window.sessionStorage.getItem(PHONE_LIST_OPEN_SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markPhoneListOpenInSession() {
+  phoneListOpenSentInMemory = true;
+
+  try {
+    window.sessionStorage.setItem(PHONE_LIST_OPEN_SESSION_KEY, "1");
+  } catch {
+    // 저장소를 사용할 수 없어도 분석 이벤트 전송은 계속합니다.
+  }
+}
+
 function classifyContactClick(element) {
   if (!element || typeof window === "undefined") {
     return null;
@@ -34,6 +58,14 @@ function classifyContactClick(element) {
 
   const dataElement = element.closest("[data-ga-contact]");
   const dataType = dataElement?.getAttribute("data-ga-contact");
+
+  if (dataType === "phone_list_open") {
+    return {
+      eventName: "phone_list_open",
+      contactType: "phone_list",
+      linkUrl: "",
+    };
+  }
 
   if (dataType === "phone") {
     return {
@@ -236,6 +268,13 @@ export default function GoogleAnalyticsTracker() {
         return;
       }
 
+      if (
+        contactEvent.eventName === "phone_list_open" &&
+        hasPhoneListOpenInSession()
+      ) {
+        return;
+      }
+
       window.gtag(
         "event",
         contactEvent.eventName,
@@ -253,6 +292,10 @@ export default function GoogleAnalyticsTracker() {
           send_to: GA_MEASUREMENT_ID,
         }
       );
+
+      if (contactEvent.eventName === "phone_list_open") {
+        markPhoneListOpenInSession();
+      }
     }
 
 document.addEventListener(
