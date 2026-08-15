@@ -9,6 +9,8 @@ export default function PhoneContactButton({ buttonStyle }) {
     <>
       <button
         type="button"
+        data-ga-contact="phone_list_open"
+        data-naver-conversion="phone_list_open"
         onClick={() => setOpen(true)}
         style={{
           ...buttonStyle,
