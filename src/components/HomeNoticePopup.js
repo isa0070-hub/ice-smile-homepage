@@ -62,6 +62,8 @@ export default function HomeNoticePopup() {
         </button>
 
         {notice.image_url && (
+          // Legacy popup images can have arbitrary administrator-defined ratios.
+          // eslint-disable-next-line @next/next/no-img-element
           <img src={notice.image_url} alt={notice.title} style={styles.image} />
         )}
 

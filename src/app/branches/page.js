@@ -138,24 +138,18 @@ export default async function BranchesPage() {
               style={styles.card}
             >
               <div style={styles.mapBox}>
-                {detailUrl ? (
-                  <Link
-                    href={detailUrl}
-                    aria-label={`${displayName} 상세 안내 보기`}
-                  >
-                    <img
-                      src={branch.map_image}
-                      alt={`아이스마일어게인 ${displayName} 위치 약도`}
-                      style={styles.mapImage}
-                    />
-                  </Link>
-                ) : (
+                <Link
+                  href={detailUrl}
+                  aria-label={`${displayName} 상세 안내 보기`}
+                >
+                  {/* Map URLs can be replaced in admin and have mixed dimensions. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={branch.map_image}
                     alt={`아이스마일어게인 ${displayName} 위치 약도`}
                     style={styles.mapImage}
                   />
-                )}
+                </Link>
               </div>
 
               <div style={styles.info}>

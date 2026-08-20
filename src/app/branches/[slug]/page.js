@@ -228,6 +228,8 @@ export default async function BranchDetailPage({ params }) {
         <article className="branch-card" style={styles.card}>
         <div className="branch-detail-map-box" style={styles.mapBox}>
             {branch.map_image ? (
+              // Map URLs can be replaced in admin and have mixed dimensions.
+              // eslint-disable-next-line @next/next/no-img-element
               <img
               className="branch-detail-map-image"
               src={branch.map_image}

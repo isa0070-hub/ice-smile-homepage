@@ -8,38 +8,46 @@ export default function PopupNotice() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    let active = true;
+
+    async function loadPopup() {
+      const todayKey = `popup_closed_${new Date().toDateString()}`;
+
+      if (localStorage.getItem(todayKey) === "yes") {
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("popup_notices")
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!active) return;
+
+      if (error) {
+        console.error("팝업 불러오기 오류:", error);
+        return;
+      }
+
+      if (!data) {
+        console.log("활성화된 팝업이 없습니다.");
+        return;
+      }
+
+      setPopup(data);
+      setVisible(true);
+    }
+
     loadPopup();
+
+    return () => {
+      active = false;
+    };
   }, []);
-
-  async function loadPopup() {
-    const todayKey = `popup_closed_${new Date().toDateString()}`;
-
-    if (localStorage.getItem(todayKey) === "yes") {
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("popup_notices")
-      .select("*")
-      .eq("is_active", true)
-      .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (error) {
-      console.error("팝업 불러오기 오류:", error);
-      return;
-    }
-
-    if (!data) {
-      console.log("활성화된 팝업이 없습니다.");
-      return;
-    }
-
-    setPopup(data);
-    setVisible(true);
-  }
 
   function closePopup() {
     setVisible(false);
@@ -104,6 +112,8 @@ export default function PopupNotice() {
         }}
       >
         {popup.image_url && (
+          // Popup images are admin-authored and can have arbitrary aspect ratios.
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={popup.image_url}
             alt={popup.title || "팝업 이미지"}

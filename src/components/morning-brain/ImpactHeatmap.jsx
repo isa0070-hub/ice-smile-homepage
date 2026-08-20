@@ -27,7 +27,7 @@ export default function ImpactHeatmap({ impacts = [] }) {
       <div style={styles.header}>
         <div>
           <p style={styles.label}>Morning Brain</p>
-          <h2 style={styles.title}>Today's Impact Heatmap</h2>
+          <h2 style={styles.title}>Today’s Impact Heatmap</h2>
         </div>
 
         <div style={styles.badge}>

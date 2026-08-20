@@ -35,7 +35,8 @@ export async function POST(request) {
       );
     }
 
-    logInfo(`🙋 사용자 질문 분석 시작: ${question}`);
+    // 질문에는 개인적인 내용이 포함될 수 있으므로 원문을 서버 로그에 남기지 않습니다.
+    logInfo("🙋 사용자 질문 분석 시작");
 
     const latestBrief = await getLatestMorningBrief();
 

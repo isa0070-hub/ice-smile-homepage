@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { cache } from "react";
 import PhoneContactButton from "@/components/PhoneContactButton";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -912,11 +913,12 @@ export default async function RepairCaseDetailPage({ params }) {
       </p>
 
       {item.image_url && (
-        <img
+        <Image
           src={item.image_url}
           alt={makeSafeAltText(item.alt_text, displayTitle)}
-          width="1200"
-          height="900"
+          width={1200}
+          height={900}
+          sizes="(max-width: 1280px) calc(100vw - 48px), 1232px"
           fetchPriority="high"
           decoding="async"
           style={mainImageStyle}
@@ -1093,15 +1095,16 @@ export default async function RepairCaseDetailPage({ params }) {
                         style={structuredFigureStyle}
                       >
                         {image.image_url && (
-                          <img
+                          <Image
                             className="repair-structured-image"
                             src={image.image_url}
                             alt={makeSafeAltText(
                               image.alt_text || image.description,
                               `${displayTitle} 수리 과정 이미지 ${absoluteIndex + 1}`,
                             )}
-                            width="900"
-                            height="675"
+                            width={900}
+                            height={675}
+                            sizes="(max-width: 720px) 100vw, (max-width: 1100px) 50vw, 33vw"
                             loading="lazy"
                             decoding="async"
                             style={structuredImageStyle}
@@ -1132,14 +1135,15 @@ export default async function RepairCaseDetailPage({ params }) {
             {detailImages.map((image, index) => (
               <div key={image.id} style={detailImageCardStyle}>
                 {image.image_url && (
-                  <img
+                  <Image
                     src={image.image_url}
                     alt={makeSafeAltText(
                       image.alt_text || image.description,
                       `${displayTitle} 상세 이미지 ${index + 1}`,
                     )}
-                    width="1200"
-                    height="900"
+                    width={1200}
+                    height={900}
+                    sizes="(max-width: 1280px) calc(100vw - 48px), 1232px"
                     loading="lazy"
                     decoding="async"
                     style={detailImageStyle}
@@ -1206,15 +1210,16 @@ export default async function RepairCaseDetailPage({ params }) {
                 style={relatedCardStyle}
               >
                 {related.image_url ? (
-                  <img
+                  <Image
                     className="repair-related-image"
                     src={related.image_url}
                     alt={makeSafeAltText(
                       related.alt_text,
                       makeDisplayTitle(related),
                     )}
-                    width="600"
-                    height="450"
+                    width={600}
+                    height={450}
+                    sizes="(max-width: 720px) 100vw, (max-width: 1100px) 50vw, 33vw"
                     loading="lazy"
                     decoding="async"
                     style={relatedImageStyle}
