@@ -16,17 +16,32 @@ export const revalidate = 1800;
 
 const baseUrl = "https://www.ismileagain.co.kr";
 
-function matchesServiceCase(item, caseTerms = []) {
+function matchesServiceCase(item, service) {
+  const caseTerms = service?.caseTerms || [];
+
   if (caseTerms.length === 0) return true;
 
-  const searchableText = [item?.title, item?.device, item?.model, item?.symptom]
+  const deviceText = [item?.device, item?.model]
     .filter(Boolean)
     .join(" ")
     .toLocaleLowerCase("ko-KR");
 
-  return caseTerms.some((term) =>
-    searchableText.includes(String(term).toLocaleLowerCase("ko-KR"))
-  );
+  const widerText = [item?.title, item?.symptom]
+    .filter(Boolean)
+    .join(" ")
+    .toLocaleLowerCase("ko-KR");
+
+  const includesCaseTerm = (text) =>
+    caseTerms.some((term) =>
+      text.includes(String(term).toLocaleLowerCase("ko-KR"))
+    );
+
+  if (includesCaseTerm(deviceText)) return true;
+
+  // 기기·모델 정보가 없는 오래된 사례만 제목과 증상으로 보완한다.
+  // 이렇게 하면 "아이폰·아이패드"가 함께 언급된 제목이 다른 기기 허브에
+  // 섞여 노출되는 일을 줄일 수 있다.
+  return !deviceText && includesCaseTerm(widerText);
 }
 
 export function generateStaticParams() {
@@ -157,12 +172,17 @@ export default async function RepairServicePage({ params }) {
     .filter(
       (item) =>
         isPublicRepairCaseSlug(item?.slug) &&
-        matchesServiceCase(item, service.caseTerms)
+        matchesServiceCase(item, service)
     )
     .slice(0, 6);
 
+  const caseArchiveHref =
+    service.caseArchive?.href ||
+    `/repair-cases?category=${encodeURIComponent(service.category)}`;
+  const caseArchiveLabel = service.caseArchive?.label || "전체 수리사례 보기";
+
   return (
-    <main style={styles.page}>
+    <main className="repair-service-page" style={styles.page}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -277,6 +297,32 @@ export default async function RepairServicePage({ params }) {
           </div>
         </section>
 
+        {service.guidance && (
+          <section style={styles.guidanceSection}>
+            <p style={styles.sectionLabel}>정확한 상담을 위한 정보</p>
+            <h2 style={styles.sectionTitle}>{service.guidance.title}</h2>
+            <p style={styles.paragraph}>{service.guidance.description}</p>
+
+            <ol style={styles.guidanceList}>
+              {service.guidance.items.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ol>
+          </section>
+        )}
+
+        {service.focusCase && (
+          <section style={styles.focusCase}>
+            <p style={styles.sectionLabel}>수리사례로 보는 점검 기준</p>
+            <h2 style={styles.focusCaseTitle}>{service.focusCase.title}</h2>
+            <p style={styles.paragraph}>{service.focusCase.description}</p>
+
+            <Link href={service.focusCase.href} style={styles.focusCaseLink}>
+              {service.focusCase.linkLabel}
+            </Link>
+          </section>
+        )}
+
         <section style={styles.caseSection}>
           <div style={styles.sectionHeader}>
             <div>
@@ -287,12 +333,10 @@ export default async function RepairServicePage({ params }) {
             </div>
 
             <Link
-              href={`/repair-cases?category=${encodeURIComponent(
-                service.category
-              )}`}
+              href={caseArchiveHref}
               style={styles.textLink}
             >
-              전체 수리사례 보기
+              {caseArchiveLabel}
             </Link>
           </div>
 
@@ -561,6 +605,50 @@ const styles = {
     background: "#eff6ff",
     border: "1px solid #bfdbfe",
     borderRadius: "24px",
+  },
+
+  guidanceSection: {
+    marginTop: "24px",
+    padding: "32px",
+    background: "#ffffff",
+    border: "1px solid #dbeafe",
+    borderRadius: "24px",
+    boxShadow: "0 10px 28px rgba(15, 23, 42, 0.05)",
+  },
+
+  guidanceList: {
+    margin: "22px 0 0",
+    paddingLeft: "24px",
+    display: "grid",
+    gap: "12px",
+    color: "#334155",
+    fontSize: "16px",
+    lineHeight: 1.75,
+  },
+
+  focusCase: {
+    marginTop: "24px",
+    padding: "32px",
+    background: "#f8fafc",
+    border: "1px solid #cbd5e1",
+    borderRadius: "24px",
+  },
+
+  focusCaseTitle: {
+    margin: 0,
+    fontSize: "clamp(24px, 3vw, 31px)",
+    lineHeight: 1.35,
+    fontWeight: 900,
+    wordBreak: "keep-all",
+  },
+
+  focusCaseLink: {
+    display: "inline-block",
+    marginTop: "22px",
+    color: "#1d4ed8",
+    fontWeight: 900,
+    textDecoration: "underline",
+    textUnderlineOffset: "4px",
   },
 
   buttonWrap: {
