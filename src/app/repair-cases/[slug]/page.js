@@ -598,23 +598,104 @@ function makeJsonLd({ item, detailImages = [], phoneNumber }) {
   };
 }
 
+function getProductFamily(item) {
+  const deviceText = [item?.device, item?.model]
+    .filter(Boolean)
+    .join(" ")
+    .toLocaleLowerCase("ko-KR");
+
+  const titleText = String(item?.title || "").toLocaleLowerCase("ko-KR");
+
+  const detectFamily = (searchableText) => {
+    if (searchableText.includes("아이폰") || searchableText.includes("iphone")) {
+      return "iphone";
+    }
+
+    if (searchableText.includes("아이패드") || searchableText.includes("ipad")) {
+      return "ipad";
+    }
+
+    if (searchableText.includes("맥북") || searchableText.includes("macbook")) {
+      return "macbook";
+    }
+
+    if (
+      searchableText.includes("애플워치") ||
+      searchableText.includes("apple watch")
+    ) {
+      return "apple-watch";
+    }
+
+    if (searchableText.includes("아이맥") || searchableText.includes("imac")) {
+      return "imac";
+    }
+
+    if (searchableText.includes("서피스") || searchableText.includes("surface")) {
+      return "surface";
+    }
+
+    if (searchableText.includes("레노버") || searchableText.includes("lenovo")) {
+      return "lenovo";
+    }
+
+    return null;
+  };
+
+  // 제목에는 다른 기기군을 비교 설명으로 넣을 수 있으므로, 기기·모델 입력값을
+  // 우선해 같은 기기군 여부를 판정한다.
+  return detectFamily(deviceText) || detectFamily(titleText);
+}
+
 function getRelatedBadge(item, related) {
-  if (item?.device && related?.device === item.device) {
-    return "같은 기기";
+  const itemFamily = getProductFamily(item);
+  const relatedFamily = getProductFamily(related);
+
+  if (itemFamily && itemFamily === relatedFamily) {
+    return "같은 기기군";
   }
 
   if (item?.branch && related?.branch === item.branch) {
-    return "같은 지점";
+    return "같은 지점의 다른 사례";
   }
 
   if (item?.category && related?.category === item.category) {
-    return "같은 분류";
+    return "같은 분류의 다른 사례";
   }
 
   return "추천 사례";
 }
 
+function getRelatedRank(item, related) {
+  const itemFamily = getProductFamily(item);
+  const relatedFamily = getProductFamily(related);
+
+  if (itemFamily && itemFamily === relatedFamily) return 0;
+  if (item?.branch && related?.branch === item.branch) return 1;
+  if (item?.category && related?.category === item.category) return 2;
+
+  return 3;
+}
+
 function getServiceHubForCase(item) {
+  if (item?.slug === "iphone-15-screen-water-damage-no-display-repair") {
+    return {
+      href: "/repair-services/iphone",
+      label: "아이폰 침수·화면 불량 점검 범위",
+      context: "침수 후 재부팅이나 화면 불통을 점검할 때 확인하는 항목",
+    };
+  }
+
+  if (
+    item?.slug ===
+    "ipad-pro-12-9-94th-screen-water-damage-no-display-repair"
+  ) {
+    return {
+      href: "/repair-services/ipad",
+      label: "아이패드 침수·화면 불량 점검 범위",
+      context: "전면유리·화면 표시·터치·침수 여부를 함께 확인하는 항목",
+    };
+  }
+
   const searchableText = [item?.device, item?.model, item?.title]
     .filter(Boolean)
     .join(" ")
@@ -719,6 +800,16 @@ async function getRelatedCases(item) {
 
   return Array.from(relatedMap.values())
     .filter((related) => isPublicRepairCaseSlug(related?.slug))
+    .sort((left, right) => {
+      const rankDifference = getRelatedRank(item, left) - getRelatedRank(item, right);
+
+      if (rankDifference !== 0) return rankDifference;
+
+      return (
+        new Date(right?.created_at || 0).getTime() -
+        new Date(left?.created_at || 0).getTime()
+      );
+    })
     .slice(0, 6);
 }
 
@@ -1034,7 +1125,9 @@ export default async function RepairCaseDetailPage({ params }) {
 
       {serviceHub && (
         <aside style={serviceHubCalloutStyle} aria-label="기기별 수리 안내">
-          <span>같은 기기군의 점검 범위와 접수 방법</span>
+          <span>
+            {serviceHub.context || "같은 기기군의 점검 범위와 접수 방법"}
+          </span>
           <Link href={serviceHub.href} style={serviceHubLinkStyle}>
             {serviceHub.label}
           </Link>
@@ -1197,9 +1290,8 @@ export default async function RepairCaseDetailPage({ params }) {
           </h3>
 
           <p style={relatedIntroStyle}>
-            같은 기기, 같은 분류, 같은 지점의 수리사례를 함께 확인해보세요. 내부
-            연결이 자연스럽게 이어져 검색엔진이 수리사례 구조를 이해하는 데도
-            도움이 됩니다.
+            같은 기기군, 같은 지점, 같은 분류의 수리사례를 비교해 기기 상태와
+            점검 범위를 확인해보세요.
           </p>
 
           <div className="repair-related-grid" style={relatedGridStyle}>
