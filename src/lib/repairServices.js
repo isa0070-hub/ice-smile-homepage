@@ -201,6 +201,10 @@ export const repairServices = {
       label: "맥북 수리사례 전체 보기",
     },
 
+    // 현재 공개된 맥북 사례는 사실관계 검토가 필요한 항목이 있어,
+    // 서비스 허브에서는 특정 사례 카드를 대표 노출하지 않는다.
+    showRecentCases: false,
+
     guidance: {
       title: "맥북은 모델·칩·전원 반응을 먼저 확인합니다",
       description:

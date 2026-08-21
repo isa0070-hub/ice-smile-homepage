@@ -16,8 +16,23 @@ export const revalidate = 1800;
 
 const baseUrl = "https://www.ismileagain.co.kr";
 
+const productFamilyTerms = {
+  iphone: ["아이폰", "iphone"],
+  ipad: ["아이패드", "ipad"],
+  macbook: ["맥북", "macbook"],
+};
+
+function getProductFamilies(text) {
+  const normalizedText = String(text || "").toLocaleLowerCase("ko-KR");
+
+  return Object.entries(productFamilyTerms)
+    .filter(([, terms]) => terms.some((term) => normalizedText.includes(term)))
+    .map(([family]) => family);
+}
+
 function matchesServiceCase(item, service) {
   const caseTerms = service?.caseTerms || [];
+  const targetFamily = productFamilyTerms[service?.slug] ? service.slug : null;
 
   if (caseTerms.length === 0) return true;
 
@@ -36,11 +51,24 @@ function matchesServiceCase(item, service) {
       text.includes(String(term).toLocaleLowerCase("ko-KR"))
     );
 
+  if (targetFamily) {
+    const metadataFamilies = getProductFamilies(deviceText);
+
+    if (metadataFamilies.length > 0) {
+      return (
+        metadataFamilies.length === 1 && metadataFamilies[0] === targetFamily
+      );
+    }
+
+    // 기기·모델 정보가 비어 있는 오래된 사례는 제목·증상에서 한 제품군만
+    // 분명히 식별될 때만 보완한다. 서로 다른 제품군이 함께 있으면 제외한다.
+    const widerFamilies = getProductFamilies(widerText);
+    return widerFamilies.length === 1 && widerFamilies[0] === targetFamily;
+  }
+
   if (includesCaseTerm(deviceText)) return true;
 
-  // 기기·모델 정보가 없는 오래된 사례만 제목과 증상으로 보완한다.
-  // 이렇게 하면 "아이폰·아이패드"가 함께 언급된 제목이 다른 기기 허브에
-  // 섞여 노출되는 일을 줄일 수 있다.
+  // 위 기기별 허브 외의 품목은 기존 용어 기반 보완 필터를 유지한다.
   return !deviceText && includesCaseTerm(widerText);
 }
 
@@ -175,6 +203,7 @@ export default async function RepairServicePage({ params }) {
         matchesServiceCase(item, service)
     )
     .slice(0, 6);
+  const showRecentCases = service.showRecentCases !== false;
 
   const caseArchiveHref =
     service.caseArchive?.href ||
@@ -328,7 +357,9 @@ export default async function RepairServicePage({ params }) {
             <div>
               <p style={styles.sectionLabel}>실제 작업 사례</p>
               <h2 style={styles.sectionTitle}>
-                최근 {service.name} 수리사례
+                {showRecentCases
+                  ? `최근 ${service.name} 수리사례`
+                  : `${service.name} 수리사례`}
               </h2>
             </div>
 
@@ -340,7 +371,7 @@ export default async function RepairServicePage({ params }) {
             </Link>
           </div>
 
-          {cases.length > 0 ? (
+          {showRecentCases && cases.length > 0 ? (
             <div style={styles.caseGrid}>
               {cases.map((item) => (
                 <Link
@@ -379,9 +410,14 @@ export default async function RepairServicePage({ params }) {
                 </Link>
               ))}
             </div>
-          ) : (
+          ) : showRecentCases ? (
             <div style={styles.emptyCard}>
               해당 품목의 수리사례를 준비 중입니다.
+            </div>
+          ) : (
+            <div style={styles.emptyCard}>
+              맥북은 모델·칩·증상에 따라 점검 범위가 달라, 모델별 실제
+              수리사례 목록에서 확인할 수 있습니다.
             </div>
           )}
         </section>

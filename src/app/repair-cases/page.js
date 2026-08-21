@@ -27,6 +27,7 @@ const deviceFilters = {
     description:
       "아이폰 액정 파손, 배터리 저하, 침수, 충전·전원 불량의 실제 점검과 수리사례를 확인하세요.",
     terms: ["아이폰", "iphone"],
+    excludeTerms: ["아이패드", "ipad", "맥북", "macbook"],
   },
   ipad: {
     slug: "ipad",
@@ -36,6 +37,7 @@ const deviceFilters = {
     description:
       "아이패드 전면유리·액정 파손, 배터리 스웰링, 침수, 충전·전원 불량의 실제 점검과 수리사례를 확인하세요.",
     terms: ["아이패드", "ipad"],
+    excludeTerms: ["아이폰", "iphone", "맥북", "macbook"],
   },
   macbook: {
     slug: "macbook",
@@ -45,6 +47,7 @@ const deviceFilters = {
     description:
       "맥북 에어·프로의 액정, 배터리, 침수, 충전·전원 관련 실제 점검과 수리사례를 확인하세요.",
     terms: ["맥북", "macbook"],
+    excludeTerms: ["아이폰", "iphone", "아이패드", "ipad"],
   },
 };
 
@@ -169,6 +172,21 @@ function getDeviceSearchFilter(device) {
       deviceSearchFields.map((field) => `${field}.ilike.%${term}%`),
     )
     .join(",");
+}
+
+function excludeConflictingDeviceTerms(query, device) {
+  const deviceFilter = getDeviceFilter(device);
+
+  if (!deviceFilter?.excludeTerms?.length) return query;
+
+  return deviceFilter.excludeTerms.reduce(
+    (filteredQuery, term) =>
+      deviceSearchFields.reduce(
+        (fieldQuery, field) => fieldQuery.not(field, "ilike", `%${term}%`),
+        filteredQuery,
+      ),
+    query,
+  );
 }
 
 function getPaginationItems(currentPage, totalPages) {
@@ -345,9 +363,12 @@ export default async function RepairCasesPage({ searchParams }) {
     .order("id", { ascending: false });
 
   if (device) {
-    query = query
-      .eq("category", deviceFilters[device].category)
-      .or(getDeviceSearchFilter(device));
+    query = excludeConflictingDeviceTerms(
+      query
+        .eq("category", deviceFilters[device].category)
+        .or(getDeviceSearchFilter(device)),
+      device,
+    );
   } else if (category !== "전체") {
     query = query.eq("category", category);
   }
