@@ -18,6 +18,40 @@ const MAX_PAGE = 10000;
 
 const categories = ["전체", "애플", "마이크로소프트 서피스", "노트북 및 태블릿"];
 
+const deviceFilters = {
+  iphone: {
+    slug: "iphone",
+    category: "애플",
+    label: "아이폰",
+    title: "아이폰 액정·배터리·침수 수리사례 | 아이스마일어게인",
+    description:
+      "아이폰 액정 파손, 배터리 저하, 침수, 충전·전원 불량의 실제 점검과 수리사례를 확인하세요.",
+    terms: ["아이폰", "iphone"],
+  },
+  ipad: {
+    slug: "ipad",
+    category: "애플",
+    label: "아이패드",
+    title: "아이패드 액정·유리·배터리 수리사례 | 아이스마일어게인",
+    description:
+      "아이패드 전면유리·액정 파손, 배터리 스웰링, 침수, 충전·전원 불량의 실제 점검과 수리사례를 확인하세요.",
+    terms: ["아이패드", "ipad"],
+  },
+  macbook: {
+    slug: "macbook",
+    category: "애플",
+    label: "맥북",
+    title: "맥북 액정·배터리·침수·전원 수리사례 | 아이스마일어게인",
+    description:
+      "맥북 에어·프로의 액정, 배터리, 침수, 충전·전원 관련 실제 점검과 수리사례를 확인하세요.",
+    terms: ["맥북", "macbook"],
+  },
+};
+
+// 기기·모델 입력값을 기준으로만 기기별 목록을 만든다. 제목에 다른 제품군을
+// 함께 나열한 사례가 잘못 섞이는 것을 막기 위한 필터다.
+const deviceSearchFields = ["device", "model"];
+
 const categoryMetadata = {
   전체: {
     title:
@@ -48,12 +82,45 @@ function normalizeCategory(category) {
   return categories.includes(category) ? category : "전체";
 }
 
+function normalizeDevice(device) {
+  const rawDevice = Array.isArray(device) ? device[0] : device;
+  return deviceFilters[rawDevice] ? rawDevice : null;
+}
+
+function getDeviceFilter(device) {
+  const normalizedDevice = normalizeDevice(device);
+  return normalizedDevice ? deviceFilters[normalizedDevice] : null;
+}
+
 function getCategoryTitle(category) {
   return categoryMetadata[normalizeCategory(category)].title;
 }
 
 function getCategoryDescription(category) {
   return categoryMetadata[normalizeCategory(category)].description;
+}
+
+function getArchiveLabel(category, device) {
+  const deviceFilter = getDeviceFilter(device);
+  return deviceFilter ? deviceFilter.label : normalizeCategory(category);
+}
+
+function getArchiveTitle(category, page, device) {
+  const deviceFilter = getDeviceFilter(device);
+  const title = deviceFilter
+    ? deviceFilter.title
+    : getCategoryTitle(category);
+
+  return page > 1 ? `${title} - ${page}페이지` : title;
+}
+
+function getArchiveDescription(category, page, device) {
+  const deviceFilter = getDeviceFilter(device);
+  const description = deviceFilter
+    ? deviceFilter.description
+    : getCategoryDescription(category);
+
+  return page > 1 ? `${description} 현재 ${page}페이지입니다.` : description;
 }
 
 function normalizePage(value) {
@@ -67,11 +134,16 @@ function normalizePage(value) {
   return Number.isSafeInteger(page) && page > 0 && page <= MAX_PAGE ? page : 1;
 }
 
-function getArchivePath(category, page = 1) {
-  const safeCategory = normalizeCategory(category);
+function getArchivePath(category, page = 1, device = null) {
+  const deviceFilter = getDeviceFilter(device);
+  const safeCategory = deviceFilter
+    ? deviceFilter.category
+    : normalizeCategory(category);
   const params = new URLSearchParams();
 
-  if (safeCategory !== "전체") {
+  if (deviceFilter) {
+    params.set("device", deviceFilter.slug);
+  } else if (safeCategory !== "전체") {
     params.set("category", safeCategory);
   }
 
@@ -83,18 +155,20 @@ function getArchivePath(category, page = 1) {
   return `/repair-cases${query ? `?${query}` : ""}`;
 }
 
-function getCanonicalUrl(category, page = 1) {
-  return `${BASE_URL}${getArchivePath(category, page)}`;
+function getCanonicalUrl(category, page = 1, device = null) {
+  return `${BASE_URL}${getArchivePath(category, page, device)}`;
 }
 
-function getPageTitle(category, page) {
-  const title = getCategoryTitle(category);
-  return page > 1 ? `${title} - ${page}페이지` : title;
-}
+function getDeviceSearchFilter(device) {
+  const deviceFilter = getDeviceFilter(device);
 
-function getPageDescription(category, page) {
-  const description = getCategoryDescription(category);
-  return page > 1 ? `${description} 현재 ${page}페이지입니다.` : description;
+  if (!deviceFilter) return "";
+
+  return deviceFilter.terms
+    .flatMap((term) =>
+      deviceSearchFields.map((field) => `${field}.ilike.%${term}%`),
+    )
+    .join(",");
 }
 
 function getPaginationItems(currentPage, totalPages) {
@@ -131,12 +205,14 @@ function getPaginationItems(currentPage, totalPages) {
 function makeJsonLd({
   cases = [],
   category = "전체",
+  device = null,
   page = 1,
   totalCount = 0,
 }) {
-  const title = getPageTitle(category, page);
-  const description = getPageDescription(category, page);
-  const canonicalUrl = getCanonicalUrl(category, page);
+  const archiveLabel = getArchiveLabel(category, device);
+  const title = getArchiveTitle(category, page, device);
+  const description = getArchiveDescription(category, page, device);
+  const canonicalUrl = getCanonicalUrl(category, page, device);
   const firstPosition = (page - 1) * PAGE_SIZE;
 
   const itemListElement = cases.map((item, index) => ({
@@ -172,10 +248,7 @@ function makeJsonLd({
       {
         "@type": "ItemList",
         "@id": `${canonicalUrl}#itemlist`,
-        name:
-          category === "전체"
-            ? "전체 수리사례 목록"
-            : `${category} 수리사례 목록`,
+        name: `${archiveLabel} 수리사례 목록`,
         itemListOrder: "https://schema.org/ItemListOrderDescending",
         numberOfItems: totalCount,
         itemListElement,
@@ -211,12 +284,15 @@ function makeJsonLd({
 
 export async function generateMetadata({ searchParams }) {
   const currentParams = await searchParams;
-  const category = normalizeCategory(currentParams?.category);
+  const device = normalizeDevice(currentParams?.device);
+  const category = device
+    ? deviceFilters[device].category
+    : normalizeCategory(currentParams?.category);
   const page = normalizePage(currentParams?.page);
 
-  const title = getPageTitle(category, page);
-  const description = getPageDescription(category, page);
-  const canonicalUrl = getCanonicalUrl(category, page);
+  const title = getArchiveTitle(category, page, device);
+  const description = getArchiveDescription(category, page, device);
+  const canonicalUrl = getCanonicalUrl(category, page, device);
 
   return {
     title,
@@ -249,9 +325,13 @@ export async function generateMetadata({ searchParams }) {
 
 export default async function RepairCasesPage({ searchParams }) {
   const currentParams = await searchParams;
-  const category = normalizeCategory(currentParams?.category);
+  const device = normalizeDevice(currentParams?.device);
+  const category = device
+    ? deviceFilters[device].category
+    : normalizeCategory(currentParams?.category);
   const currentPage = normalizePage(currentParams?.page);
   const firstRow = (currentPage - 1) * PAGE_SIZE;
+  const archiveLabel = getArchiveLabel(category, device);
 
   let query = supabase
     .from("repair_cases")
@@ -264,7 +344,11 @@ export default async function RepairCasesPage({ searchParams }) {
     .order("created_at", { ascending: false })
     .order("id", { ascending: false });
 
-  if (category !== "전체") {
+  if (device) {
+    query = query
+      .eq("category", deviceFilters[device].category)
+      .or(getDeviceSearchFilter(device));
+  } else if (category !== "전체") {
     query = query.eq("category", category);
   }
 
@@ -292,6 +376,7 @@ export default async function RepairCasesPage({ searchParams }) {
   const jsonLd = makeJsonLd({
     cases: safeCases,
     category,
+    device,
     page: currentPage,
     totalCount,
   });
@@ -317,7 +402,9 @@ export default async function RepairCasesPage({ searchParams }) {
       <section style={heroSectionStyle}>
         <p style={heroLabelStyle}>Repair Case Archive</p>
 
-        <h1 style={heroTitleStyle}>실제 수리사례</h1>
+        <h1 style={heroTitleStyle}>
+          {device ? `${archiveLabel} 실제 수리사례` : "실제 수리사례"}
+        </h1>
 
         <p style={heroDescriptionStyle}>
           아이스마일어게인 수리사례에서는 아이폰, 아이패드, 맥북,
@@ -379,9 +466,30 @@ export default async function RepairCasesPage({ searchParams }) {
         ))}
       </div>
 
+      {category === "애플" && (
+        <nav aria-label="애플 기기별 수리사례" style={deviceFilterWrapStyle}>
+          <span style={deviceFilterLabelStyle}>기기별 사례</span>
+          {Object.values(deviceFilters).map((filter) => (
+            <a
+              key={filter.slug}
+              href={getArchivePath(filter.category, 1, filter.slug)}
+              style={{
+                ...deviceFilterLinkStyle,
+                background: device === filter.slug ? "#0f172a" : "#ffffff",
+                color: device === filter.slug ? "#ffffff" : "#0f172a",
+              }}
+            >
+              {filter.label}
+            </a>
+          ))}
+        </nav>
+      )}
+
       <section style={currentListInfoStyle}>
         <h2 style={currentListTitleStyle}>
-          {category === "전체" ? "전체 수리사례" : `${category} 수리사례`}
+          {archiveLabel === "전체"
+            ? "전체 수리사례"
+            : `${archiveLabel} 수리사례`}
         </h2>
 
         <p style={currentListTextStyle}>
@@ -458,7 +566,7 @@ export default async function RepairCasesPage({ searchParams }) {
         <nav aria-label="수리사례 페이지" style={paginationStyle}>
           {currentPage > 1 && (
             <a
-              href={getArchivePath(category, currentPage - 1)}
+              href={getArchivePath(category, currentPage - 1, device)}
               rel="prev"
               style={paginationLinkStyle}
             >
@@ -470,7 +578,7 @@ export default async function RepairCasesPage({ searchParams }) {
             typeof item === "number" ? (
               <a
                 key={item}
-                href={getArchivePath(category, item)}
+                href={getArchivePath(category, item, device)}
                 aria-current={item === currentPage ? "page" : undefined}
                 style={{
                   ...paginationLinkStyle,
@@ -492,7 +600,7 @@ export default async function RepairCasesPage({ searchParams }) {
 
           {currentPage < totalPages && (
             <a
-              href={getArchivePath(category, currentPage + 1)}
+              href={getArchivePath(category, currentPage + 1, device)}
               rel="next"
               style={paginationLinkStyle}
             >
@@ -648,6 +756,33 @@ const categoryWrapStyle = {
   gap: "12px",
   flexWrap: "wrap",
   marginBottom: "34px",
+};
+
+const deviceFilterWrapStyle = {
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
+  flexWrap: "wrap",
+  margin: "-14px 0 34px",
+  padding: "16px 18px",
+  border: "1px solid #dbeafe",
+  borderRadius: "16px",
+  background: "#f8fbff",
+};
+
+const deviceFilterLabelStyle = {
+  marginRight: "2px",
+  color: "#475569",
+  fontWeight: "800",
+};
+
+const deviceFilterLinkStyle = {
+  display: "inline-block",
+  padding: "9px 14px",
+  border: "1px solid #cbd5e1",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: "800",
 };
 
 const categoryButtonStyle = {
