@@ -45,7 +45,9 @@ export default async function sitemap() {
 
   if (error) {
     console.error("sitemap repair_cases error:", error);
-    throw new Error("사이트맵의 수리사례 URL을 불러오지 못했습니다.");
+    // Keep the core static/service URLs crawlable when the optional
+    // repair-case query is temporarily unavailable.
+    cases = [];
   }
 
   const safeCases = (cases || []).filter((item) =>

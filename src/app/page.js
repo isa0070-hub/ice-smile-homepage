@@ -94,21 +94,29 @@ function OptimizedImage({
 }
 
 export default async function Home() {
-  const latestCasesResult = await supabase
-    .from("repair_cases")
-    .select("id, slug, image_url, alt_text, title, branch")
-    .not("slug", "is", null)
-    .neq("slug", "")
-    .order("created_at", { ascending: false })
-    .limit(8);
+  let latestCases = [];
+  let caseDataAvailable = true;
 
-  const latestCases = (latestCasesResult.data || []).filter((item) =>
-    isPublicRepairCaseSlug(item?.slug),
-  );
+  try {
+    const { data, error } = await supabase
+      .from("repair_cases")
+      .select("id, slug, image_url, alt_text, title, branch")
+      .not("slug", "is", null)
+      .neq("slug", "")
+      .order("created_at", { ascending: false })
+      .limit(8);
 
-  if (latestCasesResult.error) {
-    console.error("homepage repair_cases error:", latestCasesResult.error);
-    throw new Error("최근 수리사례를 불러오지 못했습니다.");
+    if (error) {
+      console.error("homepage repair_cases error:", error);
+      caseDataAvailable = false;
+    } else {
+      latestCases = (data || []).filter((item) =>
+        isPublicRepairCaseSlug(item?.slug),
+      );
+    }
+  } catch (error) {
+    console.error("homepage repair_cases exception:", error);
+    caseDataAvailable = false;
   }
 
   const homeLocalBusinessJsonLd = {
@@ -415,40 +423,42 @@ export default async function Home() {
         </div>
       </section>
 
-      <section
-        style={{
-          ...sectionStyle,
-          paddingTop: "20px",
-        }}
-      >
-        <h2 style={titleStyle}>최근 수리사례</h2>
+      {caseDataAvailable && (
+        <section
+          style={{
+            ...sectionStyle,
+            paddingTop: "20px",
+          }}
+        >
+          <h2 style={titleStyle}>최근 수리사례</h2>
 
-        <div style={gridStyle}>
-          {latestCases && latestCases.length > 0 ? (
-            latestCases.map((item) => (
-              <Link
-                key={item.id}
-                href={getPublicRepairCasePath(item.slug)}
-                style={{ color: "inherit", textDecoration: "none" }}
-              >
-                <div style={cardStyle}>
-                  <OptimizedImage
-                    src={item.image_url}
-                    alt={item.alt_text || item.title}
-                  />
+          <div style={gridStyle}>
+            {latestCases.length > 0 ? (
+              latestCases.map((item) => (
+                <Link
+                  key={item.id}
+                  href={getPublicRepairCasePath(item.slug)}
+                  style={{ color: "inherit", textDecoration: "none" }}
+                >
+                  <div style={cardStyle}>
+                    <OptimizedImage
+                      src={item.image_url}
+                      alt={item.alt_text || item.title}
+                    />
 
-                  <h3>{item.title}</h3>
-                  <p>{item.branch}</p>
-                </div>
-              </Link>
-            ))
-          ) : (
-            <p style={{ textAlign: "center" }}>
-              등록된 수리사례가 없습니다.
-            </p>
-          )}
-        </div>
-      </section>
+                    <h3>{item.title}</h3>
+                    <p>{item.branch}</p>
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <p style={{ textAlign: "center" }}>
+                등록된 수리사례가 없습니다.
+              </p>
+            )}
+          </div>
+        </section>
+      )}
 
       <section style={sectionStyle}>
         <h2 style={titleStyle}>온라인 접수 · 상담 가능</h2>

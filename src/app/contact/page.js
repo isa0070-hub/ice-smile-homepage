@@ -1,29 +1,94 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { Suspense, useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { trackNaverLead } from "@/components/NaverConversionTracker"
 import {
   createInquirySubmissionToken,
   submitOnlineInquiry,
 } from "@/lib/inquiryClient"
 
-export default function ContactPage() {
-  const [form, setForm] = useState({
+const BRANCH_PREFILLS = Object.freeze({
+  gangbyeon: "강변점",
+  seolleung: "선릉점",
+  sindorim: "신도림점",
+})
+
+const DEVICE_PREFILLS = Object.freeze({
+  iphone: "아이폰",
+  ipad: "아이패드",
+  macbook: "맥북",
+  surface: "서피스",
+  lenovo: "레노버",
+})
+
+function getAllowedPrefill(prefills, value) {
+  if (typeof value !== "string") return null
+
+  return prefills[value.trim().toLowerCase()] || null
+}
+
+function createInitialForm({ preferredBranch, device }) {
+  return {
     customer_name: "",
     phone: "",
-    device: "",
+    device: device || "",
     model: "",
     symptom: "",
-    preferred_branch: "강변점",
+    preferred_branch: preferredBranch || "강변점",
     contact_time: "",
     memo: "",
     website: "",
     privacy_consent: false,
-  })
+  }
+}
+
+export default function ContactPage() {
+  return <ContactForm />
+}
+
+function ContactQueryPrefill({ onPrefill }) {
+  const searchParams = useSearchParams()
+  const preferredBranch = getAllowedPrefill(
+    BRANCH_PREFILLS,
+    searchParams?.get("branch"),
+  )
+  const device = getAllowedPrefill(
+    DEVICE_PREFILLS,
+    searchParams?.get("device"),
+  )
+
+  useEffect(() => {
+    onPrefill({ preferredBranch, device })
+  }, [device, onPrefill, preferredBranch])
+
+  return null
+}
+
+function ContactForm() {
+  const [form, setForm] = useState(() =>
+    createInitialForm({ preferredBranch: null, device: null }),
+  )
 
   const [loading, setLoading] = useState(false)
   const submissionTokenRef = useRef(null)
+  const applyPrefill = useCallback(({ preferredBranch, device }) => {
+    if (!preferredBranch && !device) return
+
+    setForm((previous) => {
+      const next = {
+        ...previous,
+        ...(preferredBranch ? { preferred_branch: preferredBranch } : {}),
+        ...(device ? { device } : {}),
+      }
+
+      return next.preferred_branch === previous.preferred_branch &&
+        next.device === previous.device
+        ? previous
+        : next
+    })
+  }, [])
 
   const handleChange = (e) => {
     const { checked, name, type, value } = e.target
@@ -66,6 +131,10 @@ export default function ContactPage() {
   return (
     <main style={styles.page}>
       <section style={styles.box}>
+        <Suspense fallback={null}>
+          <ContactQueryPrefill onPrefill={applyPrefill} />
+        </Suspense>
+
   <Link href="/" style={styles.backButton}>
     ← 홈페이지로 돌아가기
   </Link>
