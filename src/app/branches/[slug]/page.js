@@ -129,6 +129,11 @@ export default async function BranchDetailPage({ params }) {
   const branch = getBranchDisplayData(seo, databaseBranch)
   const canonicalUrl = getBranchCanonicalUrl(seo)
   const branchFaqs = getBranchFaqs(seo)
+  const contactHref = `/contact?branch=${encodeURIComponent(seo.slug)}`
+  const seolleungIpadContactHref =
+    seo.slug === "seolleung"
+      ? "/contact?branch=seolleung&device=ipad"
+      : null
 
   const localBusinessJsonLd = {
     "@context": "https://schema.org",
@@ -299,9 +304,18 @@ export default async function BranchDetailPage({ params }) {
                 </a>
               )}
 
-              <Link href="/contact" style={styles.secondaryButton}>
+              <Link href={contactHref} style={styles.secondaryButton}>
                 온라인 문의
               </Link>
+
+              {seolleungIpadContactHref && (
+                <Link
+                  href={seolleungIpadContactHref}
+                  style={styles.secondaryButton}
+                >
+                  아이패드 수리 문의
+                </Link>
+              )}
             </div>
           </div>
         </article>
@@ -383,7 +397,7 @@ export default async function BranchDetailPage({ params }) {
             <a href={`tel:${branch.phone}`} style={styles.primaryButton}>
               {seo.shortName} 전화 상담
             </a>
-            <Link href="/contact" style={styles.secondaryButton}>
+            <Link href={contactHref} style={styles.secondaryButton}>
               사진·증상 온라인 문의
             </Link>
           </div>

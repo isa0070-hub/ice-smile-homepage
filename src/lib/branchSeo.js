@@ -202,20 +202,22 @@ export function getBranchLocalBusinessId(seo) {
 }
 
 export function getBranchDisplayData(seo, branch = {}) {
+  const displayBranch = branch || {}
+
   return {
-    id: branch.id || seo.slug,
+    id: displayBranch.id || seo.slug,
     slug: seo.slug,
     name: seo.shortName,
     phone: seo.phone,
     address1: seo.address1,
     address2: seo.address2,
-    visit_info: branch.visit_info || seo.visitInfo,
+    visit_info: displayBranch.visit_info || seo.visitInfo,
     business_hours: seo.businessHours || null,
     parking_info: seo.parkingInfo || null,
     naver_map: seo.naverMap,
-    map_image: branch.map_image || seo.mapImage,
-    is_active: branch.is_active ?? true,
-    sort_order: branch.sort_order ?? branchSlugs.indexOf(seo.slug),
+    map_image: displayBranch.map_image || seo.mapImage,
+    is_active: displayBranch.is_active ?? true,
+    sort_order: displayBranch.sort_order ?? branchSlugs.indexOf(seo.slug),
   }
 }
 

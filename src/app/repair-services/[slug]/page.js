@@ -137,20 +137,33 @@ export default async function RepairServicePage({ params }) {
     notFound();
   }
 
-  const { data: repairCases, error } = await supabase
-    .from("repair_cases")
-    .select(
-      "id, slug, title, image_url, alt_text, branch, device, model, symptom, created_at"
-    )
-    .eq("category", service.category)
-    .not("slug", "is", null)
-    .neq("slug", "")
-    .order("created_at", { ascending: false })
-    .limit(120);
+  const showRecentCases = service.showRecentCases !== false;
+  let repairCases = [];
+  let caseDataAvailable = true;
 
-  if (error) {
-    console.error("repair service cases error:", error);
-    throw new Error("수리품목 사례를 불러오지 못했습니다.");
+  if (showRecentCases) {
+    try {
+      const { data, error } = await supabase
+        .from("repair_cases")
+        .select(
+          "id, slug, title, image_url, alt_text, branch, device, model, symptom, created_at"
+        )
+        .eq("category", service.category)
+        .not("slug", "is", null)
+        .neq("slug", "")
+        .order("created_at", { ascending: false })
+        .limit(120);
+
+      if (error) {
+        console.error("repair service cases error:", error);
+        caseDataAvailable = false;
+      } else {
+        repairCases = data || [];
+      }
+    } catch (error) {
+      console.error("repair service cases exception:", error);
+      caseDataAvailable = false;
+    }
   }
 
   const canonicalUrl = `${baseUrl}/repair-services/${service.slug}`;
@@ -203,8 +216,6 @@ export default async function RepairServicePage({ params }) {
         matchesServiceCase(item, service)
     )
     .slice(0, 6);
-  const showRecentCases = service.showRecentCases !== false;
-
   const caseArchiveHref =
     service.caseArchive?.href ||
     `/repair-cases?category=${encodeURIComponent(service.category)}`;
@@ -352,6 +363,7 @@ export default async function RepairServicePage({ params }) {
           </section>
         )}
 
+        {caseDataAvailable && (
         <section style={styles.caseSection}>
           <div style={styles.sectionHeader}>
             <div>
@@ -421,6 +433,7 @@ export default async function RepairServicePage({ params }) {
             </div>
           )}
         </section>
+        )}
 
         <section style={styles.branchSection}>
           <div style={styles.sectionHeader}>
