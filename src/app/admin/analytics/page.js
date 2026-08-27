@@ -95,6 +95,32 @@ function formatDateTime(value) {
   }).format(date);
 }
 
+function formatNaverClickDateTime(value) {
+  const date = new Date(value);
+
+  if (!Number.isFinite(date.getTime())) {
+    return "";
+  }
+
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  })
+    .formatToParts(date)
+    .reduce((result, part) => {
+      result[part.type] = part.value;
+      return result;
+    }, {});
+
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
+}
+
 function formatDuration(duration) {
   if (
     duration === null ||
@@ -150,6 +176,121 @@ function asObject(value) {
   }
 
   return {};
+}
+
+function getVisitParam(visit, key) {
+  const naverTracking = asObject(
+    visit.naver_tracking
+  );
+
+  const queryParams = asObject(
+    visit.query_params
+  );
+
+  const value =
+    naverTracking[key] ?? queryParams[key];
+
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  const text = String(value).trim();
+  return text || null;
+}
+
+function getNaverClickFingerprint(visit) {
+  const napm = getVisitParam(visit, "NaPm");
+
+  if (napm) {
+    return `napm:${napm}`;
+  }
+
+  return `visit:${visit.id}`;
+}
+
+function getSubmissionKeyword(visit) {
+  return (
+    getVisitParam(visit, "n_keyword") ||
+    visit.search_keyword ||
+    getVisitParam(visit, "n_query") ||
+    getVisitParam(visit, "utm_term") ||
+    null
+  );
+}
+
+function getSubmissionUrl(visit) {
+  const value =
+    visit.advertiser_url || visit.landing_url;
+
+  if (!value) return null;
+
+  try {
+    const url = new URL(value);
+
+    if (
+      url.protocol !== "http:" &&
+      url.protocol !== "https:"
+    ) {
+      return null;
+    }
+
+    return `${url.origin}${url.pathname}`;
+  } catch {
+    return null;
+  }
+}
+
+function isSubmissionReady(visit) {
+  return Boolean(
+    formatNaverClickDateTime(visit.clicked_at) &&
+      getSubmissionKeyword(visit) &&
+      visit.ip_address &&
+      getSubmissionUrl(visit)
+  );
+}
+
+function getSubmissionCandidateVisitIds(groups) {
+  const ids = new Set();
+
+  for (const group of groups) {
+    const visits = group.visits;
+
+    for (const visit of visits) {
+      if (visit.is_bot) {
+        ids.add(visit.id);
+      }
+    }
+
+    for (let index = 0; index < visits.length; index += 1) {
+      const tenMinuteBurst = visits.filter(
+        (visit) =>
+          visit.clickedTime >= visits[index].clickedTime &&
+          visit.clickedTime - visits[index].clickedTime <=
+            10 * 60 * 1000
+      );
+
+      if (tenMinuteBurst.length >= 3) {
+        for (const visit of tenMinuteBurst) {
+          ids.add(visit.id);
+        }
+      }
+
+      const oneHourBurst = visits.filter(
+        (visit) =>
+          visit.clickedTime >= visits[index].clickedTime &&
+          visit.clickedTime - visits[index].clickedTime <=
+            HOUR_MS
+      );
+
+      if (oneHourBurst.length >= 4) {
+        for (const visit of oneHourBurst) {
+          ids.add(visit.id);
+        }
+      }
+    }
+  }
+
+  return ids;
 }
 
 function isNaverAdVisit(row) {
@@ -233,7 +374,7 @@ function getRiskLevel({
 }
 
 function analyzeNaverAdClicks(rows) {
-  const visits = rows
+  const rawVisits = rows
     .filter(isNaverAdVisit)
     .map((row) => ({
       ...row,
@@ -250,6 +391,26 @@ function analyzeNaverAdClicks(rows) {
     .sort(
       (a, b) => a.clickedTime - b.clickedTime
     );
+
+  const seenClickFingerprints = new Set();
+
+  const visits = rawVisits.filter((visit) => {
+    const ownerKey =
+      visit.ip_address ||
+      visit.visitor_id ||
+      "unknown";
+
+    const fingerprint = `${ownerKey}:${getNaverClickFingerprint(
+      visit
+    )}`;
+
+    if (seenClickFingerprints.has(fingerprint)) {
+      return false;
+    }
+
+    seenClickFingerprints.add(fingerprint);
+    return true;
+  });
 
   const groupMap = new Map();
 
@@ -350,6 +511,9 @@ function analyzeNaverAdClicks(rows) {
     (group) => group.risk.key !== "normal"
   );
 
+  const submissionCandidateVisitIds =
+    getSubmissionCandidateVisitIds(groups);
+
   const suspiciousGroupKeys = new Set(
     suspiciousGroups.map((group) => group.key)
   );
@@ -398,11 +562,29 @@ function analyzeNaverAdClicks(rows) {
       (a, b) => b.clickedTime - a.clickedTime
     );
 
+  const submissionCandidates = exportVisits.filter(
+    (visit) =>
+      submissionCandidateVisitIds.has(visit.id)
+  );
+
+  const submissionReadyVisits =
+    submissionCandidates.filter(isSubmissionReady);
+
   return {
     visits,
     groups,
     suspiciousGroups,
     exportVisits,
+    submissionCandidates,
+    submissionReadyVisits,
+    incompleteSubmissionCandidateCount:
+      submissionCandidates.length -
+      submissionReadyVisits.length,
+    duplicateVisitCount:
+      rawVisits.length - visits.length,
+    keywordCapturedCount: visits.filter((visit) =>
+      Boolean(getSubmissionKeyword(visit))
+    ).length,
     repeatIpCount: groups.filter(
       (group) =>
         group.ipAddress !== "확인 불가" &&
@@ -502,47 +684,73 @@ function safeCsvCell(value) {
   return `"${text.replace(/"/g, '""')}"`;
 }
 
-function makeNaverCsv(analysis) {
+function makeNaverCsv(visits) {
   const headers = [
-    "클릭 일시(KST)",
-    "유입 IP",
-    "검색 키워드",
+    "클릭일시",
+    "키워드",
+    "IP",
     "광고주 URL",
-    "방문 페이지",
-    "이전 동일 IP 클릭과 간격",
-    "의심 단계",
-    "의심 점수",
-    "의심 사유",
-    "기기",
-    "브라우저",
-    "운영체제",
-    "캠페인",
+    "부가설명",
   ];
 
   const lines = [
     headers.map(safeCsvCell).join(","),
   ];
 
-  for (const visit of analysis.exportVisits) {
+  for (const visit of visits) {
+    const registeredKeyword = getVisitParam(
+      visit,
+      "n_keyword"
+    );
+
+    const actualQuery = getVisitParam(
+      visit,
+      "n_query"
+    );
+
+    const description = [
+      visit.group?.risk.label
+        ? `의심 단계: ${visit.group.risk.label}`
+        : null,
+      Array.isArray(visit.suspicion_reasons) &&
+      visit.suspicion_reasons.length
+        ? `사유: ${visit.suspicion_reasons.join(" / ")}`
+        : null,
+      visit.gapMs !== null &&
+      visit.gapMs !== undefined
+        ? `직전 동일 IP 간격: ${formatDuration(
+            visit.gapMs
+          )}`
+        : null,
+      actualQuery && actualQuery !== registeredKeyword
+        ? `실제 검색어: ${actualQuery}`
+        : null,
+      [
+        visit.device_type,
+        visit.browser_name,
+        visit.os_name,
+      ].filter(Boolean).length
+        ? `환경: ${[
+            visit.device_type,
+            visit.browser_name,
+            visit.os_name,
+          ]
+            .filter(Boolean)
+            .join(" / ")}`
+        : null,
+    ]
+      .filter(Boolean)
+      .join(" | ");
+
     lines.push(
       [
-        formatDateTime(visit.clicked_at),
-        visit.ip_address || "확인 불가",
-        visit.search_keyword || "",
-        visit.advertiser_url ||
-          visit.landing_url ||
-          "",
-        visit.landing_url ||
-          visit.landing_path ||
-          "",
-        formatDuration(visit.gapMs),
-        visit.group?.risk.label || "일반",
-        visit.suspicionScore,
-        visit.suspicion_reasons || [],
-        visit.device_type || "",
-        visit.browser_name || "",
-        visit.os_name || "",
-        visit.campaign || "",
+        formatNaverClickDateTime(
+          visit.clicked_at
+        ),
+        getSubmissionKeyword(visit),
+        visit.ip_address,
+        getSubmissionUrl(visit),
+        description,
       ]
         .map(safeCsvCell)
         .join(",")
@@ -759,8 +967,10 @@ function NaverAdClickPanel({
   }
 
   const csv =
-    analysis.exportVisits.length > 0
-      ? makeNaverCsv(analysis)
+    analysis.submissionReadyVisits.length > 0
+      ? makeNaverCsv(
+          analysis.submissionReadyVisits
+        )
       : null;
 
   const csvHref = csv
@@ -804,11 +1014,14 @@ function NaverAdClickPanel({
             download={getCsvDownloadName()}
             style={csvButtonStyle}
           >
-            네이버 제출용 CSV
+            네이버 공식양식 CSV
           </a>
         ) : (
           <span style={csvButtonDisabledStyle}>
-            제출할 의심 자료 없음
+            {analysis.incompleteSubmissionCandidateCount >
+            0
+              ? "필수 정보 부족 — 제출 불가"
+              : "제출 기준 충족 자료 없음"}
           </span>
         )}
       </div>
@@ -816,6 +1029,20 @@ function NaverAdClickPanel({
       <p style={selectedPeriodStyle}>
         광고 클릭 선택 기간:{" "}
         {analysis.periodLabel}
+        {" · "}키워드 수집{" "}
+        {formatNumber(
+          analysis.keywordCapturedCount
+        )}
+        건{" · "}공식양식 준비{" "}
+        {formatNumber(
+          analysis.submissionReadyVisits.length
+        )}
+        건
+        {analysis.duplicateVisitCount > 0
+          ? ` · 동일 클릭 중복 제외 ${formatNumber(
+              analysis.duplicateVisitCount
+            )}건`
+          : ""}
       </p>
 
       <section style={adMetricGridStyle}>
@@ -842,9 +1069,11 @@ function NaverAdClickPanel({
         />
 
         <MetricCard
-          label="주의 이상 클릭"
-          value={analysis.cautionVisitCount}
-          description="반복 간격이나 점수상 검토가 필요한 클릭"
+          label="공식양식 준비"
+          value={
+            analysis.submissionReadyVisits.length
+          }
+          description="필수 4항목과 엄격한 반복 기준을 모두 충족한 행"
         />
       </section>
 

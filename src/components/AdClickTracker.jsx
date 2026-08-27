@@ -15,6 +15,8 @@ const NAVER_TRACKING_KEYS = [
   "n_ad",
   "n_keyword_id",
   "n_keyword",
+  "n_match",
+  "n_campaign",
   "n_campaign_type",
   "n_ad_group_type",
 ];

@@ -95,6 +95,8 @@ function getNaverTracking(params) {
     "n_ad",
     "n_keyword_id",
     "n_keyword",
+    "n_match",
+    "n_campaign",
     "n_campaign_type",
     "n_ad_group_type",
   ];
@@ -256,26 +258,60 @@ export async function POST(request) {
     const naverTracking = getNaverTracking(queryParams);
     const hasNaverTracking = Object.keys(naverTracking).length > 0;
 
+    const utmMedium = getParam(queryParams, "utm_medium")
+      ?.toLowerCase();
+
+    const hasPaidMedium = [
+      "cpc",
+      "ppc",
+      "paid",
+      "paidsearch",
+      "paid_search",
+    ].includes(utmMedium);
+
+    const hasOtherPaidClickId = [
+      "gclid",
+      "gbraid",
+      "wbraid",
+      "msclkid",
+      "dclid",
+    ].some((key) => Boolean(getParam(queryParams, key)));
+
+    if (
+      !hasNaverTracking &&
+      !hasPaidMedium &&
+      !hasOtherPaidClickId
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "유료광고 유입 정보가 확인되지 않습니다.",
+        },
+        { status: 400 }
+      );
+    }
+
     const referrer =
       cleanText(body?.referrer, 2000) ||
       cleanText(request.headers.get("referer") || "", 2000);
 
     const trafficSource =
-      cleanText(body?.trafficSource, 100) ||
       getParam(queryParams, "utm_source") ||
-      (hasNaverTracking ? "naver" : null);
+      (hasNaverTracking ? "naver" : null) ||
+      (getParam(queryParams, "msclkid")
+        ? "bing"
+        : null) ||
+      (hasOtherPaidClickId ? "google" : null);
 
     const trafficMedium =
-      cleanText(body?.trafficMedium, 100) ||
-      getParam(queryParams, "utm_medium") ||
+      utmMedium ||
       (hasNaverTracking ? "cpc" : null);
 
     const campaign =
-      cleanText(body?.campaign, 300) ||
-      getParam(queryParams, "utm_campaign");
+      getParam(queryParams, "utm_campaign") ||
+      getParam(queryParams, "n_campaign");
 
     const searchKeyword =
-      cleanText(body?.searchKeyword, 500) ||
       getParam(queryParams, "n_query") ||
       getParam(queryParams, "n_keyword") ||
       getParam(queryParams, "utm_term");
@@ -345,9 +381,7 @@ export async function POST(request) {
         visitor_id: visitorId,
         session_id: sessionId,
         landing_url: landingUrl.toString(),
-        advertiser_url:
-          cleanText(body?.advertiserUrl, 2000) ||
-          landingUrl.toString(),
+        advertiser_url: `${landingUrl.origin}${landingUrl.pathname}`,
         landing_path: landingUrl.pathname,
         referrer,
         traffic_source: trafficSource,
