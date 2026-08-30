@@ -1,5 +1,7 @@
 import "server-only";
 
+import { createHmac } from "node:crypto";
+import { isIP } from "node:net";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const INQUIRY_MAX_BODY_SIZE = 16 * 1024;
@@ -55,13 +57,44 @@ function normalizeMultiline(value, maxLength) {
 }
 
 function getClientIp(request) {
-  const forwardedFor = request.headers.get("x-forwarded-for");
+  const candidates = [
+    request.headers.get("x-vercel-forwarded-for"),
+    request.headers.get("x-forwarded-for"),
+    request.headers.get("x-real-ip"),
+  ];
 
-  if (forwardedFor) {
-    return forwardedFor.split(",")[0].trim().slice(0, 100) || "unknown";
+  for (const candidate of candidates) {
+    let value = candidate?.split(",")[0]?.trim() || "";
+
+    if (value.startsWith("::ffff:")) {
+      value = value.slice(7);
+    }
+
+    if (isIP(value)) {
+      return value;
+    }
   }
 
-  return request.headers.get("x-real-ip")?.trim().slice(0, 100) || "unknown";
+  return "unknown";
+}
+
+function makeInquiryRateLimitKey(request) {
+  const secret =
+    process.env.INQUIRY_RATE_LIMIT_SECRET ||
+    process.env.SUPABASE_SECRET_KEY;
+
+  if (
+    typeof secret !== "string" ||
+    Buffer.byteLength(secret, "utf8") < 32
+  ) {
+    throw new Error(
+      "Inquiry rate-limit secret must contain at least 32 bytes.",
+    );
+  }
+
+  return createHmac("sha256", secret)
+    .update(`online-inquiry-ip\0${getClientIp(request)}`)
+    .digest("hex");
 }
 
 function consumeRateLimit(key, limit, windowMs, now) {
@@ -98,7 +131,7 @@ function pruneRateLimits(now) {
 export function consumeInquiryIpRateLimit(request, now = Date.now()) {
   pruneRateLimits(now);
 
-  const requestedKey = `ip:${getClientIp(request)}`;
+  const requestedKey = `ip:${makeInquiryRateLimitKey(request)}`;
   const key =
     rateLimitStore.has(requestedKey) ||
     rateLimitStore.size < MAX_RATE_LIMIT_ENTRIES
@@ -115,6 +148,32 @@ export function consumeInquiryGlobalRateLimit(now = Date.now()) {
     GLOBAL_RATE_WINDOW_MS,
     now,
   );
+}
+
+export async function consumeInquiryDistributedRateLimit(request) {
+  const { data, error } = await supabaseAdmin
+    .rpc("consume_online_inquiry_rate_limit", {
+      p_ip_hash: makeInquiryRateLimitKey(request),
+    })
+    .maybeSingle();
+
+  if (
+    error ||
+    !data ||
+    typeof data.allowed !== "boolean"
+  ) {
+    throw error || new Error("Invalid inquiry rate-limit response.");
+  }
+
+  const retryAfter = Number(data.retry_after);
+
+  return {
+    allowed: data.allowed,
+    retryAfter:
+      Number.isFinite(retryAfter) && retryAfter > 0
+        ? Math.ceil(retryAfter)
+        : 1,
+  };
 }
 
 export async function readLimitedJson(request, maxBytes) {
@@ -275,7 +334,7 @@ export async function insertInquiryOnce(inquiry, submissionToken) {
   };
 }
 
-export async function sendTelegramInquiry(inquiry) {
+export async function sendTelegramInquiryAlert() {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
 
@@ -283,22 +342,13 @@ export async function sendTelegramInquiry(inquiry) {
     throw new Error("Telegram notification is not configured.");
   }
 
-  const message = `
-🔔 새 온라인 접수
-
-성함: ${inquiry.customer_name}
-연락처: ${inquiry.phone}
-희망지점: ${inquiry.preferred_branch}
-기기: ${inquiry.device || "-"}
-모델: ${inquiry.model || "-"}
-연락가능시간: ${inquiry.contact_time || "-"}
-
-증상:
-${inquiry.symptom}
-
-메모:
-${inquiry.memo || "-"}
-`;
+  // Telegram에는 고객이 입력한 개인정보를 보내지 않습니다. 담당자는
+  // 인증된 관리자 화면에서만 접수 내용을 확인합니다.
+  const message = [
+    "🔔 새 온라인 접수 1건이 등록되었습니다.",
+    "고객 정보와 문의 내용은 관리자 화면에서 확인해 주세요.",
+    "https://www.ismileagain.co.kr/admin/online-inquiries",
+  ].join("\n");
 
   const response = await fetch(
     `https://api.telegram.org/bot${token}/sendMessage`,

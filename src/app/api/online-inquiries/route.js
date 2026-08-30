@@ -5,12 +5,13 @@ import {
 } from "@/lib/adminApi";
 import { isSameOriginRequest } from "@/lib/adminSession";
 import {
+  consumeInquiryDistributedRateLimit,
   consumeInquiryGlobalRateLimit,
   consumeInquiryIpRateLimit,
   INQUIRY_MAX_BODY_SIZE,
   insertInquiryOnce,
   readLimitedJson,
-  sendTelegramInquiry,
+  sendTelegramInquiryAlert,
   validateInquirySubmission,
   validateSubmissionToken,
 } from "@/lib/onlineInquiries";
@@ -92,7 +93,21 @@ export async function POST(request) {
     );
   }
 
-  const ipLimit = consumeInquiryIpRateLimit(request);
+  let ipLimit;
+
+  try {
+    ipLimit = consumeInquiryIpRateLimit(request);
+  } catch {
+    console.error("Local inquiry rate-limit configuration failed.");
+    return publicResponse(
+      {
+        ok: false,
+        message: "접수 보호 기능을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      },
+      503,
+      { "Retry-After": "60" },
+    );
+  }
 
   if (!ipLimit.allowed) {
     return rateLimitResponse(ipLimit.retryAfter);
@@ -142,6 +157,26 @@ export async function POST(request) {
     return rateLimitResponse(globalLimit.retryAfter);
   }
 
+  let distributedLimit;
+
+  try {
+    distributedLimit = await consumeInquiryDistributedRateLimit(request);
+  } catch {
+    console.error("Distributed inquiry rate limit failed.");
+    return publicResponse(
+      {
+        ok: false,
+        message: "접수 보호 기능을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      },
+      503,
+      { "Retry-After": "60" },
+    );
+  }
+
+  if (!distributedLimit.allowed) {
+    return rateLimitResponse(distributedLimit.retryAfter);
+  }
+
   let insertion;
 
   try {
@@ -165,7 +200,7 @@ export async function POST(request) {
   }
 
   try {
-    await sendTelegramInquiry(validation.inquiry);
+    await sendTelegramInquiryAlert();
   } catch (error) {
     console.error(
       "Online inquiry was saved, but Telegram notification failed:",

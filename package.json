@@ -13,12 +13,12 @@
     "@aws-sdk/s3-request-presigner": "^3.1096.0",
     "@google-analytics/data": "^6.1.0",
     "@supabase/supabase-js": "^2.107.0",
-    "next": "16.2.7",
+    "next": "16.3.3",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
   "devDependencies": {
     "eslint": "^9",
-    "eslint-config-next": "16.2.7"
+    "eslint-config-next": "16.3.3"
   }
 }
