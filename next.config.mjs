@@ -74,8 +74,17 @@ const nextConfig = {
     formats: ["image/webp"],
     qualities: [75],
     minimumCacheTTL: 2678400,
+    localPatterns: [
+      { pathname: "/images/apple-repair.jpg", search: "" },
+      { pathname: "/images/microsoft-surface.jpg", search: "" },
+      { pathname: "/images/notebook-tablet.jpg", search: "" },
+      { pathname: "/images/gangbyeon-branch.jpg", search: "" },
+      { pathname: "/images/seolleung-branch.jpg", search: "" },
+      { pathname: "/images/sindorim-branch.jpg", search: "" },
+    ],
     // Repair photos are served directly by SiteImage. Keeping remotePatterns
-    // empty prevents old or hand-crafted URLs from consuming Vercel transforms.
+    // empty and localPatterns exact prevents arbitrary URLs from consuming
+    // Vercel transformations while retaining optimized fixed SEO hero images.
   },
 };
 
