@@ -72,19 +72,10 @@ const nextConfig = {
 
   images: {
     formats: ["image/webp"],
-    minimumCacheTTL: 604800,
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "**.supabase.co",
-        pathname: "/storage/v1/object/public/**",
-      },
-      {
-        protocol: "https",
-        hostname: "images.ismileagain.co.kr",
-        pathname: "/**",
-      },
-    ],
+    qualities: [75],
+    minimumCacheTTL: 2678400,
+    // Repair photos are served directly by SiteImage. Keeping remotePatterns
+    // empty prevents old or hand-crafted URLs from consuming Vercel transforms.
   },
 };
 

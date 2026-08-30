@@ -1,6 +1,6 @@
 import PhoneContactButton from "@/components/PhoneContactButton";
+import Image from "@/components/SiteImage";
 import { supabase } from "@/lib/supabase";
-import Image from "next/image";
 import Link from "next/link";
 import {
   getPublicRepairCasePath,

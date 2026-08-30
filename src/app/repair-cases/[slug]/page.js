@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { cache } from "react";
 import PhoneContactButton from "@/components/PhoneContactButton";
-import Image from "next/image";
+import Image from "@/components/SiteImage";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
