@@ -9,6 +9,7 @@ import {
   getBranchSeoForRecord,
   branchSlugs,
 } from "@/lib/branchSeo"
+import { getOrganizationJsonLd, getWebSiteJsonLd } from "@/lib/siteSeo"
 
 export const revalidate = 3600
 
@@ -137,7 +138,11 @@ export default async function BranchDetailPage({ params }) {
 
   const localBusinessJsonLd = {
     "@context": "https://schema.org",
-    ...getBranchLocalBusinessJsonLd(seo),
+    "@graph": [
+      getWebSiteJsonLd(),
+      getOrganizationJsonLd(),
+      getBranchLocalBusinessJsonLd(seo),
+    ],
   }
 
   const breadcrumbJsonLd = {

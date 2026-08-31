@@ -12,7 +12,12 @@ export function getOrganizationJsonLd() {
     "@type": "Organization",
     "@id": ORGANIZATION_ID,
     name: "아이스마일어게인",
+    legalName: "아이스마일어게인",
     url: `${SITE_URL}/`,
+    description:
+      "강변·선릉·신도림에서 아이폰, 아이패드, 맥북, 서피스와 노트북을 점검·수리하는 아이스마일어게인입니다.",
+    taxID: "542-52-00920",
+    telephone: "+82-2-3424-5295",
     logo: {
       "@type": "ImageObject",
       url: `${SITE_URL}/icon.png`,

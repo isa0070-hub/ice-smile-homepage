@@ -6,6 +6,7 @@ import {
   getBranchLocalBusinessJsonLd,
   getBranchSeoForRecord,
 } from "@/lib/branchSeo"
+import { getOrganizationJsonLd, getWebSiteJsonLd } from "@/lib/siteSeo"
 
 export const revalidate = 3600
 
@@ -78,6 +79,8 @@ export default async function BranchesPage() {
   const branchesJsonLd = {
     "@context": "https://schema.org",
     "@graph": [
+      getWebSiteJsonLd(),
+      getOrganizationJsonLd(),
       {
         "@type": "ItemList",
         "@id": "https://www.ismileagain.co.kr/branches#branch-list",
