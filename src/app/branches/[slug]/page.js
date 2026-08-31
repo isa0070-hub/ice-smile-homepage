@@ -10,6 +10,10 @@ import {
   branchSlugs,
 } from "@/lib/branchSeo"
 import { getOrganizationJsonLd, getWebSiteJsonLd } from "@/lib/siteSeo"
+import {
+  getPublicRepairCasePath,
+  isPublicRepairCaseSlug,
+} from "@/lib/publicRepairCases"
 
 export const revalidate = 3600
 
@@ -48,6 +52,24 @@ function getBranchFaqs(seo) {
         "방문이 어려운 경우 전국 택배 접수를 상담할 수 있습니다. 발송 전에 기기 모델과 증상을 알려주시면 포장과 접수 방법을 안내합니다.",
     },
   ]
+}
+
+async function getRecentBranchCases(seo) {
+  const { data, error } = await supabase
+    .from("repair_cases")
+    .select("id,slug,title,device,model,symptom,created_at")
+    .in("branch", seo.dbNames)
+    .not("slug", "is", null)
+    .neq("slug", "")
+    .order("created_at", { ascending: false })
+    .limit(3)
+
+  if (error) {
+    console.error("branch recent repair cases error:", error)
+    return []
+  }
+
+  return (data || []).filter((item) => isPublicRepairCaseSlug(item?.slug))
 }
 
 export async function generateMetadata({ params }) {
@@ -130,6 +152,7 @@ export default async function BranchDetailPage({ params }) {
   const branch = getBranchDisplayData(seo, databaseBranch)
   const canonicalUrl = getBranchCanonicalUrl(seo)
   const branchFaqs = getBranchFaqs(seo)
+  const recentCases = await getRecentBranchCases(seo)
   const contactHref = `/contact?branch=${encodeURIComponent(seo.slug)}`
   const seolleungIpadContactHref =
     seo.slug === "seolleung"
@@ -358,16 +381,59 @@ export default async function BranchDetailPage({ params }) {
         <article style={styles.textCard}>
           <h2 style={styles.sectionTitle}>인근 지역 방문 안내</h2>
 
-          <p style={styles.paragraph}>
-            {seo.nearbyAreas.join(", ")} 등 인근 지역에서도 방문하실 수
-            있습니다. 제품의 증상과 부품 재고에 따라 수리 시간은 달라질
-            수 있으므로 방문 전에 전화 또는 온라인 문의로 확인해 주세요.
+          {seo.visitAreas ? (
+            <div style={styles.areaGrid}>
+              {seo.visitAreas.map((area) => (
+                <section key={area.name} style={styles.areaItem}>
+                  <h3 style={styles.areaTitle}>{area.name} 방문 안내</h3>
+                  <p style={styles.areaText}>{area.description}</p>
+                </section>
+              ))}
+            </div>
+          ) : (
+            <p style={styles.paragraph}>
+              {seo.nearbyAreas.join(", ")} 등 인근 지역에서도 방문하실 수
+              있습니다.
+            </p>
+          )}
+
+          <p style={styles.areaNotice}>
+            제품의 증상과 부품 재고에 따라 수리 시간은 달라질 수 있으므로
+            방문 전에 전화 또는 온라인 문의로 확인해 주세요.
           </p>
 
           <Link href="/repair-cases" style={styles.caseButton}>
             최근 수리사례 확인하기
           </Link>
         </article>
+
+        {recentCases.length > 0 && (
+          <article style={styles.textCard}>
+            <h2 style={styles.sectionTitle}>{seo.shortName} 최근 수리사례</h2>
+            <p style={styles.paragraph}>
+              실제 접수된 기기의 증상과 점검·수리 내용을 확인해 보세요.
+            </p>
+
+            <div style={styles.caseGrid}>
+              {recentCases.map((item) => {
+                const casePath = getPublicRepairCasePath(item.slug)
+
+                return (
+                  <Link key={item.id} href={casePath} style={styles.caseItem}>
+                    <span style={styles.caseMeta}>
+                      {[item.device, item.model].filter(Boolean).join(" · ") ||
+                        seo.shortName}
+                    </span>
+                    <strong style={styles.caseTitle}>{item.title}</strong>
+                    {item.symptom && (
+                      <span style={styles.caseSymptom}>증상: {item.symptom}</span>
+                    )}
+                  </Link>
+                )
+              })}
+            </div>
+          </article>
+        )}
 
         <article style={styles.textCard}>
           <h2 style={styles.sectionTitle}>방문·택배 접수 전 확인사항</h2>
@@ -621,6 +687,75 @@ const styles = {
     borderRadius: "12px",
     textDecoration: "none",
     fontWeight: 800,
+  },
+
+  areaGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+    gap: "14px",
+  },
+
+  areaItem: {
+    padding: "20px",
+    border: "1px solid #dbeafe",
+    borderRadius: "16px",
+    backgroundColor: "#f8fbff",
+  },
+
+  areaTitle: {
+    margin: "0 0 9px",
+    fontSize: "18px",
+    color: "#1e3a8a",
+  },
+
+  areaText: {
+    margin: 0,
+    color: "#475569",
+    fontSize: "15px",
+    lineHeight: 1.75,
+  },
+
+  areaNotice: {
+    margin: "20px 0 0",
+    color: "#475569",
+    fontSize: "15px",
+    lineHeight: 1.75,
+  },
+
+  caseGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+    gap: "14px",
+    marginTop: "22px",
+  },
+
+  caseItem: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "9px",
+    padding: "20px",
+    border: "1px solid #e2e8f0",
+    borderRadius: "16px",
+    color: "#111827",
+    textDecoration: "none",
+    backgroundColor: "#ffffff",
+  },
+
+  caseMeta: {
+    color: "#1d4ed8",
+    fontSize: "14px",
+    fontWeight: 800,
+  },
+
+  caseTitle: {
+    fontSize: "18px",
+    lineHeight: 1.5,
+  },
+
+  caseSymptom: {
+    color: "#64748b",
+    fontSize: "14px",
+    lineHeight: 1.6,
   },
 
   checkGrid: {
