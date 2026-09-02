@@ -16,6 +16,10 @@ import {
   getBranchLocalBusinessJsonLd,
   getBranchSeoByName,
 } from "@/lib/branchSeo";
+import {
+  getLegacyRepairCasePresentation,
+  getLegacyRepairCaseTitle,
+} from "@/lib/legacyRepairCasePresentation";
 
 const BASE_URL = "https://www.ismileagain.co.kr";
 export const revalidate = 3600;
@@ -298,6 +302,12 @@ function dedupeAdjacentTerms(value = "") {
 }
 
 function makeDisplayTitle(item) {
+  const legacyTitle = getLegacyRepairCaseTitle(item?.slug);
+
+  if (legacyTitle) {
+    return legacyTitle;
+  }
+
   let title = cleanText(item?.title);
   const device = cleanText(item?.device);
   const model = cleanText(item?.model);
@@ -448,6 +458,13 @@ function makeDescription(item) {
 function makeTitle(item) {
   if (!item) {
     return "수리사례 | 아이스마일어게인 독립 스마트기기 수리센터";
+  }
+
+  const legacyTitle = getLegacyRepairCaseTitle(item.slug);
+  const suffix = " | 아이스마일어게인";
+
+  if (legacyTitle) {
+    return `${limitText(legacyTitle, 65 - suffix.length)}${suffix}`;
   }
 
   const branchLabel = getBranchSearchLabel(item.branch);
@@ -848,8 +865,10 @@ export async function generateMetadata({ params }) {
   const displayTitle = item
     ? makeDisplayTitle(item)
     : "아이스마일어게인 수리사례";
-
-  const socialImageAlt = makeSafeAltText(item?.alt_text, displayTitle);
+  const reviewedLegacyTitle = getLegacyRepairCaseTitle(item?.slug);
+  const socialImageAlt = reviewedLegacyTitle
+    ? `${displayTitle} 대표 이미지`
+    : makeSafeAltText(item?.alt_text, displayTitle);
 
   return {
     title,
@@ -926,10 +945,14 @@ export default async function RepairCaseDetailPage({ params }) {
   });
   const faqItems = makeFaqItems(item, phoneNumber);
   const displayTitle = makeDisplayTitle(item);
+  const reviewedLegacyTitle = getLegacyRepairCaseTitle(item.slug);
   const deviceModel = makeDeviceModelText(item);
   const displayKeyword = makeMetaKeyword(item);
   const serviceHub = getServiceHubForCase(item);
-  const normalizedSections = normalizeContentSections(item.content_sections);
+  const legacyPresentation = getLegacyRepairCasePresentation(item);
+  const normalizedSections = normalizeContentSections(
+    legacyPresentation.contentSections,
+  );
   const processSections = normalizedSections.filter(
     (section) => section.type === "process",
   );
@@ -1000,13 +1023,17 @@ export default async function RepairCaseDetailPage({ params }) {
       </h1>
 
       <p style={{ fontSize: "18px", color: "#475569", marginBottom: "12px" }}>
-        대표 키워드 : {displayKeyword}
+        증상·수리 내용 : {displayKeyword}
       </p>
 
       {item.image_url && (
         <Image
           src={item.image_url}
-          alt={makeSafeAltText(item.alt_text, displayTitle)}
+          alt={
+            reviewedLegacyTitle
+              ? `${displayTitle} 대표 이미지`
+              : makeSafeAltText(item.alt_text, displayTitle)
+          }
           width={1200}
           height={900}
           sizes="(max-width: 1280px) calc(100vw - 48px), 1232px"
@@ -1074,7 +1101,7 @@ export default async function RepairCaseDetailPage({ params }) {
           </div>
 
           <div style={summaryItemStyle}>
-            <span style={summaryLabelStyle}>수리 키워드</span>
+            <span style={summaryLabelStyle}>수리 내용</span>
             <strong style={summaryValueStyle}>
               {displayKeyword || "기기 수리"}
             </strong>
@@ -1134,8 +1161,8 @@ export default async function RepairCaseDetailPage({ params }) {
         </aside>
       )}
 
-      {item.repair_content && (
-        <section style={contentStyle}>{item.repair_content}</section>
+      {legacyPresentation.repairContent && (
+        <section style={contentStyle}>{legacyPresentation.repairContent}</section>
       )}
 
       {!hasStructuredContent && item.blog_url && (
@@ -1191,10 +1218,14 @@ export default async function RepairCaseDetailPage({ params }) {
                           <Image
                             className="repair-structured-image"
                             src={image.image_url}
-                            alt={makeSafeAltText(
-                              image.alt_text || image.description,
-                              `${displayTitle} 수리 과정 이미지 ${absoluteIndex + 1}`,
-                            )}
+                            alt={
+                              reviewedLegacyTitle
+                                ? `${displayTitle} 수리 과정 이미지 ${absoluteIndex + 1}`
+                                : makeSafeAltText(
+                                    image.alt_text || image.description,
+                                    `${displayTitle} 수리 과정 이미지 ${absoluteIndex + 1}`,
+                                  )
+                            }
                             width={900}
                             height={675}
                             sizes="(max-width: 720px) 100vw, (max-width: 1100px) 50vw, 33vw"
@@ -1230,10 +1261,14 @@ export default async function RepairCaseDetailPage({ params }) {
                 {image.image_url && (
                   <Image
                     src={image.image_url}
-                    alt={makeSafeAltText(
-                      image.alt_text || image.description,
-                      `${displayTitle} 상세 이미지 ${index + 1}`,
-                    )}
+                    alt={
+                      reviewedLegacyTitle
+                        ? `${displayTitle} 수리 과정 이미지 ${index + 1}`
+                        : makeSafeAltText(
+                            image.alt_text || image.description,
+                            `${displayTitle} 상세 이미지 ${index + 1}`,
+                          )
+                    }
                     width={1200}
                     height={900}
                     sizes="(max-width: 1280px) calc(100vw - 48px), 1232px"

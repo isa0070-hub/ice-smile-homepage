@@ -11,6 +11,7 @@ import {
   getWebSiteJsonLd,
   WEBSITE_ID,
 } from "@/lib/siteSeo";
+import { getLegacyRepairCasePresentation } from "@/lib/legacyRepairCasePresentation";
 
 const BASE_URL = "https://www.ismileagain.co.kr";
 const PAGE_SIZE = 18;
@@ -233,12 +234,16 @@ function makeJsonLd({
   const canonicalUrl = getCanonicalUrl(category, page, device);
   const firstPosition = (page - 1) * PAGE_SIZE;
 
-  const itemListElement = cases.map((item, index) => ({
-    "@type": "ListItem",
-    position: firstPosition + index + 1,
-    url: `${BASE_URL}${getPublicRepairCasePath(item.slug)}`,
-    name: item.title,
-  }));
+  const itemListElement = cases.map((item, index) => {
+    const presentation = getLegacyRepairCasePresentation(item);
+
+    return {
+      "@type": "ListItem",
+      position: firstPosition + index + 1,
+      url: `${BASE_URL}${getPublicRepairCasePath(item.slug)}`,
+      name: presentation.displayTitle || item.title,
+    };
+  });
 
   return {
     "@context": "https://schema.org",
@@ -524,6 +529,9 @@ export default async function RepairCasesPage({ searchParams }) {
         {safeCases.length > 0 ? (
           safeCases.map((item) => {
             const detailPath = getPublicRepairCasePath(item.slug);
+            const presentation = getLegacyRepairCasePresentation(item);
+            const displayTitle =
+              presentation.displayTitle || item.title || "제목 없음";
 
             return (
               <article key={item.id} style={cardStyle}>
@@ -531,7 +539,11 @@ export default async function RepairCasesPage({ searchParams }) {
                   <a href={detailPath} style={imageLinkStyle}>
                     <Image
                       src={item.image_url}
-                      alt={item.alt_text || item.title || "수리사례 이미지"}
+                      alt={
+                        presentation.displayTitle
+                          ? `${displayTitle} 대표 이미지`
+                          : item.alt_text || displayTitle || "수리사례 이미지"
+                      }
                       fill
                       sizes="(max-width: 680px) 100vw, (max-width: 1040px) 50vw, 33vw"
                       quality={72}
@@ -551,7 +563,7 @@ export default async function RepairCasesPage({ searchParams }) {
                   href={detailPath}
                   style={{ color: "#111827", textDecoration: "none" }}
                 >
-                  <h2 style={cardTitleStyle}>{item.title || "제목 없음"}</h2>
+                  <h2 style={cardTitleStyle}>{displayTitle}</h2>
                 </a>
 
                 <p style={deviceTextStyle}>
@@ -567,8 +579,8 @@ export default async function RepairCasesPage({ searchParams }) {
                 </p>
 
                 <p style={excerptTextStyle}>
-                  {item.repair_content
-                    ? `${item.repair_content.slice(0, 90)}...`
+                  {presentation.repairContent
+                    ? `${presentation.repairContent.slice(0, 90)}...`
                     : "수리 내용 준비중입니다."}
                 </p>
 

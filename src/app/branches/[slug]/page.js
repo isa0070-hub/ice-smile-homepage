@@ -14,6 +14,7 @@ import {
   getPublicRepairCasePath,
   isPublicRepairCaseSlug,
 } from "@/lib/publicRepairCases"
+import { getLegacyRepairCaseTitle } from "@/lib/legacyRepairCasePresentation"
 
 export const revalidate = 3600
 
@@ -417,6 +418,8 @@ export default async function BranchDetailPage({ params }) {
             <div style={styles.caseGrid}>
               {recentCases.map((item) => {
                 const casePath = getPublicRepairCasePath(item.slug)
+                const displayTitle =
+                  getLegacyRepairCaseTitle(item.slug) || item.title
 
                 return (
                   <Link key={item.id} href={casePath} style={styles.caseItem}>
@@ -424,7 +427,7 @@ export default async function BranchDetailPage({ params }) {
                       {[item.device, item.model].filter(Boolean).join(" · ") ||
                         seo.shortName}
                     </span>
-                    <strong style={styles.caseTitle}>{item.title}</strong>
+                    <strong style={styles.caseTitle}>{displayTitle}</strong>
                     {item.symptom && (
                       <span style={styles.caseSymptom}>증상: {item.symptom}</span>
                     )}

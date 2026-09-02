@@ -80,7 +80,10 @@ export default function SiteImage(imageProps) {
         {...nativeProps}
         src={overrideSrc || src}
         alt={alt}
-        loading={loading || (priority || preload ? "eager" : "lazy")}
+        loading={
+          loading ||
+          (fetchPriority === "high" || priority || preload ? "eager" : "lazy")
+        }
         decoding={decoding || "async"}
         fetchPriority={
           fetchPriority || (priority || preload ? "high" : undefined)

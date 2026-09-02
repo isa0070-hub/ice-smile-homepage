@@ -1,0 +1,123 @@
+.carousel {
+  position: absolute;
+  inset: 0;
+}
+
+.slides,
+.slide,
+.picture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.slides {
+  z-index: 0;
+  overflow: hidden;
+  background: #0f172a;
+}
+
+.slide {
+  opacity: 0;
+  transition: opacity 1.2s ease-in-out;
+  will-change: opacity;
+}
+
+.activeSlide {
+  opacity: 1;
+}
+
+.picture {
+  display: block;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.controls {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.66);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25);
+  transform: translateX(-50%);
+  backdrop-filter: blur(5px);
+}
+
+.playButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 5px 9px;
+  border: 0;
+  border-radius: 999px;
+  color: #ffffff;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.playButton:hover,
+.playButton:focus-visible {
+  background: rgba(255, 255, 255, 0.16);
+  outline: none;
+}
+
+.playButton:focus-visible,
+.dot:focus-visible {
+  box-shadow: 0 0 0 3px #ffffff;
+}
+
+.dots {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.dot:hover:not(:disabled),
+.activeDot {
+  background: #ffffff;
+}
+
+.dot:disabled {
+  cursor: wait;
+  opacity: 0.45;
+}
+
+@media (max-width: 768px) {
+  .controls {
+    bottom: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide {
+    transition: none;
+  }
+}

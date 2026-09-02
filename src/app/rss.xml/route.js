@@ -3,6 +3,7 @@ import {
   getPublicRepairCasePath,
   isPublicRepairCaseSlug,
 } from "@/lib/publicRepairCases";
+import { getLegacyRepairCaseTitle } from "@/lib/legacyRepairCasePresentation";
 
 const BASE_URL = "https://www.ismileagain.co.kr";
 
@@ -80,10 +81,11 @@ export async function GET() {
     .map((item) => {
       const url = makeCaseUrl(item);
       const pubDate = toRssDate(item.created_at);
+      const displayTitle = getLegacyRepairCaseTitle(item.slug) || item.title;
 
       return `
         <item>
-          <title>${escapeXml(item.title)}</title>
+          <title>${escapeXml(displayTitle)}</title>
           <link>${escapeXml(url)}</link>
           <guid isPermaLink="true">${escapeXml(url)}</guid>
           <description>${escapeXml(makeDescription(item))}</description>

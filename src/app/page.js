@@ -1,4 +1,5 @@
 import PhoneContactButton from "@/components/PhoneContactButton";
+import HomeHeroCarousel from "@/components/HomeHeroCarousel";
 import Image from "@/components/SiteImage";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
@@ -14,6 +15,7 @@ import {
   getOrganizationJsonLd,
   getWebSiteJsonLd,
 } from "@/lib/siteSeo";
+import { getLegacyRepairCaseTitle } from "@/lib/legacyRepairCasePresentation";
 
 export const revalidate = 900;
 
@@ -142,23 +144,7 @@ export default async function Home() {
         }}
       />
       <section className="home-hero" style={heroSectionStyle}>
-        <picture>
-          <source
-            media="(max-width: 768px)"
-            srcSet="/images/hero-iphone-repair-mobile.webp"
-          />
-
-          <img
-            src="/images/hero-repair-clean.jpg"
-            alt="아이스마일어게인 스마트기기 내부 점검 작업 모습"
-            width="1600"
-            height="900"
-            fetchPriority="high"
-            loading="eager"
-            decoding="async"
-            style={heroImageStyle}
-          />
-        </picture>
+        <HomeHeroCarousel />
 
         <div aria-hidden="true" style={heroOverlayStyle} />
 
@@ -434,23 +420,32 @@ export default async function Home() {
 
           <div style={gridStyle}>
             {latestCases.length > 0 ? (
-              latestCases.map((item) => (
-                <Link
-                  key={item.id}
-                  href={getPublicRepairCasePath(item.slug)}
-                  style={{ color: "inherit", textDecoration: "none" }}
-                >
-                  <div style={cardStyle}>
-                    <OptimizedImage
-                      src={item.image_url}
-                      alt={item.alt_text || item.title}
-                    />
+              latestCases.map((item) => {
+                const reviewedTitle = getLegacyRepairCaseTitle(item.slug);
+                const displayTitle = reviewedTitle || item.title;
 
-                    <h3>{item.title}</h3>
-                    <p>{item.branch}</p>
-                  </div>
-                </Link>
-              ))
+                return (
+                  <Link
+                    key={item.id}
+                    href={getPublicRepairCasePath(item.slug)}
+                    style={{ color: "inherit", textDecoration: "none" }}
+                  >
+                    <div style={cardStyle}>
+                      <OptimizedImage
+                        src={item.image_url}
+                        alt={
+                          reviewedTitle
+                            ? `${displayTitle} 대표 이미지`
+                            : item.alt_text || displayTitle
+                        }
+                      />
+
+                      <h3>{displayTitle}</h3>
+                      <p>{item.branch}</p>
+                    </div>
+                  </Link>
+                );
+              })
             ) : (
               <p style={{ textAlign: "center" }}>
                 등록된 수리사례가 없습니다.
@@ -579,16 +574,6 @@ const heroSectionStyle = {
   display: "flex",
   flexDirection: "column",
   justifyContent: "center",
-};
-
-const heroImageStyle = {
-  position: "absolute",
-  inset: 0,
-  width: "100%",
-  height: "100%",
-  objectFit: "cover",
-  objectPosition: "center",
-  zIndex: 0,
 };
 
 const heroOverlayStyle = {

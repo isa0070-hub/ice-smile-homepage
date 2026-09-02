@@ -11,6 +11,7 @@ import {
   isPublicRepairCaseSlug,
 } from "@/lib/publicRepairCases";
 import { getOrganizationJsonLd } from "@/lib/siteSeo";
+import { getLegacyRepairCaseTitle } from "@/lib/legacyRepairCasePresentation";
 
 export const revalidate = 1800;
 
@@ -385,42 +386,51 @@ export default async function RepairServicePage({ params }) {
 
           {showRecentCases && cases.length > 0 ? (
             <div style={styles.caseGrid}>
-              {cases.map((item) => (
-                <Link
-                  key={item.id}
-                  href={getPublicRepairCasePath(item.slug)}
-                  style={styles.caseLink}
-                >
-                  <article style={styles.caseCard}>
-                    <div style={styles.caseImageFrame}>
-                      <Image
-                        src={item.image_url || service.image}
-                        alt={item.alt_text || item.title}
-                        fill
-                        sizes="(max-width: 760px) 100vw, (max-width: 1100px) 50vw, 33vw"
-                        quality={72}
-                        loading="lazy"
-                        style={styles.caseImage}
-                      />
-                    </div>
+              {cases.map((item) => {
+                const reviewedTitle = getLegacyRepairCaseTitle(item.slug);
+                const displayTitle = reviewedTitle || item.title;
 
-                    <div style={styles.caseBody}>
-                      <p style={styles.caseMeta}>
-                        {item.branch || "아이스마일어게인"}
-                        {item.model ? ` · ${item.model}` : ""}
-                      </p>
+                return (
+                  <Link
+                    key={item.id}
+                    href={getPublicRepairCasePath(item.slug)}
+                    style={styles.caseLink}
+                  >
+                    <article style={styles.caseCard}>
+                      <div style={styles.caseImageFrame}>
+                        <Image
+                          src={item.image_url || service.image}
+                          alt={
+                            reviewedTitle
+                              ? `${displayTitle} 대표 이미지`
+                              : item.alt_text || displayTitle
+                          }
+                          fill
+                          sizes="(max-width: 760px) 100vw, (max-width: 1100px) 50vw, 33vw"
+                          quality={72}
+                          loading="lazy"
+                          style={styles.caseImage}
+                        />
+                      </div>
 
-                      <h3 style={styles.caseTitle}>{item.title}</h3>
-
-                      {item.symptom && (
-                        <p style={styles.caseSymptom}>
-                          증상: {item.symptom}
+                      <div style={styles.caseBody}>
+                        <p style={styles.caseMeta}>
+                          {item.branch || "아이스마일어게인"}
+                          {item.model ? ` · ${item.model}` : ""}
                         </p>
-                      )}
-                    </div>
-                  </article>
-                </Link>
-              ))}
+
+                        <h3 style={styles.caseTitle}>{displayTitle}</h3>
+
+                        {item.symptom && (
+                          <p style={styles.caseSymptom}>
+                            증상: {item.symptom}
+                          </p>
+                        )}
+                      </div>
+                    </article>
+                  </Link>
+                );
+              })}
             </div>
           ) : showRecentCases ? (
             <div style={styles.emptyCard}>
