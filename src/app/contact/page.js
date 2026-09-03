@@ -41,6 +41,7 @@ function createInitialForm({ preferredBranch, device }) {
     memo: "",
     website: "",
     privacy_consent: false,
+    telegram_consent: false,
   }
 }
 
@@ -105,6 +106,7 @@ function ContactForm() {
     if (!form.phone.trim()) return alert("연락처를 입력해 주세요.")
     if (!form.symptom.trim()) return alert("증상을 입력해 주세요.")
     if (!form.privacy_consent) return alert("개인정보 수집·이용에 동의해 주세요.")
+    if (!form.telegram_consent) return alert("수리 상담 및 접수 알림을 위한 개인정보 처리에 동의해 주세요.")
 
     setLoading(true)
 
@@ -174,8 +176,20 @@ function ContactForm() {
 
           <label style={styles.consentLabel}>
             <input type="checkbox" name="privacy_consent" checked={form.privacy_consent} onChange={handleChange} required />
-            <span><Link href="/privacy">개인정보처리방침</Link>의 수집·이용 내용에 동의합니다. <span aria-hidden="true">*</span></span>
+            <span><Link href="/privacy" target="_blank" rel="noreferrer">개인정보처리방침</Link>의 수집·이용 내용에 동의합니다. <span aria-hidden="true">*</span></span>
           </label>
+
+          <label style={styles.consentLabel}>
+            <input type="checkbox" name="telegram_consent" checked={form.telegram_consent} onChange={handleChange} required />
+            <span>
+              온라인 접수 정보가 수리 상담 담당자의 Telegram 업무 알림으로 전달되어 수리 상담·접수 처리에만 사용되는 것에 동의합니다. {" "}
+              <Link href="/privacy#telegram-transfer" target="_blank" rel="noreferrer">자세히 보기</Link> <span aria-hidden="true">*</span>
+            </span>
+          </label>
+
+          <p style={styles.consentHelp}>
+            접수 정보는 수리 상담 및 접수 처리 외에는 사용하지 않습니다.
+          </p>
 
           <button type="submit" disabled={loading} style={styles.button}>
             {loading ? "접수 중..." : "온라인 접수하기"}
@@ -237,6 +251,12 @@ const styles = {
     gap: "10px",
     color: "#334155",
     fontSize: "14px",
+    lineHeight: 1.6,
+  },
+  consentHelp: {
+    margin: "-4px 0 4px 30px",
+    color: "#64748b",
+    fontSize: "12px",
     lineHeight: 1.6,
   },
   input: {

@@ -183,6 +183,7 @@ export async function POST(request) {
     insertion = await insertInquiryOnce(
       validation.inquiry,
       submissionToken,
+      validation.telegramConsent,
     );
   } catch {
     console.error("Failed to save an online inquiry.");
@@ -200,7 +201,10 @@ export async function POST(request) {
   }
 
   try {
-    await sendTelegramInquiryAlert();
+    await sendTelegramInquiryAlert(
+      validation.telegramConsent ? validation.inquiry : null,
+      insertion.id,
+    );
   } catch (error) {
     console.error(
       "Online inquiry was saved, but Telegram notification failed:",

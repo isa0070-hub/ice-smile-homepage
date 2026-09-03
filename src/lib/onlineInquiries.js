@@ -3,6 +3,10 @@ import "server-only";
 import { createHmac } from "node:crypto";
 import { isIP } from "node:net";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import {
+  buildTelegramInquiryLinkMessage,
+  buildTelegramInquiryMessage,
+} from "@/lib/telegramInquiryMessage";
 
 export const INQUIRY_MAX_BODY_SIZE = 16 * 1024;
 
@@ -20,6 +24,7 @@ const ALLOWED_STATUSES = new Set([
 ]);
 const SUBMISSION_TOKEN_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const PRIVACY_NOTICE_VERSION = "2026-09-03";
 
 const rateLimitStore =
   globalThis.__ismileInquiryRateLimitStore || new Map();
@@ -237,6 +242,15 @@ export function validateInquirySubmission(body) {
     return { error: "개인정보 수집·이용에 동의해 주세요." };
   }
 
+  if (
+    body.telegram_consent !== undefined &&
+    body.telegram_consent !== true
+  ) {
+    return {
+      error: "수리 상담 및 접수 알림을 위한 개인정보 처리에 동의해 주세요.",
+    };
+  }
+
   const customerName = normalizeSingleLine(body.customer_name, 40);
   const phone = normalizeSingleLine(body.phone, 30);
   const device = normalizeSingleLine(body.device ?? "", 80);
@@ -272,6 +286,7 @@ export function validateInquirySubmission(body) {
   }
 
   return {
+    telegramConsent: body.telegram_consent === true,
     inquiry: {
       customer_name: customerName,
       phone,
@@ -307,10 +322,25 @@ export function validateInquiryId(value) {
   );
 }
 
-export async function insertInquiryOnce(inquiry, submissionToken) {
+export async function insertInquiryOnce(
+  inquiry,
+  submissionToken,
+  telegramConsent,
+) {
+  const consentedAt = telegramConsent ? new Date().toISOString() : null;
   const { data, error } = await supabaseAdmin
     .from("online_inquiries")
-    .insert([{ ...inquiry, submission_token: submissionToken }])
+    .insert([
+      {
+        ...inquiry,
+        submission_token: submissionToken,
+        telegram_consent: telegramConsent,
+        telegram_consent_at: consentedAt,
+        privacy_notice_version: telegramConsent
+          ? PRIVACY_NOTICE_VERSION
+          : null,
+      },
+    ])
     .select("id")
     .maybeSingle();
 
@@ -334,7 +364,7 @@ export async function insertInquiryOnce(inquiry, submissionToken) {
   };
 }
 
-export async function sendTelegramInquiryAlert() {
+export async function sendTelegramInquiryAlert(inquiry, inquiryId) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
 
@@ -342,20 +372,21 @@ export async function sendTelegramInquiryAlert() {
     throw new Error("Telegram notification is not configured.");
   }
 
-  // Telegram에는 고객이 입력한 개인정보를 보내지 않습니다. 담당자는
-  // 인증된 관리자 화면에서만 접수 내용을 확인합니다.
-  const message = [
-    "🔔 새 온라인 접수 1건이 등록되었습니다.",
-    "고객 정보와 문의 내용은 관리자 화면에서 확인해 주세요.",
-    "https://www.ismileagain.co.kr/admin/online-inquiries",
-  ].join("\n");
+  const message = inquiry
+    ? buildTelegramInquiryMessage(inquiry, inquiryId)
+    : buildTelegramInquiryLinkMessage(inquiryId);
 
   const response = await fetch(
     `https://api.telegram.org/bot${token}/sendMessage`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text: message }),
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message,
+        protect_content: true,
+        link_preview_options: { is_disabled: true },
+      }),
       cache: "no-store",
       signal: AbortSignal.timeout(10_000),
     },
