@@ -180,16 +180,6 @@ export default function HomeHeroCarousel() {
       </div>
 
       <div className={styles.controls} aria-label="사진 슬라이드 제어">
-        <button
-          type="button"
-          className={styles.playButton}
-          onClick={() => setIsPlaying((currentValue) => !currentValue)}
-          aria-label={isPlaying ? "사진 자동 전환 일시정지" : "사진 자동 전환 재생"}
-        >
-          <span aria-hidden="true">{isPlaying ? "Ⅱ" : "▶"}</span>
-          <span>{isPlaying ? "일시정지" : "재생"}</span>
-        </button>
-
         <div className={styles.dots}>
           {slides.map((slide, index) => {
             const isLoaded = loadedSlideIndexes.has(index);
@@ -202,7 +192,7 @@ export default function HomeHeroCarousel() {
                   activeIndex === index ? styles.activeDot : ""
                 }`}
                 onClick={() => selectSlide(index)}
-                aria-label={`${index + 1}번 사진 보기: ${slide.label}`}
+                aria-label={`${index + 1}번 사진 보기 및 자동 전환 멈춤: ${slide.label}`}
                 aria-current={activeIndex === index ? "true" : undefined}
                 disabled={!isLoaded}
               />
