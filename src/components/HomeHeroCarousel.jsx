@@ -30,11 +30,9 @@ const slides = [
     label: "노트북 내부 수리 작업",
   },
   {
-    desktopSrc: "/images/gangbyeon-branch.jpg",
-    alt: "아이스마일어게인 강변점이 위치한 강변테크노마트 외관",
-    label: "아이스마일어게인 강변점이 위치한 강변테크노마트 외관",
-    width: 1280,
-    height: 720,
+    desktopSrc: "/images/hero-service-center.jpg",
+    alt: "아이스마일어게인 수리센터 내부 전경과 전문 수리 작업 공간",
+    label: "아이스마일어게인 수리센터 내부 전경",
   },
 ];
 
