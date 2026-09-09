@@ -12,6 +12,13 @@ import {
 } from "@/lib/publicRepairCases";
 import { getOrganizationJsonLd } from "@/lib/siteSeo";
 import { getLegacyRepairCaseTitle } from "@/lib/legacyRepairCasePresentation";
+import {
+  branchSeo,
+  getBranchCanonicalUrl,
+  getBranchDisplayData,
+  getBranchLocalBusinessId,
+  getBranchSeoForRecord,
+} from "@/lib/branchSeo";
 
 export const revalidate = 1800;
 
@@ -22,6 +29,68 @@ const productFamilyTerms = {
   ipad: ["아이패드", "ipad"],
   macbook: ["맥북", "macbook"],
 };
+
+const contactDeviceSlugs = new Set([
+  "iphone",
+  "ipad",
+  "macbook",
+  "surface",
+  "lenovo",
+]);
+
+async function getActiveServiceBranches() {
+  let branchRows = [];
+  let branchQueryFailed = false;
+
+  try {
+    const { data, error } = await supabase
+      .from("branches")
+      .select("id, name, phone, is_active, sort_order")
+      .order("sort_order", { ascending: true });
+
+    if (error) {
+      console.error("repair service branches error:", error);
+      branchQueryFailed = true;
+    } else {
+      branchRows = data || [];
+    }
+  } catch (error) {
+    console.error("repair service branches exception:", error);
+    branchQueryFailed = true;
+  }
+
+  const rowsBySlug = new Map(
+    branchRows.flatMap((branch) => {
+      const seo = getBranchSeoForRecord(branch);
+      return seo ? [[seo.slug, branch]] : [];
+    }),
+  );
+
+  return Object.values(branchSeo)
+    .filter((seo) => {
+      const databaseBranch = rowsBySlug.get(seo.slug);
+
+      // A transient query failure must not remove every verified location from
+      // this service hub. Only a successfully read, explicit inactive flag
+      // removes a branch link.
+      return branchQueryFailed || databaseBranch?.is_active !== false;
+    })
+    .map((seo) => ({
+      seo,
+      display: getBranchDisplayData(seo, rowsBySlug.get(seo.slug)),
+    }))
+    .sort((left, right) => left.display.sort_order - right.display.sort_order);
+}
+
+function getBranchContactHref(branchSlug, serviceSlug) {
+  const params = new URLSearchParams({ branch: branchSlug });
+
+  if (contactDeviceSlugs.has(serviceSlug)) {
+    params.set("device", serviceSlug);
+  }
+
+  return `/contact?${params.toString()}`;
+}
 
 function getProductFamilies(text) {
   const normalizedText = String(text || "").toLocaleLowerCase("ko-KR");
@@ -167,6 +236,8 @@ export default async function RepairServicePage({ params }) {
     }
   }
 
+  const activeBranches = await getActiveServiceBranches();
+
   const canonicalUrl = `${baseUrl}/repair-services/${service.slug}`;
 
   const pageJsonLd = {
@@ -206,6 +277,13 @@ export default async function RepairServicePage({ params }) {
         provider: {
           "@id": `${baseUrl}/#organization`,
         },
+        availableChannel: activeBranches.map(({ seo }) => ({
+          "@type": "ServiceChannel",
+          serviceLocation: {
+            "@id": getBranchLocalBusinessId(seo),
+          },
+          serviceUrl: getBranchCanonicalUrl(seo),
+        })),
       },
     ],
   };
@@ -445,45 +523,48 @@ export default async function RepairServicePage({ params }) {
         </section>
         )}
 
+        {activeBranches.length > 0 && (
         <section style={styles.branchSection}>
           <div style={styles.sectionHeader}>
             <div>
               <p style={styles.sectionLabel}>방문 접수</p>
               <h2 style={styles.sectionTitle}>
-                강변점·선릉점·신도림점 안내
+                {service.name} 방문 접수 지점
               </h2>
             </div>
           </div>
 
           <div style={styles.branchGrid}>
-            <Link
-              href="/branches/gangbyeon"
-              style={styles.branchCard}
-            >
-              <strong style={styles.branchName}>강변점</strong>
-              <span>강변테크노마트 5층 B-20호</span>
-              <span style={styles.phone}>02-3424-5295</span>
-            </Link>
+            {activeBranches.map(({ seo, display }) => (
+              <article key={seo.slug} style={styles.branchCard}>
+                <Link
+                  href={`/branches/${seo.slug}`}
+                  style={styles.branchDetailsLink}
+                >
+                  <strong style={styles.branchName}>
+                    {seo.serviceAreaLabel} {service.name} 방문 접수
+                  </strong>
+                  <span>{display.address1}</span>
+                  <span>{display.address2}</span>
+                  {display.business_hours && (
+                    <span style={styles.branchHours}>
+                      {display.business_hours.weekdays}
+                    </span>
+                  )}
+                  <span style={styles.phone}>{display.phone}</span>
+                </Link>
 
-            <Link
-              href="/branches/seolleung"
-              style={styles.branchCard}
-            >
-              <strong style={styles.branchName}>선릉점</strong>
-              <span>샹제리제센터 A동 406호</span>
-              <span style={styles.phone}>02-554-5295</span>
-            </Link>
-
-            <Link
-              href="/branches/sindorim"
-              style={styles.branchCard}
-            >
-              <strong style={styles.branchName}>신도림점</strong>
-              <span>신도림테크노마트 9층 57-1번 기둥</span>
-              <span style={styles.phone}>02-2111-8899</span>
-            </Link>
+                <Link
+                  href={getBranchContactHref(seo.slug, service.slug)}
+                  style={styles.branchContactLink}
+                >
+                  {display.name} 온라인 접수
+                </Link>
+              </article>
+            ))}
           </div>
         </section>
+        )}
       </div>
     </main>
   );
@@ -850,11 +931,17 @@ const styles = {
   branchCard: {
     display: "flex",
     flexDirection: "column",
-    gap: "7px",
     padding: "24px",
     background: "#0f172a",
     color: "#ffffff",
     borderRadius: "18px",
+  },
+
+  branchDetailsLink: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "7px",
+    color: "#ffffff",
     textDecoration: "none",
   },
 
@@ -868,5 +955,23 @@ const styles = {
     color: "#bfdbfe",
     fontWeight: 900,
     fontSize: "18px",
+  },
+
+  branchHours: {
+    marginTop: "5px",
+    color: "#cbd5e1",
+    fontSize: "14px",
+  },
+
+  branchContactLink: {
+    display: "inline-block",
+    alignSelf: "flex-start",
+    marginTop: "18px",
+    padding: "10px 14px",
+    borderRadius: "10px",
+    background: "#ffffff",
+    color: "#1d4ed8",
+    textDecoration: "none",
+    fontWeight: 900,
   },
 };

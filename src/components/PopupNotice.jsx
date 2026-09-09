@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+
+const POPUP_ENDPOINT = "/api/public/popup-notice";
+const POPUP_TITLE_ID = "site-popup-notice-title";
+
+function getTodayKey() {
+  return `popup_closed_${new Date().toDateString()}`;
+}
 
 export default function PopupNotice() {
   const [popup, setPopup] = useState(null);
@@ -9,43 +15,58 @@ export default function PopupNotice() {
 
   useEffect(() => {
     let active = true;
+    const controller = new AbortController();
+    let timerId = null;
+    let idleCallbackId = null;
 
     async function loadPopup() {
-      const todayKey = `popup_closed_${new Date().toDateString()}`;
-
-      if (localStorage.getItem(todayKey) === "yes") {
+      if (localStorage.getItem(getTodayKey()) === "yes") {
         return;
       }
 
-      const { data, error } = await supabase
-        .from("popup_notices")
-        .select("*")
-        .eq("is_active", true)
-        .order("sort_order", { ascending: true })
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      try {
+        const response = await fetch(POPUP_ENDPOINT, {
+          headers: { Accept: "application/json" },
+          signal: controller.signal,
+        });
 
-      if (!active) return;
+        if (!response.ok) {
+          return;
+        }
 
-      if (error) {
-        console.error("팝업 불러오기 오류:", error);
-        return;
+        const result = await response.json();
+
+        if (!active || !result?.popup) {
+          return;
+        }
+
+        setPopup(result.popup);
+        setVisible(true);
+      } catch (error) {
+        if (error?.name !== "AbortError") {
+          console.error("팝업 불러오기 오류:", error);
+        }
       }
-
-      if (!data) {
-        console.log("활성화된 팝업이 없습니다.");
-        return;
-      }
-
-      setPopup(data);
-      setVisible(true);
     }
 
-    loadPopup();
+    // 공지 조회는 핵심 콘텐츠의 hydration과 경쟁하지 않도록 유휴 시간에 시작한다.
+    if (typeof window.requestIdleCallback === "function") {
+      idleCallbackId = window.requestIdleCallback(loadPopup, { timeout: 1800 });
+    } else {
+      timerId = window.setTimeout(loadPopup, 800);
+    }
 
     return () => {
       active = false;
+      controller.abort();
+
+      if (idleCallbackId !== null) {
+        window.cancelIdleCallback(idleCallbackId);
+      }
+
+      if (timerId !== null) {
+        window.clearTimeout(timerId);
+      }
     };
   }, []);
 
@@ -54,156 +75,180 @@ export default function PopupNotice() {
   }
 
   function closeToday() {
-    const todayKey = `popup_closed_${new Date().toDateString()}`;
-    localStorage.setItem(todayKey, "yes");
+    localStorage.setItem(getTodayKey(), "yes");
     setVisible(false);
   }
 
   function getPositionStyle() {
     const base = {
       position: "fixed",
-      zIndex: 99999,
+      zIndex: 20000,
     };
 
     if (popup.position === "top-left") {
-      return { ...base, top: "40px", left: "40px" };
+      return { ...base, top: "94px", left: "clamp(12px, 3vw, 40px)" };
     }
 
     if (popup.position === "top-right") {
-      return { ...base, top: "40px", right: "40px" };
+      return { ...base, top: "94px", right: "clamp(12px, 3vw, 40px)" };
     }
 
     if (popup.position === "bottom-left") {
-      return { ...base, bottom: "40px", left: "40px" };
+      return { ...base, bottom: "20px", left: "clamp(12px, 3vw, 40px)" };
     }
 
-    if (popup.position === "bottom-right") {
-      return { ...base, bottom: "40px", right: "40px" };
-    }
-
-    if (popup.position === "custom") {
+    if (popup.position === "center") {
       return {
         ...base,
-        top: `${popup.custom_y || 80}px`,
-        left: `${popup.custom_x || 80}px`,
+        bottom: "20px",
+        left: "50%",
+        transform: "translateX(-50%)",
       };
     }
 
     return {
       ...base,
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
+      bottom: "20px",
+      right: "clamp(12px, 3vw, 40px)",
     };
   }
 
   if (!visible || !popup) return null;
 
   return (
-    <>
-      <div style={overlayStyle} />
-
-      <div
-        style={{
-          ...popupBoxStyle,
-          ...getPositionStyle(),
-          width: `${popup.width || 500}px`,
-          maxWidth: "92vw",
-        }}
+    <aside
+      aria-labelledby={POPUP_TITLE_ID}
+      aria-live="polite"
+      role="region"
+      style={{
+        ...popupBoxStyle,
+        ...getPositionStyle(),
+        width: `min(calc(100vw - 24px), ${popup.width || 420}px)`,
+      }}
+    >
+      <button
+        aria-label="공지 닫기"
+        type="button"
+        onClick={closePopup}
+        style={iconCloseButtonStyle}
       >
-        {popup.image_url && (
-          // Popup images are admin-authored and can have arbitrary aspect ratios.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={popup.image_url}
-            alt={popup.title || "팝업 이미지"}
-            style={imageStyle}
-          />
-        )}
+        ×
+      </button>
 
-        <div style={contentStyle}>
-          <h2 style={titleStyle}>{popup.title}</h2>
+      {popup.image_url && (
+        // Popup images are admin-authored and can have arbitrary aspect ratios.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={popup.image_url}
+          alt={popup.title || "공지 이미지"}
+          decoding="async"
+          fetchPriority="low"
+          loading="lazy"
+          style={imageStyle}
+        />
+      )}
 
-          {popup.content && <p style={textStyle}>{popup.content}</p>}
+      <div style={contentStyle}>
+        <h2 id={POPUP_TITLE_ID} style={titleStyle}>
+          {popup.title}
+        </h2>
 
-          <div style={buttonWrapStyle}>
-            {popup.show_today_close && (
-              <button type="button" onClick={closeToday} style={todayButtonStyle}>
-                오늘 하루 보지 않기
-              </button>
-            )}
+        {popup.content && <p style={textStyle}>{popup.content}</p>}
 
-            <button type="button" onClick={closePopup} style={closeButtonStyle}>
-              닫기
+        <div style={buttonWrapStyle}>
+          {popup.show_today_close && (
+            <button type="button" onClick={closeToday} style={todayButtonStyle}>
+              오늘 하루 보지 않기
             </button>
-          </div>
+          )}
+
+          <button type="button" onClick={closePopup} style={closeButtonStyle}>
+            닫기
+          </button>
         </div>
       </div>
-    </>
+    </aside>
   );
 }
 
-const overlayStyle = {
-  position: "fixed",
-  inset: 0,
-  background: "rgba(15, 23, 42, 0.35)",
-  zIndex: 99998,
-};
-
 const popupBoxStyle = {
   background: "white",
-  borderRadius: "22px",
+  border: "1px solid #dbeafe",
+  borderRadius: "18px",
   overflow: "hidden",
-  boxShadow: "0 25px 60px rgba(15, 23, 42, 0.35)",
+  boxShadow: "0 18px 45px rgba(15, 23, 42, 0.22)",
+  maxHeight: "min(70vh, 620px)",
+  overflowY: "auto",
 };
 
 const imageStyle = {
   width: "100%",
-  maxHeight: "420px",
-  objectFit: "cover",
+  maxHeight: "min(32vh, 260px)",
+  objectFit: "contain",
   display: "block",
+  background: "#f8fafc",
 };
 
 const contentStyle = {
-  padding: "24px",
+  padding: "18px",
 };
 
 const titleStyle = {
-  fontSize: "26px",
-  margin: "0 0 12px",
+  fontSize: "clamp(19px, 4vw, 24px)",
+  lineHeight: 1.35,
+  margin: "0 38px 8px 0",
 };
 
 const textStyle = {
-  fontSize: "17px",
-  lineHeight: 1.7,
+  fontSize: "15px",
+  lineHeight: 1.65,
   color: "#475569",
   whiteSpace: "pre-wrap",
+  margin: 0,
 };
 
 const buttonWrapStyle = {
   display: "flex",
   gap: "10px",
   justifyContent: "flex-end",
-  marginTop: "22px",
+  marginTop: "16px",
   flexWrap: "wrap",
 };
 
 const todayButtonStyle = {
-  padding: "12px 16px",
-  border: "none",
+  minHeight: "44px",
+  padding: "10px 15px",
+  border: "1px solid #cbd5e1",
   borderRadius: "999px",
-  background: "#e5e7eb",
+  background: "#f8fafc",
   color: "#111827",
-  fontWeight: "900",
+  fontWeight: "800",
   cursor: "pointer",
 };
 
 const closeButtonStyle = {
-  padding: "12px 18px",
+  minHeight: "44px",
+  padding: "10px 18px",
   border: "none",
   borderRadius: "999px",
   background: "#1e3a8a",
   color: "white",
-  fontWeight: "900",
+  fontWeight: "800",
   cursor: "pointer",
+};
+
+const iconCloseButtonStyle = {
+  position: "absolute",
+  top: "10px",
+  right: "10px",
+  zIndex: 1,
+  width: "44px",
+  height: "44px",
+  border: "1px solid #cbd5e1",
+  borderRadius: "999px",
+  background: "rgba(255, 255, 255, 0.96)",
+  color: "#0f172a",
+  cursor: "pointer",
+  fontSize: "25px",
+  lineHeight: 1,
 };

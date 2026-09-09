@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
 export const metadata = {
@@ -25,11 +26,23 @@ export const metadata = {
 };
 
 export default async function NoticesPage() {
-  const { data: notices } = await supabase
-    .from("notices")
-    .select("id, title, is_pinned, created_at")
-    .order("is_pinned", { ascending: false })
-    .order("created_at", { ascending: false });
+  let notices = [];
+
+  try {
+    const { data, error } = await supabase
+      .from("notices")
+      .select("id, title, is_pinned, created_at")
+      .order("is_pinned", { ascending: false })
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("notices page error:", error);
+    } else {
+      notices = data || [];
+    }
+  } catch (error) {
+    console.error("notices page exception:", error);
+  }
 
   return (
     <main style={{ maxWidth: "960px", margin: "70px auto", padding: "24px" }}>
@@ -43,7 +56,7 @@ export default async function NoticesPage() {
       <div style={listStyle}>
         {notices && notices.length > 0 ? (
           notices.map((item) => (
-            <a key={item.id} href={`/notices/${item.id}`} style={noticeCardStyle}>
+            <Link key={item.id} href={`/notices/${item.id}`} style={noticeCardStyle}>
               <div>
                 <p style={{ margin: "0 0 8px", color: "#1e3a8a", fontWeight: "900" }}>
                   {item.is_pinned ? "📌 중요공지" : "공지사항"}
@@ -57,7 +70,7 @@ export default async function NoticesPage() {
                   {new Date(item.created_at).toLocaleDateString("ko-KR")}
                 </p>
               </div>
-            </a>
+            </Link>
           ))
         ) : (
           <div style={emptyStyle}>등록된 공지사항이 없습니다.</div>

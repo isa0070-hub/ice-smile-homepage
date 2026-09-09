@@ -1,5 +1,3 @@
-import { supabase } from "@/lib/supabase";
-import { cache } from "react";
 import PhoneContactButton from "@/components/PhoneContactButton";
 import Image from "@/components/SiteImage";
 import Link from "next/link";
@@ -19,25 +17,22 @@ import {
 import {
   getLegacyRepairCasePresentation,
   getLegacyRepairCaseTitle,
+  makeRepairCaseMetaDescription,
+  makeRepairCaseMetaTitle,
+  sanitizeRepairCaseSearchText,
 } from "@/lib/legacyRepairCasePresentation";
+import {
+  getPublicRepairCaseBySlug as getRepairCaseBySlug,
+  getPublicRepairCaseImages,
+  getPublicRelatedRepairCaseRows,
+} from "@/lib/publicRepairCaseData";
 
 const BASE_URL = "https://www.ismileagain.co.kr";
 export const revalidate = 3600;
 
-const getRepairCaseBySlug = cache(async (slug) => {
-  const { data, error } = await supabase
-    .from("repair_cases")
-    .select("*")
-    .eq("slug", slug)
-    .maybeSingle();
-
-  if (error) {
-    console.error("repair case detail error:", error);
-    throw new Error("수리사례를 불러오지 못했습니다.");
-  }
-
-  return data;
-});
+export async function generateStaticParams() {
+  return [];
+}
 
 function getBranchInfo(branch) {
   const seo = getBranchSeoByName(branch);
@@ -65,6 +60,10 @@ function cleanText(value) {
   return String(value || "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function cleanRepairCaseText(value) {
+  return cleanText(sanitizeRepairCaseSearchText(String(value || "")));
 }
 
 function normalizeContentSections(value) {
@@ -169,16 +168,6 @@ function getStructuredImageGridStyle(imageCount = 0) {
     ...structuredImageGridStyle,
     gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
   };
-}
-
-function limitText(value, maxLength) {
-  const text = cleanText(value);
-
-  if (text.length <= maxLength) {
-    return text;
-  }
-
-  return `${text.slice(0, maxLength - 1)}…`;
 }
 
 function escapeRegExp(value) {
@@ -305,10 +294,13 @@ function makeDisplayTitle(item) {
   const legacyTitle = getLegacyRepairCaseTitle(item?.slug);
 
   if (legacyTitle) {
-    return legacyTitle;
+    return cleanRepairCaseText(legacyTitle);
   }
 
-  let title = cleanText(item?.title);
+  let title = cleanRepairCaseText(item?.title).replace(
+    /(?:\.{3,}|…+)/gu,
+    " ",
+  );
   const device = cleanText(item?.device);
   const model = cleanText(item?.model);
 
@@ -337,14 +329,16 @@ function makeDisplayTitle(item) {
   );
 }
 function makeSafeAltText(value, fallback) {
-  const source = cleanText(value) || cleanText(fallback);
+  const source = cleanRepairCaseText(value) || cleanRepairCaseText(fallback);
 
   return dedupeAdjacentTerms(source);
 }
 
 function findRepairAction(item) {
   const source = normalizeComparable(
-    `${item?.title || ""} ${item?.seo_keyword || ""} ${item?.symptom || ""}`,
+    sanitizeRepairCaseSearchText(
+      `${item?.title || ""} ${item?.seo_keyword || ""} ${item?.symptom || ""}`,
+    ),
   );
 
   const actions = [
@@ -375,30 +369,33 @@ function makeMetaKeyword(item) {
   const branchLabel = getBranchSearchLabel(item?.branch);
   const device = cleanText(item?.device);
   const model = cleanText(item?.model);
-  const rawSymptom = cleanText(item?.symptom);
+  const rawSymptom = cleanRepairCaseText(item?.symptom);
   const action = findRepairAction(item);
 
   // 증상에 기기명이나 모델명이 들어간 경우 제거
   const symptom = removeTextParts(rawSymptom, [device, model]);
 
-  const cleanedSeoKeyword = removeTextParts(item?.seo_keyword, [
-    item?.branch,
-    branchLabel,
-    "강변점",
-    "강변역",
-    "강변",
-    "선릉점",
-    "선릉역",
-    "선릉",
-    "신도림점",
-    "신도림역",
-    "신도림",
-    device,
-    model,
-    "아이스마일어게인",
-    "수리사례",
-    "관련",
-  ]);
+  const cleanedSeoKeyword = removeTextParts(
+    sanitizeRepairCaseSearchText(item?.seo_keyword),
+    [
+      item?.branch,
+      branchLabel,
+      "강변점",
+      "강변역",
+      "강변",
+      "선릉점",
+      "선릉역",
+      "선릉",
+      "신도림점",
+      "신도림역",
+      "신도림",
+      device,
+      model,
+      "아이스마일어게인",
+      "수리사례",
+      "관련",
+    ],
+  );
 
   const keywordParts = [];
 
@@ -414,18 +411,18 @@ function makeMetaKeyword(item) {
   }
 
   // 관리자가 사례별 검색 의도에 맞춰 입력한 SEO 키워드를 최우선 사용합니다.
-// 지점명·기기명·모델명은 makeTitle에서 다시 조합하므로 여기서는 중복을 제거합니다.
-const preferredKeyword = dedupeAdjacentTerms(cleanedSeoKeyword);
+  // 지점명·기기명·모델명은 제목에서 다시 조합하므로 여기서는 중복을 제거합니다.
+  const preferredKeyword = dedupeAdjacentTerms(cleanedSeoKeyword);
 
-if (preferredKeyword) {
-  return preferredKeyword;
-}
+  if (preferredKeyword) {
+    return preferredKeyword;
+  }
 
-const combinedKeyword = dedupeAdjacentTerms(keywordParts.join(" "));
+  const combinedKeyword = dedupeAdjacentTerms(keywordParts.join(" "));
 
-if (combinedKeyword) {
-  return combinedKeyword;
-}
+  if (combinedKeyword) {
+    return combinedKeyword;
+  }
 
   if (item?.category) {
     return dedupeAdjacentTerms(`${item.category} 수리`);
@@ -439,20 +436,10 @@ function makeDescription(item) {
     return "아이스마일어게인 수리사례 상세페이지입니다. 아이폰, 아이패드, 맥북, 서피스, 레노버 수리 사례를 확인해보세요.";
   }
 
-  const branchIntro = getBranchIntro(item.branch);
-  const deviceModel = makeDeviceModelText(item);
-  const keyword = makeMetaKeyword(item);
-  const symptom = removeTextParts(item.symptom, [item.device, item.model]);
-
-  const symptomText =
-    symptom &&
-    !normalizeComparable(keyword).includes(normalizeComparable(symptom))
-      ? `${symptom} 증상 점검 후 `
-      : "";
-
-  const description = `${branchIntro}에서 진행한 ${deviceModel} ${keyword} 사례입니다. ${symptomText}방문 전 수리 가능 여부, 예상 비용, 소요 시간, 방문 및 택배 접수 방법을 안내해드립니다.`;
-
-  return limitText(description, 155);
+  return makeRepairCaseMetaDescription({
+    displayTitle: makeDisplayTitle(item),
+    branchIntro: getBranchIntro(item.branch),
+  });
 }
 
 function makeTitle(item) {
@@ -460,22 +447,7 @@ function makeTitle(item) {
     return "수리사례 | 아이스마일어게인 독립 스마트기기 수리센터";
   }
 
-  const legacyTitle = getLegacyRepairCaseTitle(item.slug);
-  const suffix = " | 아이스마일어게인";
-
-  if (legacyTitle) {
-    return `${limitText(legacyTitle, 65 - suffix.length)}${suffix}`;
-  }
-
-  const branchLabel = getBranchSearchLabel(item.branch);
-  const deviceModel = makeDeviceModelText(item);
-  const keyword = makeMetaKeyword(item);
-
-  const title = dedupeAdjacentTerms(
-    `${branchLabel} ${deviceModel} ${keyword} 수리사례 | 아이스마일어게인 ${item.branch || ""}`,
-  );
-
-  return limitText(title, 65);
+  return makeRepairCaseMetaTitle(makeDisplayTitle(item));
 }
 
 function makeCanonicalUrl(item) {
@@ -757,54 +729,29 @@ async function getRelatedCases(item) {
 
   const relatedMap = new Map();
   const relatedQueries = [];
-  const relatedFields =
-    "id,slug,title,image_url,alt_text,branch,category,device,model,seo_keyword,symptom,created_at";
 
   if (item.device) {
     relatedQueries.push(
-      supabase
-        .from("repair_cases")
-        .select(relatedFields)
-        .eq("device", item.device)
-        .neq("id", item.id)
-        .order("created_at", { ascending: false })
-        .limit(4),
+      getPublicRelatedRepairCaseRows("device", item.device, item.id),
     );
   }
 
   if (item.category) {
     relatedQueries.push(
-      supabase
-        .from("repair_cases")
-        .select(relatedFields)
-        .eq("category", item.category)
-        .neq("id", item.id)
-        .order("created_at", { ascending: false })
-        .limit(4),
+      getPublicRelatedRepairCaseRows("category", item.category, item.id),
     );
   }
 
   if (item.branch) {
     relatedQueries.push(
-      supabase
-        .from("repair_cases")
-        .select(relatedFields)
-        .eq("branch", item.branch)
-        .neq("id", item.id)
-        .order("created_at", { ascending: false })
-        .limit(4),
+      getPublicRelatedRepairCaseRows("branch", item.branch, item.id),
     );
   }
 
   const relatedResults = await Promise.all(relatedQueries);
 
-  relatedResults.forEach(({ data, error }) => {
-    if (error) {
-      console.error("related repair cases error:", error);
-      throw new Error("관련 수리사례를 불러오지 못했습니다.");
-    }
-
-    (data || []).forEach((related) => {
+  relatedResults.forEach((rows) => {
+    rows.forEach((related) => {
       if (
         related?.id &&
         related.id !== item.id &&
@@ -920,20 +867,10 @@ export default async function RepairCaseDetailPage({ params }) {
   const branchInfo = getBranchInfo(item.branch);
   const phoneNumber = branchInfo?.phone || "";
 
-  const [detailImagesResult, relatedCases] = await Promise.all([
-    supabase
-      .from("repair_case_images")
-      .select("id,image_url,alt_text,description,sort_order")
-      .eq("repair_case_id", item.id)
-      .order("sort_order", { ascending: true }),
+  const [detailImages, relatedCases] = await Promise.all([
+    getPublicRepairCaseImages(item.id),
     getRelatedCases(item),
   ]);
-  const { data: detailImages, error: detailImagesError } = detailImagesResult;
-
-  if (detailImagesError) {
-    console.error("repair case images error:", detailImagesError);
-    throw new Error("수리사례 이미지를 불러오지 못했습니다.");
-  }
 
   const branchVisitGuide = getBranchVisitGuide(item.branch);
   const consultTitle = makeConsultTitle(item);
@@ -1096,7 +1033,7 @@ export default async function RepairCaseDetailPage({ params }) {
           <div style={summaryItemStyle}>
             <span style={summaryLabelStyle}>고장 증상</span>
             <strong style={summaryValueStyle}>
-              {item.symptom || "증상 점검 필요"}
+              {cleanRepairCaseText(item.symptom) || "증상 점검 필요"}
             </strong>
           </div>
 
@@ -1237,7 +1174,7 @@ export default async function RepairCaseDetailPage({ params }) {
 
                         {image.description && (
                           <figcaption style={structuredCaptionStyle}>
-                            {image.description}
+                            {cleanRepairCaseText(image.description)}
                           </figcaption>
                         )}
                       </figure>
@@ -1282,7 +1219,8 @@ export default async function RepairCaseDetailPage({ params }) {
                   <p style={detailImageNumberStyle}>사진 {index + 1}</p>
 
                   <p style={detailDescriptionStyle}>
-                    {image.description || "수리 과정 상세 이미지입니다."}
+                    {cleanRepairCaseText(image.description) ||
+                      "수리 과정 상세 이미지입니다."}
                   </p>
                 </div>
               </div>

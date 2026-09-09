@@ -2,17 +2,28 @@ import { supabase } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { cache } from "react";
+import { getOrganizationJsonLd } from "@/lib/siteSeo";
 
 const BASE_URL = "https://www.ismileagain.co.kr";
 
 const getNotice = cache(async (id) => {
-  const { data } = await supabase
-    .from("notices")
-    .select("id, title, content, is_pinned, created_at")
-    .eq("id", id)
-    .maybeSingle();
+  try {
+    const { data, error } = await supabase
+      .from("notices")
+      .select("id, title, content, is_pinned, created_at")
+      .eq("id", id)
+      .maybeSingle();
 
-  return data || null;
+    if (error) {
+      console.error("notice detail error:", error);
+      return null;
+    }
+
+    return data || null;
+  } catch (error) {
+    console.error("notice detail exception:", error);
+    return null;
+  }
 });
 
 function makeDescription(notice) {
@@ -88,6 +99,58 @@ export default async function NoticeDetailPage({ params }) {
     notFound();
   }
 
+  const canonicalUrl = `${BASE_URL}/notices/${encodeURIComponent(
+    String(notice.id),
+  )}`;
+  const description = makeDescription(notice);
+  const pageJsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      getOrganizationJsonLd(),
+      {
+        "@type": "BreadcrumbList",
+        "@id": `${canonicalUrl}#breadcrumb`,
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "홈",
+            item: `${BASE_URL}/`,
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "공지사항",
+            item: `${BASE_URL}/notices`,
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: notice.title,
+            item: canonicalUrl,
+          },
+        ],
+      },
+      {
+        "@type": "Article",
+        "@id": `${canonicalUrl}#article`,
+        mainEntityOfPage: canonicalUrl,
+        url: canonicalUrl,
+        headline: notice.title,
+        description,
+        datePublished: notice.created_at,
+        dateModified: notice.created_at,
+        inLanguage: "ko-KR",
+        author: {
+          "@id": `${BASE_URL}/#organization`,
+        },
+        publisher: {
+          "@id": `${BASE_URL}/#organization`,
+        },
+      },
+    ],
+  };
+
   return (
     <main
       style={{
@@ -96,6 +159,19 @@ export default async function NoticeDetailPage({ params }) {
         padding: "24px",
       }}
     >
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(pageJsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
+
+      <nav aria-label="현재 위치" style={breadcrumbStyle}>
+        <Link href="/">홈</Link>
+        <span aria-hidden="true">›</span>
+        <Link href="/notices">공지사항</Link>
+      </nav>
+
       <p
         style={{
           color: "#1e3a8a",
@@ -148,6 +224,15 @@ const contentStyle = {
   lineHeight: 1.9,
   fontSize: "18px",
   whiteSpace: "pre-wrap",
+};
+
+const breadcrumbStyle = {
+  display: "flex",
+  gap: "8px",
+  alignItems: "center",
+  marginBottom: "24px",
+  color: "#475569",
+  fontSize: "15px",
 };
 
 const backButtonStyle = {

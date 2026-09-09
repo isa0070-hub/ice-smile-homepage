@@ -102,6 +102,7 @@ export default function SiteHeader() {
             <Link style={navStyle} href="/">홈</Link>
             <Link href="/#repair-items" style={navStyle}>수리품목</Link>
             <Link style={navStyle} href="/repair-cases">수리사례</Link>
+            <Link style={navStyle} href="/notices">공지사항</Link>
             <button type="button" onClick={() => setIsOpen(true)} style={navButtonStyle}>
               온라인접수
             </button>
@@ -157,6 +158,7 @@ export default function SiteHeader() {
             <Link href="/" onClick={closeMenu} style={mobileNavStyle}>홈</Link>
             <Link href="/#repair-items" onClick={closeMenu} style={mobileNavStyle}>수리품목</Link>
             <Link href="/repair-cases" onClick={closeMenu} style={mobileNavStyle}>수리사례</Link>
+            <Link href="/notices" onClick={closeMenu} style={mobileNavStyle}>공지사항</Link>
             <button type="button" onClick={openInquiry} style={mobileNavButtonStyle}>온라인접수</button>
             <Link href="/branches" onClick={closeMenu} style={mobileNavStyle}>지점안내</Link>
 

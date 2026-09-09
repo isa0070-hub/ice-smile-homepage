@@ -74,6 +74,10 @@ const NEUTRAL_REPLACEMENTS = [
   [/최고급\s*전용/giu, "전용"],
   [/분해\s*난이도가\s*최상급에\s*속합니다/giu, "분해 난이도가 높은 편입니다"],
   [/수리\s*완료\s*및\s*완벽한\s*대변신/giu, "수리 완료"],
+  [/새것처럼\s*완벽하게\s*케어해\s*드리는/giu, "기기 상태를 점검하고 수리하는"],
+  [/완벽하게\s*되살려\s*드린/giu, "점검하고 수리한"],
+  [/어떻게\s*새것처럼\s*완벽하게\s*되살아났는지/giu, "어떻게 수리됐는지"],
+  [/어떻게\s*흔적도\s*없이\s*완벽하게\s*복원되고/giu, "어떻게 수리되고"],
   [
     /새\s*제품처럼\s*완벽하게\s*부활했습니다/giu,
     "정상 작동 상태로 복구했습니다",
@@ -99,6 +103,12 @@ const NEUTRAL_REPLACEMENTS = [
     "본체 프레임에 맞춰 고르게",
   ],
   [/완벽하게\s*해결/giu, "해결"],
+  [/완벽\s*해결/giu, "수리"],
+  [/완벽\s*복구/giu, "복구"],
+  [/완벽\s*교체/giu, "교체"],
+  [/완벽\s*수리/giu, "수리"],
+  [/완벽하게\s*심폐소생\s*완료/giu, "수리 완료"],
+  [/완벽\s*심폐소생/giu, "수리"],
   [/부활\s*완료/giu, "복구 완료"],
   [/정품급(?:\s*고품질)?\s*새\s*액정/giu, "교체용 새 액정"],
   [/정품\s*신품\s*액정/giu, "교체용 새 액정"],
@@ -106,11 +116,37 @@ const NEUTRAL_REPLACEMENTS = [
   [/고화질\s*정품\s*새\s*액정\s*패널/giu, "고화질 교체용 새 액정 패널"],
   [/정품\s*디스플레이\s*모듈/giu, "교체용 디스플레이 모듈"],
   [/정품\s*규격의\s*새\s*단자/giu, "규격에 맞는 교체용 단자"],
+  [/정품\s*배터리/giu, "교체용 배터리"],
+  [/광속\s*방전되는/giu, "빠르게 소모되는"],
+  [/흑점\s*테러당한/giu, "흑점이 발생한"],
+  [/3배\s*줌의\s*배신\s*[?!]*/giu, "3배 줌에서"],
+  [/데이터\s*복구\s*전문\s*!?/giu, "데이터 보존 점검"],
+  [/와장창\s*/giu, ""],
+];
+
+// 기존 검토 대상에서 이미 노출 중이던 가격 관련 표현만 중립화합니다.
+// 신규 사례의 가격 문구는 이번 검색 품질 작업 범위에서 변경하지 않습니다.
+const LEGACY_ONLY_REPLACEMENTS = [
   [/악명\s*높은\s*리퍼\s*비용/giu, "리퍼 비용"],
   [/비싼\s*공식\s*리퍼\s*비용/giu, "공식 리퍼 비용"],
   [/비싼\s*수리\s*비용/giu, "수리 비용"],
   [/과도한\s*공식\s*센터\s*비용/giu, "공식 센터 비용"],
 ];
+
+const TEXT_CORRECTIONS = [
+  [/떨어뜨러서/gu, "떨어뜨려"],
+  [/액정검정\s*멍\s*이보며/gu, "액정에 검은 멍이 보이며"],
+  [/덜렁\s+덜렁/gu, "들떠 분리된 상태"],
+  [/액정정파손/gu, "액정 파손"],
+  [/전원이꺼지는/gu, "전원이 꺼지는"],
+  [/화면백화/gu, "화면 백화"],
+  [/샤워중/gu, "샤워 중"],
+  [/부팅안됨/gu, "부팅 안 됨"],
+  [/전원\s*안켜짐/gu, "전원 안 켜짐"],
+];
+
+const META_TITLE_MAX_LENGTH = 60;
+const SITE_NAME = "아이스마일어게인";
 
 function isTargetSlug(slug) {
   return Object.hasOwn(LEGACY_REPAIR_CASE_TITLES, String(slug || ""));
@@ -157,6 +193,65 @@ function neutralizeMarketingLanguage(value) {
   );
 }
 
+function neutralizeReviewedLegacyLanguage(value) {
+  return LEGACY_ONLY_REPLACEMENTS.reduce(
+    (text, [pattern, replacement]) => text.replace(pattern, replacement),
+    value,
+  );
+}
+
+function correctKnownTextErrors(value) {
+  return TEXT_CORRECTIONS.reduce(
+    (text, [pattern, replacement]) => text.replace(pattern, replacement),
+    value,
+  );
+}
+
+function cleanPresentationText(value) {
+  return correctKnownTextErrors(neutralizeMarketingLanguage(value))
+    .replace(/수리\s*완료\s*및\s*수리\s*완료/gu, "수리 완료")
+    .replace(/교체용\s+교체용/gu, "교체용")
+    .replace(/점검과\s*수리\s*기술으로/gu, "점검과 수리로")
+    .replace(/[ \t]+([,.!?])/gu, "$1")
+    .replace(/[ \t]{2,}/gu, " ")
+    .replace(/[ \t]+\n/gu, "\n")
+    .replace(/\n[ \t]+/gu, "\n")
+    .replace(/\n{3,}/gu, "\n\n")
+    .trim();
+}
+
+function trimTerminalPunctuation(value) {
+  return value
+    .replace(/\s*[|｜·ㆍ,/:;\-–—([{]+\s*$/gu, "")
+    .replace(/[!?]+$/gu, "")
+    .trim();
+}
+
+function limitAtWordBoundary(value, maxLength) {
+  const text = cleanPresentationText(value);
+  const characters = Array.from(text);
+
+  if (characters.length <= maxLength) {
+    return trimTerminalPunctuation(text);
+  }
+
+  const candidate = characters.slice(0, maxLength + 1).join("");
+  const boundary = Math.max(
+    candidate.lastIndexOf(" "),
+    candidate.lastIndexOf("｜"),
+    candidate.lastIndexOf("|"),
+    candidate.lastIndexOf(","),
+    candidate.lastIndexOf("·"),
+  );
+  const minimumUsefulBoundary = Math.floor(maxLength * 0.68);
+  const limited =
+    boundary >= minimumUsefulBoundary
+      ? candidate.slice(0, boundary)
+      : characters.slice(0, maxLength).join("");
+
+  return trimTerminalPunctuation(limited);
+}
+
 function sanitizeSectionNode(slug, value) {
   if (Array.isArray(value)) {
     return value.map((entry) => sanitizeSectionNode(slug, entry));
@@ -181,8 +276,51 @@ export function getLegacyRepairCaseTitle(slug) {
   return LEGACY_REPAIR_CASE_TITLES[String(slug || "")] || "";
 }
 
+export function sanitizeRepairCaseSearchText(value) {
+  if (typeof value !== "string" || !value.trim()) {
+    return value;
+  }
+
+  return cleanPresentationText(value);
+}
+
+export function makeRepairCaseMetaTitle(
+  displayTitle,
+  fallbackTitle = "수리사례",
+) {
+  const suffix = ` | ${SITE_NAME}`;
+  const maxCoreLength = META_TITLE_MAX_LENGTH - Array.from(suffix).length;
+  const source = sanitizeRepairCaseSearchText(displayTitle || fallbackTitle)
+    .replace(/(?:\.{3,}|…+)/gu, " ")
+    .replace(/\(\s*feat\.?\s*아이스마일어게인\s*\)/giu, " ")
+    .replace(/아이스마일어게인/gu, " ")
+    .replace(/\s+/gu, " ")
+    .trim();
+  const titleCore = limitAtWordBoundary(source || fallbackTitle, maxCoreLength);
+
+  return `${titleCore}${suffix}`;
+}
+
+export function makeRepairCaseMetaDescription({
+  displayTitle,
+  branchIntro,
+  maxLength = 155,
+}) {
+  const titleSummary = limitAtWordBoundary(
+    sanitizeRepairCaseSearchText(displayTitle || "수리사례").replace(
+      /(?:\.{3,}|…+)/gu,
+      " ",
+    ),
+    78,
+  );
+  const location = sanitizeRepairCaseSearchText(branchIntro || SITE_NAME);
+  const description = `${titleSummary} 실제 사례입니다. ${location}에서 진행했으며 방문 전 수리 가능 여부, 예상 비용, 소요 시간, 방문 및 택배 접수 방법을 안내합니다.`;
+
+  return limitAtWordBoundary(description, maxLength);
+}
+
 export function sanitizeLegacyRepairCaseText(slug, value) {
-  if (!isTargetSlug(slug) || typeof value !== "string" || !value.trim()) {
+  if (typeof value !== "string" || !value.trim()) {
     return value;
   }
 
@@ -201,20 +339,15 @@ export function sanitizeLegacyRepairCaseText(slug, value) {
     })
     .join("");
 
-  return neutralizeMarketingLanguage(keptText)
-    .replace(/수리\s*완료\s*및\s*수리\s*완료/gu, "수리 완료")
-    .replace(/교체용\s+교체용/gu, "교체용")
-    .replace(/점검과\s*수리\s*기술으로/gu, "점검과 수리로")
-    .replace(/[ \t]+([,.!?])/gu, "$1")
-    .replace(/[ \t]{2,}/gu, " ")
-    .replace(/[ \t]+\n/gu, "\n")
-    .replace(/\n[ \t]+/gu, "\n")
-    .replace(/\n{3,}/gu, "\n\n")
-    .trim();
+  const cleanedText = cleanPresentationText(keptText);
+
+  return isTargetSlug(slug)
+    ? neutralizeReviewedLegacyLanguage(cleanedText)
+    : cleanedText;
 }
 
 export function sanitizeLegacyRepairCaseSections(slug, value) {
-  if (!isTargetSlug(slug) || value == null) {
+  if (value == null) {
     return value;
   }
 
@@ -234,14 +367,6 @@ export function sanitizeLegacyRepairCaseSections(slug, value) {
 }
 
 export function getLegacyRepairCasePresentation(item) {
-  if (!isTargetSlug(item?.slug)) {
-    return {
-      displayTitle: "",
-      repairContent: item?.repair_content,
-      contentSections: item?.content_sections,
-    };
-  }
-
   return {
     displayTitle: getLegacyRepairCaseTitle(item.slug),
     repairContent: sanitizeLegacyRepairCaseText(item.slug, item.repair_content),

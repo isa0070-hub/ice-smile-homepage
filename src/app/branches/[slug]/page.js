@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import Image from "@/components/SiteImage"
 import { supabase } from "@/lib/supabase"
 import {
   getBranchCanonicalUrl,
@@ -30,6 +31,32 @@ const serviceHubLinks = [
     label: "ASUS·HP·LG 노트북 수리 안내",
   },
 ]
+
+const branchGalleries = {
+  seolleung: [
+    {
+      src: "/images/branches/seolleung/seolleung-entrance.jpg",
+      alt: "서울 강남구 테헤란로 406 샹제리제센터 A동 406호 아이스마일어게인 선릉점 출입구",
+      caption: "샹제리제센터 A동 406호 선릉점 출입구",
+      width: 1200,
+      height: 900,
+    },
+    {
+      src: "/images/branches/seolleung/seolleung-iphone-screen-repair.jpg",
+      alt: "아이스마일어게인 선릉점 아이폰 액정 분해 점검 작업대",
+      caption: "아이폰 액정 분해·점검 작업",
+      width: 1200,
+      height: 900,
+    },
+    {
+      src: "/images/branches/seolleung/seolleung-device-repair-workbench.jpg",
+      alt: "아이스마일어게인 선릉점 태블릿과 스마트기기 분해 점검 작업대",
+      caption: "태블릿·스마트기기 분해 점검 작업",
+      width: 720,
+      height: 960,
+    },
+  ],
+}
 
 export function generateStaticParams() {
   return branchSlugs.map((slug) => ({ slug }))
@@ -154,18 +181,28 @@ export default async function BranchDetailPage({ params }) {
   const canonicalUrl = getBranchCanonicalUrl(seo)
   const branchFaqs = getBranchFaqs(seo)
   const recentCases = await getRecentBranchCases(seo)
+  const branchGallery = branchGalleries[seo.slug] || []
   const contactHref = `/contact?branch=${encodeURIComponent(seo.slug)}`
   const seolleungIpadContactHref =
     seo.slug === "seolleung"
       ? "/contact?branch=seolleung&device=ipad"
       : null
 
+  const branchLocalBusinessJsonLd = getBranchLocalBusinessJsonLd(seo)
+
+  if (branchGallery.length > 0) {
+    branchLocalBusinessJsonLd.image = [
+      branchLocalBusinessJsonLd.image,
+      ...branchGallery.map((photo) => new URL(photo.src, canonicalUrl).href),
+    ]
+  }
+
   const localBusinessJsonLd = {
     "@context": "https://schema.org",
     "@graph": [
       getWebSiteJsonLd(),
       getOrganizationJsonLd(),
-      getBranchLocalBusinessJsonLd(seo),
+      branchLocalBusinessJsonLd,
     ],
   }
 
@@ -348,6 +385,34 @@ export default async function BranchDetailPage({ params }) {
             </div>
           </div>
         </article>
+
+        {branchGallery.length > 0 && (
+          <article style={styles.textCard}>
+            <h2 style={styles.sectionTitle}>{seo.shortName} 매장·수리 현장</h2>
+            <p style={styles.paragraph}>
+              실제 방문 위치와 매장에서 진행하는 기기 분해·점검 환경을
+              사진으로 확인해 보세요.
+            </p>
+
+            <div className="branch-gallery" style={styles.galleryGrid}>
+              {branchGallery.map((photo) => (
+                <figure key={photo.src} style={styles.galleryItem}>
+                  <Image
+                    src={photo.src}
+                    alt={photo.alt}
+                    width={photo.width}
+                    height={photo.height}
+                    sizes="(max-width: 760px) 100vw, 33vw"
+                    style={styles.galleryImage}
+                  />
+                  <figcaption style={styles.galleryCaption}>
+                    {photo.caption}
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </article>
+        )}
 
         <article style={styles.textCard}>
           <h2 style={styles.sectionTitle}>{seo.shortName} 수리 안내</h2>
@@ -538,6 +603,34 @@ const styles = {
     margin: "0 auto",
     display: "grid",
     gap: "28px",
+  },
+
+  galleryGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+    gap: "16px",
+  },
+
+  galleryItem: {
+    margin: 0,
+    overflow: "hidden",
+    border: "1px solid #e2e8f0",
+    borderRadius: "18px",
+    backgroundColor: "#f8fafc",
+  },
+
+  galleryImage: {
+    display: "block",
+    width: "100%",
+    height: "260px",
+    objectFit: "cover",
+  },
+
+  galleryCaption: {
+    padding: "12px 14px",
+    color: "#475569",
+    fontSize: "14px",
+    lineHeight: 1.6,
   },
 
   card: {

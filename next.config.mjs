@@ -5,6 +5,16 @@ const nextConfig = {
   async headers() {
     return [
       {
+        source: "/images/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value:
+              "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800",
+          },
+        ],
+      },
+      {
         source: "/:path*",
         headers: [
           { key: "X-Content-Type-Options", value: "nosniff" },
@@ -80,6 +90,20 @@ const nextConfig = {
       { pathname: "/images/notebook-tablet.jpg", search: "" },
       { pathname: "/images/gangbyeon-branch.jpg", search: "" },
       { pathname: "/images/seolleung-branch.jpg", search: "" },
+      {
+        pathname: "/images/branches/seolleung/seolleung-entrance.jpg",
+        search: "",
+      },
+      {
+        pathname:
+          "/images/branches/seolleung/seolleung-iphone-screen-repair.jpg",
+        search: "",
+      },
+      {
+        pathname:
+          "/images/branches/seolleung/seolleung-device-repair-workbench.jpg",
+        search: "",
+      },
       { pathname: "/images/sindorim-branch.jpg", search: "" },
     ],
     // Repair photos are served directly by SiteImage. Keeping remotePatterns
