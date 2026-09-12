@@ -149,18 +149,6 @@ export default async function Home() {
         <div aria-hidden="true" style={heroOverlayStyle} />
 
         <div style={heroContentStyle}>
-          <p
-            className="home-hero-label"
-            style={{
-              fontSize: "24px",
-              marginBottom: "18px",
-              opacity: 0.95,
-              textShadow: "0 2px 10px rgba(0,0,0,0.5)",
-            }}
-          >
-            아이스마일어게인
-          </p>
-
           <h1
             className="home-hero-title"
             style={{

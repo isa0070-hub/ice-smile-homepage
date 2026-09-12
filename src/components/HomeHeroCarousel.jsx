@@ -124,13 +124,6 @@ export default function HomeHeroCarousel() {
     });
   };
 
-  const selectSlide = (index) => {
-    if (!loadedSlideIndexes.has(index)) return;
-
-    setActiveIndex(index);
-    setIsPlaying(false);
-  };
-
   const renderedSlides = loadDeferredSlides ? slides : slides.slice(0, 1);
 
   return (
@@ -177,27 +170,6 @@ export default function HomeHeroCarousel() {
         ))}
       </div>
 
-      <div className={styles.controls} aria-label="사진 슬라이드 제어">
-        <div className={styles.dots}>
-          {slides.map((slide, index) => {
-            const isLoaded = loadedSlideIndexes.has(index);
-
-            return (
-              <button
-                key={slide.desktopSrc}
-                type="button"
-                className={`${styles.dot} ${
-                  activeIndex === index ? styles.activeDot : ""
-                }`}
-                onClick={() => selectSlide(index)}
-                aria-label={`${index + 1}번 사진 보기 및 자동 전환 멈춤: ${slide.label}`}
-                aria-current={activeIndex === index ? "true" : undefined}
-                disabled={!isLoaded}
-              />
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 }
