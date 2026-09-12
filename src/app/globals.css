@@ -741,8 +741,8 @@ form {
     width: 100%;
     margin-left: auto !important;
     margin-right: auto !important;
-    font-size: clamp(42px, 11vw, 50px) !important;
-    line-height: 1.16 !important;
+    font-size: clamp(24px, 7vw, 32px) !important;
+    line-height: 1.35 !important;
     letter-spacing: -2px;
     text-align: center !important;
     word-break: keep-all;
@@ -908,9 +908,40 @@ form {
   }
 
   .home-hero-title {
-    font-size: clamp(42px, 11vw, 50px) !important;
-    line-height: 1.16 !important;
-    letter-spacing: -2px !important;
+    font-size: clamp(24px, 7vw, 32px) !important;
+    line-height: 1.35 !important;
+    letter-spacing: -0.5px !important;
+  }
+
+  .home-hero-subtitle {
+    font-size: clamp(17px, 4.6vw, 20px) !important;
+    line-height: 1.6 !important;
+  }
+
+  .home-hero-subtitle-divider {
+    display: none;
+  }
+
+  .home-hero-subtitle-visit {
+    display: block;
+  }
+
+  #device-service-title,
+  #repair-standard-title {
+    font-size: clamp(23px, 6.3vw, 30px) !important;
+    line-height: 1.45 !important;
+    letter-spacing: -0.5px;
+    word-break: keep-all;
+    overflow-wrap: normal;
+    text-wrap: balance;
+  }
+
+  #device-service-title + p,
+  #repair-standard-title + p {
+    font-size: 16px !important;
+    line-height: 1.85 !important;
+    word-break: keep-all;
+    text-wrap: pretty;
   }
 
   .branches-main-title,
