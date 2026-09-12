@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { branchSeo, branchSlugs } from "@/lib/branchSeo";
 
@@ -9,11 +10,43 @@ export default function PhoneContactButton({
   buttonLabel = "전화 문의",
 }) {
   const [open, setOpen] = useState(false);
+  const dialogRef = useRef(null);
+  const titleId = useId();
   const pathname = usePathname() || "";
   const currentBranch = pathname.match(/^\/branches\/([^/]+)\/?$/)?.[1];
   const orderedBranches = [...branchSlugs].sort(
     (a, b) => Number(b === currentBranch) - Number(a === currentBranch)
   );
+
+  useEffect(() => {
+    if (!open) return;
+    const previousFocus = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    dialogRef.current?.focus();
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setOpen(false);
+      if (event.key !== "Tab") return;
+      const controls = dialogRef.current?.querySelectorAll("a[href], button");
+      if (!controls?.length) return;
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === dialogRef.current)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+      previousFocus?.focus?.();
+    };
+  }, [open]);
 
   return (
     <>
@@ -35,10 +68,10 @@ export default function PhoneContactButton({
         {buttonLabel}
       </button>
 
-      {open && (
+      {open && createPortal(
         <div style={overlayStyle} onClick={() => setOpen(false)}>
-          <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
-            <h2>지점 전화문의</h2>
+          <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} style={modalStyle} onClick={(e) => e.stopPropagation()}>
+            <h2 id={titleId}>지점 전화문의</h2>
 
             {orderedBranches.map((slug) => (
               <p key={slug}>
@@ -53,7 +86,8 @@ export default function PhoneContactButton({
               닫기
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
@@ -74,6 +108,9 @@ const modalStyle = {
   color: "#111827",
   width: "360px",
   maxWidth: "90vw",
+  maxHeight: "calc(100dvh - 32px)",
+  overflowY: "auto",
+  boxSizing: "border-box",
   borderRadius: "22px",
   padding: "30px",
   textAlign: "center",
