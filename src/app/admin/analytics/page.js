@@ -1437,6 +1437,13 @@ export default async function AdminAnalyticsPage({
           </a>
 
           <a
+            href="#inquiry-funnel"
+            style={analyticsMenuLinkStyle}
+          >
+            문의 전환 단계
+          </a>
+
+          <a
             href="#naver-ad-clicks"
             style={analyticsMenuLinkAccentStyle}
           >
@@ -1545,6 +1552,25 @@ export default async function AdminAnalyticsPage({
               },
             ]}
           />
+        </section>
+
+        <section id="inquiry-funnel" style={inquirySectionStyle}>
+          <h2 style={sectionTitleStyle}>문의 전환 단계</h2>
+          <p style={sectionDescriptionStyle}>
+            개인정보는 기록하지 않고 문의 버튼과 접수 과정의 단계별 횟수만 확인합니다.
+            접수 완료 수치는 이번 개선 배포 이후부터 누적됩니다.
+          </p>
+
+          <div style={metricGridStyle}>
+            <MetricCard label="전화번호 목록 열기" value={analytics.inquiryFunnel.phone_list_open} description="지점 전화번호를 확인한 세션" />
+            <MetricCard label="전화번호 직접 누르기" value={analytics.inquiryFunnel.phone_click} description="휴대전화에서 실제 전화 연결을 누른 횟수" />
+            <MetricCard label="온라인 문의 누르기" value={analytics.inquiryFunnel.online_inquiry_click} description="문의 페이지 또는 접수 버튼을 누른 횟수" />
+            <MetricCard label="문의 화면 보기" value={analytics.inquiryFunnel.inquiry_form_view} description="접수 화면이 실제로 열린 횟수" />
+            <MetricCard label="문의 작성 시작" value={analytics.inquiryFunnel.inquiry_form_start} description="접수 항목을 입력하기 시작한 횟수" />
+            <MetricCard label="온라인 접수 완료" value={analytics.inquiryFunnel.generate_lead} description="서버에 새 문의가 정상 저장된 횟수" emphasis />
+            <MetricCard label="네이버 톡톡 누르기" value={analytics.inquiryFunnel.naver_talk_click} description="네이버 톡톡 상담을 누른 횟수" />
+            <MetricCard label="카카오톡 누르기" value={analytics.inquiryFunnel.kakao_talk_click} description="카카오톡 상담을 누른 횟수" />
+          </div>
         </section>
 
         <section style={topGridStyle}>
@@ -1691,6 +1717,14 @@ const metricGridStyle = {
   gridTemplateColumns:
     "repeat(auto-fit, minmax(220px, 1fr))",
   gap: "16px",
+};
+
+const inquirySectionStyle = {
+  marginTop: "28px",
+  padding: "25px",
+  borderRadius: "22px",
+  background: "#eff6ff",
+  border: "1px solid #bfdbfe",
 };
 
 const metricCardStyle = {

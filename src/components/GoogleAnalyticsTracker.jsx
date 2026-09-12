@@ -29,6 +29,49 @@ function cleanLabel(value = "") {
     .slice(0, 100);
 }
 
+function sendGoogleEvent(eventName, parameters = {}, attempt = 0) {
+  if (typeof window === "undefined") {
+    return Promise.resolve(false);
+  }
+
+  if (typeof window.gtag === "function") {
+    window.gtag("event", eventName, {
+      ...parameters,
+      page_title: document.title,
+      page_location: window.location.href,
+      page_path:
+        window.location.pathname + window.location.search,
+      send_to: GA_MEASUREMENT_ID,
+    });
+
+    return Promise.resolve(true);
+  }
+
+  if (attempt >= 8) {
+    return Promise.resolve(false);
+  }
+
+  return new Promise((resolve) => {
+    window.setTimeout(() => {
+      resolve(sendGoogleEvent(eventName, parameters, attempt + 1));
+    }, 150);
+  });
+}
+
+export function trackGoogleInquiryEvent(
+  eventName,
+  { formLocation = "unknown", preferredBranch = "" } = {}
+) {
+  return sendGoogleEvent(eventName, {
+    form_location: cleanLabel(formLocation),
+    preferred_branch: cleanLabel(preferredBranch),
+  });
+}
+
+export function trackGoogleLead(options = {}) {
+  return trackGoogleInquiryEvent("generate_lead", options);
+}
+
 function hasPhoneListOpenInSession() {
   if (phoneListOpenSentInMemory) {
     return true;

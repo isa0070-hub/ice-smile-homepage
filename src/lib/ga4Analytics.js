@@ -43,6 +43,17 @@ const PAID_MEDIUMS = new Set([
   "cpa",
 ]);
 
+const INQUIRY_EVENT_NAMES = [
+  "phone_list_open",
+  "phone_click",
+  "online_inquiry_click",
+  "inquiry_form_view",
+  "inquiry_form_start",
+  "generate_lead",
+  "naver_talk_click",
+  "kakao_talk_click",
+];
+
 let analyticsClient = null;
 
 function cleanText(value = "") {
@@ -52,34 +63,35 @@ function cleanText(value = "") {
 function normalize(value = "") {
   return cleanText(value).toLowerCase();
 }
+
 function getGa4PropertyId() {
-    const value = process.env.GA4_PROPERTY_ID;
-  
-    if (!value || !value.trim()) {
-      throw new Error(
-        `GA4_PROPERTY_ID 값을 읽지 못했습니다. 현재 길이: ${
-          String(value || "").length
-        }`
-      );
-    }
-  
-    return value.trim();
+  const value = process.env.GA4_PROPERTY_ID;
+
+  if (!value || !value.trim()) {
+    throw new Error(
+      `GA4_PROPERTY_ID 값을 읽지 못했습니다. 현재 길이: ${
+        String(value || "").length
+      }`
+    );
   }
-  
-  function getGa4CredentialsBase64() {
-    const value =
-      process.env.GOOGLE_ANALYTICS_CREDENTIALS_BASE64;
-  
-    if (!value || !value.trim()) {
-      throw new Error(
-        `GOOGLE_ANALYTICS_CREDENTIALS_BASE64 값을 읽지 못했습니다. 현재 길이: ${
-          String(value || "").length
-        }`
-      );
-    }
-  
-    return value.trim();
+
+  return value.trim();
+}
+
+function getGa4CredentialsBase64() {
+  const value =
+    process.env.GOOGLE_ANALYTICS_CREDENTIALS_BASE64;
+
+  if (!value || !value.trim()) {
+    throw new Error(
+      `GOOGLE_ANALYTICS_CREDENTIALS_BASE64 값을 읽지 못했습니다. 현재 길이: ${
+        String(value || "").length
+      }`
+    );
   }
+
+  return value.trim();
+}
 function getPeriodConfig(periodKey = "7d") {
   return PERIOD_CONFIG[periodKey] || PERIOD_CONFIG["7d"];
 }
@@ -158,31 +170,31 @@ function classifyPortal(source = "") {
 }
 
 function classifyPaidPortal({
-    source = "",
-    channel = "",
-    campaign = "",
-  }) {
-    const normalizedSource = normalize(source);
-    const normalizedCampaign = normalize(campaign);
-  
-    // UTM 캠페인이 powerlink로 확인되는 경우만 파워링크
-    if (
-      normalizedSource.includes("naver") &&
-      normalizedCampaign.includes("powerlink")
-    ) {
-      return "naver";
-    }
-  
-    // Google의 검색광고로 확실히 분류된 경우
-    if (
-      normalizedSource.includes("google") &&
-      channel === "Paid Search"
-    ) {
-      return "google";
-    }
-  
-    return "other";
+  source = "",
+  channel = "",
+  campaign = "",
+}) {
+  const normalizedSource = normalize(source);
+  const normalizedCampaign = normalize(campaign);
+
+  // UTM 캠페인이 powerlink로 확인되는 경우만 파워링크
+  if (
+    normalizedSource.includes("naver") &&
+    normalizedCampaign.includes("powerlink")
+  ) {
+    return "naver";
   }
+
+  // Google의 검색광고로 확실히 분류된 경우
+  if (
+    normalizedSource.includes("google") &&
+    channel === "Paid Search"
+  ) {
+    return "google";
+  }
+
+  return "other";
+}
 
 function normalizeLandingPath(value = "") {
   const path = cleanText(value);
@@ -278,12 +290,12 @@ async function makeTopRepairCases(sessionMap) {
 export async function getSearchTrafficSummary(
   periodKey = "7d"
 ) {
-    const propertyId = getGa4PropertyId();
+  const propertyId = getGa4PropertyId();
 
   const period = getPeriodConfig(periodKey);
   const client = getAnalyticsClient();
 
-  const [report] = await client.runReport({
+  const reportRequest = client.runReport({
     property: `properties/${propertyId}`,
 
     dateRanges: [
@@ -294,22 +306,12 @@ export async function getSearchTrafficSummary(
     ],
 
     dimensions: [
-  {
-    name: "sessionDefaultChannelGroup",
-  },
-  {
-    name: "sessionSource",
-  },
-  {
-    name: "sessionMedium",
-  },
-  {
-    name: "sessionCampaignName",
-  },
-  {
-    name: "landingPagePlusQueryString",
-  },
-],
+      { name: "sessionDefaultChannelGroup" },
+      { name: "sessionSource" },
+      { name: "sessionMedium" },
+      { name: "sessionCampaignName" },
+      { name: "landingPagePlusQueryString" },
+    ],
 
     metrics: [
       {
@@ -328,6 +330,33 @@ export async function getSearchTrafficSummary(
 
     limit: 100000,
   });
+
+  const inquiryEventRequest = client.runReport({
+    property: `properties/${propertyId}`,
+    dateRanges: [
+      {
+        startDate: period.startDate,
+        endDate: period.endDate,
+      },
+    ],
+    dimensions: [{ name: "eventName" }],
+    metrics: [{ name: "eventCount" }],
+    dimensionFilter: {
+      filter: {
+        fieldName: "eventName",
+        inListFilter: {
+          values: INQUIRY_EVENT_NAMES,
+          caseSensitive: true,
+        },
+      },
+    },
+    limit: 100,
+  });
+
+  const [[report], [inquiryEventReport]] = await Promise.all([
+    reportRequest,
+    inquiryEventRequest,
+  ]);
 
   const organic = {
     total: 0,
@@ -353,7 +382,7 @@ export async function getSearchTrafficSummary(
     const source =
       row.dimensionValues?.[1]?.value || "";
 
-      const medium =
+    const medium =
       row.dimensionValues?.[2]?.value || "";
     
     const campaign =
@@ -389,14 +418,14 @@ export async function getSearchTrafficSummary(
     }
 
     if (isPaidTraffic(channel, medium)) {
-        const paidPortal = classifyPaidPortal({
-          source,
-          channel,
-          campaign,
-        });
-      
-        paid.total += sessions;
-        paid[paidPortal] += sessions;
+      const paidPortal = classifyPaidPortal({
+        source,
+        channel,
+        campaign,
+      });
+
+      paid.total += sessions;
+      paid[paidPortal] += sessions;
 
       if (isRepairCasePath(landingPath)) {
         addSessions(
@@ -413,6 +442,20 @@ export async function getSearchTrafficSummary(
     makeTopRepairCases(paidRepairCases),
   ]);
 
+  const inquiryFunnel = Object.fromEntries(
+    INQUIRY_EVENT_NAMES.map((eventName) => [eventName, 0])
+  );
+
+  for (const row of inquiryEventReport.rows || []) {
+    const eventName = row.dimensionValues?.[0]?.value || "";
+
+    if (eventName in inquiryFunnel) {
+      inquiryFunnel[eventName] = Number(
+        row.metricValues?.[0]?.value || 0
+      );
+    }
+  }
+
   return {
     periodKey,
     periodLabel: period.label,
@@ -424,6 +467,7 @@ export async function getSearchTrafficSummary(
 
     organicTop,
     paidTop,
+    inquiryFunnel,
 
     hasData:
       organic.total > 0 ||

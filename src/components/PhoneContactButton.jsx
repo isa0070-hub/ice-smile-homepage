@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 
-export default function PhoneContactButton({ buttonStyle }) {
+export default function PhoneContactButton({
+  buttonStyle,
+  buttonLabel = "전화 문의",
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -22,7 +25,7 @@ export default function PhoneContactButton({ buttonStyle }) {
           lineHeight: "1.2",
         }}
       >
-        전화 문의
+        {buttonLabel}
       </button>
 
       {open && (

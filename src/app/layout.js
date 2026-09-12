@@ -4,6 +4,7 @@ import PopupNotice from "@/components/PopupNotice";
 import GoogleAnalyticsTracker from "@/components/GoogleAnalyticsTracker";
 import AdClickTracker from "@/components/AdClickTracker";
 import NaverConversionTracker from "@/components/NaverConversionTracker";
+import MobileContactBar from "@/components/MobileContactBar";
 import Link from "next/link";
 
 export const metadata = {
@@ -135,12 +136,13 @@ export default function RootLayout({ children }) {
             </p>
 
           </div>
-          </footer>
-<AdClickTracker />
-<GoogleAnalyticsTracker />
-<NaverConversionTracker />
-</body>
-</html>
+        </footer>
+        <MobileContactBar />
+        <AdClickTracker />
+        <GoogleAnalyticsTracker />
+        <NaverConversionTracker />
+      </body>
+    </html>
   );
 }
 

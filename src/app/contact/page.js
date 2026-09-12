@@ -1,13 +1,9 @@
 "use client"
 
-import { Suspense, useCallback, useEffect, useRef, useState } from "react"
+import { Suspense } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { trackNaverLead } from "@/components/NaverConversionTracker"
-import {
-  createInquirySubmissionToken,
-  submitOnlineInquiry,
-} from "@/lib/inquiryClient"
+import InquiryForm from "@/components/InquiryForm"
 
 const BRANCH_PREFILLS = Object.freeze({
   gangbyeon: "강변점",
@@ -24,32 +20,11 @@ const DEVICE_PREFILLS = Object.freeze({
 })
 
 function getAllowedPrefill(prefills, value) {
-  if (typeof value !== "string") return null
-
-  return prefills[value.trim().toLowerCase()] || null
+  if (typeof value !== "string") return ""
+  return prefills[value.trim().toLowerCase()] || ""
 }
 
-function createInitialForm({ preferredBranch, device }) {
-  return {
-    customer_name: "",
-    phone: "",
-    device: device || "",
-    model: "",
-    symptom: "",
-    preferred_branch: preferredBranch || "강변점",
-    contact_time: "",
-    memo: "",
-    website: "",
-    privacy_consent: false,
-    telegram_consent: false,
-  }
-}
-
-export default function ContactPage() {
-  return <ContactForm />
-}
-
-function ContactQueryPrefill({ onPrefill }) {
+function ContactFormFromQuery() {
   const searchParams = useSearchParams()
   const preferredBranch = getAllowedPrefill(
     BRANCH_PREFILLS,
@@ -60,241 +35,55 @@ function ContactQueryPrefill({ onPrefill }) {
     searchParams?.get("device"),
   )
 
-  useEffect(() => {
-    onPrefill({ preferredBranch, device })
-  }, [device, onPrefill, preferredBranch])
-
-  return null
+  return (
+    <InquiryForm
+      key={`${preferredBranch}:${device}`}
+      formLocation="contact_page"
+      idPrefix="contact"
+      initialPreferredBranch={preferredBranch}
+      initialDevice={device}
+    />
+  )
 }
 
-function ContactForm() {
-  const [form, setForm] = useState(() =>
-    createInitialForm({ preferredBranch: null, device: null }),
-  )
-
-  const [loading, setLoading] = useState(false)
-  const submissionTokenRef = useRef(null)
-  const applyPrefill = useCallback(({ preferredBranch, device }) => {
-    if (!preferredBranch && !device) return
-
-    setForm((previous) => {
-      const next = {
-        ...previous,
-        ...(preferredBranch ? { preferred_branch: preferredBranch } : {}),
-        ...(device ? { device } : {}),
-      }
-
-      return next.preferred_branch === previous.preferred_branch &&
-        next.device === previous.device
-        ? previous
-        : next
-    })
-  }, [])
-
-  const handleChange = (e) => {
-    const { checked, name, type, value } = e.target
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }))
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-
-    if (!form.customer_name.trim()) return alert("성함을 입력해 주세요.")
-    if (!form.phone.trim()) return alert("연락처를 입력해 주세요.")
-    if (!form.symptom.trim()) return alert("증상을 입력해 주세요.")
-    if (!form.privacy_consent) return alert("개인정보 수집·이용에 동의해 주세요.")
-    if (!form.telegram_consent) return alert("수리 상담 및 접수 알림을 위한 개인정보 처리에 동의해 주세요.")
-
-    setLoading(true)
-
-    if (!submissionTokenRef.current) {
-      submissionTokenRef.current = createInquirySubmissionToken()
-    }
-
-    try {
-      const result = await submitOnlineInquiry(form, submissionTokenRef.current)
-
-      if (result?.inserted === true) {
-        await trackNaverLead()
-      }
-
-      alert("온라인 접수가 완료되었습니다. 확인 후 연락드리겠습니다.")
-      window.location.assign("/")
-    } catch (error) {
-      alert(error?.message || "접수 저장에 실패했습니다.")
-    } finally {
-      setLoading(false)
-    }
-  }
-
+export default function ContactPage() {
   return (
     <main style={styles.page}>
       <section style={styles.box}>
-        <Suspense fallback={null}>
-          <ContactQueryPrefill onPrefill={applyPrefill} />
+        <Link href="/" style={styles.backButton}>
+          ← 홈페이지로 돌아가기
+        </Link>
+
+        <p style={styles.eyebrow}>사진 없이도 바로 접수</p>
+        <h1 style={styles.title}>30초 온라인 수리 문의</h1>
+        <p style={styles.desc}>
+          성함·연락처·증상만 남기면 강변점·선릉점·신도림점에서 확인 후 연락드립니다.
+        </p>
+
+        <Suspense fallback={<p style={styles.loading}>문의 양식을 불러오는 중입니다.</p>}>
+          <ContactFormFromQuery />
         </Suspense>
-
-  <Link href="/" style={styles.backButton}>
-    ← 홈페이지로 돌아가기
-  </Link>
-
-  <h1 style={styles.title}>온라인 접수</h1>
-        <p style={styles.desc}>수리 문의 내용을 남겨주시면 확인 후 빠르게 연락드리겠습니다.</p>
-
-        <form method="post" onSubmit={handleSubmit} style={styles.form}>
-          <label htmlFor="contact-name" style={styles.label}>성함 <span aria-hidden="true">*</span></label>
-          <input id="contact-name" name="customer_name" value={form.customer_name} onChange={handleChange} placeholder="성함" autoComplete="name" required maxLength={40} style={styles.input} />
-          <label htmlFor="contact-phone" style={styles.label}>연락처 <span aria-hidden="true">*</span></label>
-          <input id="contact-phone" type="tel" inputMode="tel" name="phone" value={form.phone} onChange={handleChange} placeholder="010-0000-0000" autoComplete="tel" required maxLength={30} style={styles.input} />
-
-          <label htmlFor="contact-branch" style={styles.label}>희망 지점</label>
-          <select id="contact-branch" name="preferred_branch" value={form.preferred_branch} onChange={handleChange} style={styles.input}>
-            <option>강변점</option>
-            <option>선릉점</option>
-            <option>신도림점</option>
-          </select>
-
-          <label htmlFor="contact-device" style={styles.label}>기기 종류</label>
-          <input id="contact-device" name="device" value={form.device} onChange={handleChange} placeholder="예: 아이폰, 아이패드, 맥북, 서피스" maxLength={80} style={styles.input} />
-          <label htmlFor="contact-model" style={styles.label}>모델명</label>
-          <input id="contact-model" name="model" value={form.model} onChange={handleChange} placeholder="예: 아이폰15프로, 아이패드프로12.9" maxLength={100} style={styles.input} />
-          <label htmlFor="contact-time" style={styles.label}>연락 가능 시간</label>
-          <input id="contact-time" name="contact_time" value={form.contact_time} onChange={handleChange} placeholder="예: 오후 2시 이후" maxLength={80} style={styles.input} />
-
-          <label htmlFor="contact-symptom" style={styles.label}>고장 증상 또는 문의 내용 <span aria-hidden="true">*</span></label>
-          <textarea id="contact-symptom" name="symptom" value={form.symptom} onChange={handleChange} placeholder="고장 증상 또는 문의 내용을 입력해 주세요." required maxLength={2000} style={styles.textarea} />
-          <label htmlFor="contact-memo" style={styles.label}>추가 메모 <span style={styles.optional}>(선택)</span></label>
-          <textarea id="contact-memo" name="memo" value={form.memo} onChange={handleChange} placeholder="추가로 전달할 내용을 입력해 주세요." maxLength={1000} style={styles.textareaSmall} />
-
-          <div aria-hidden="true" style={styles.honeypot}>
-            <label htmlFor="contact-website">웹사이트</label>
-            <input id="contact-website" name="website" value={form.website} onChange={handleChange} tabIndex={-1} autoComplete="off" />
-          </div>
-
-          <label style={styles.consentLabel}>
-            <input type="checkbox" name="privacy_consent" checked={form.privacy_consent} onChange={handleChange} required />
-            <span><Link href="/privacy" target="_blank" rel="noreferrer">개인정보처리방침</Link>의 수집·이용 내용에 동의합니다. <span aria-hidden="true">*</span></span>
-          </label>
-
-          <label style={styles.consentLabel}>
-            <input type="checkbox" name="telegram_consent" checked={form.telegram_consent} onChange={handleChange} required />
-            <span>
-              온라인 접수 정보가 수리 상담 담당자의 Telegram 업무 알림으로 전달되어 수리 상담·접수 처리에만 사용되는 것에 동의합니다. {" "}
-              <Link href="/privacy#telegram-transfer" target="_blank" rel="noreferrer">자세히 보기</Link> <span aria-hidden="true">*</span>
-            </span>
-          </label>
-
-          <p style={styles.consentHelp}>
-            접수 정보는 수리 상담 및 접수 처리 외에는 사용하지 않습니다.
-          </p>
-
-          <button type="submit" disabled={loading} style={styles.button}>
-            {loading ? "접수 중..." : "온라인 접수하기"}
-          </button>
-        </form>
       </section>
     </main>
   )
 }
 
 const styles = {
-  page: {
-    minHeight: "100vh",
-    backgroundColor: "#f4f8fc",
-    padding: "60px 24px",
-  },
+  page: { minHeight: "100vh", backgroundColor: "#f4f8fc", padding: "42px 20px 64px" },
   box: {
-    maxWidth: "760px",
-    margin: "0 auto",
-    backgroundColor: "#fff",
-    border: "1px solid #e2e8f0",
-    borderRadius: "28px",
-    padding: "34px",
-    boxShadow: "0 18px 45px rgba(15,23,42,0.08)",
+    maxWidth: "680px", margin: "0 auto", backgroundColor: "#fff",
+    border: "1px solid #e2e8f0", borderRadius: "28px",
+    padding: "clamp(22px, 5vw, 34px)", boxShadow: "0 18px 45px rgba(15,23,42,0.08)",
   },
+  eyebrow: { margin: "0 0 8px", color: "#2563eb", fontWeight: 900, fontSize: "14px" },
   title: {
-    fontSize: "38px",
-    fontWeight: 900,
-    margin: "0 0 10px",
+    fontSize: "clamp(32px, 7vw, 42px)", lineHeight: 1.2, fontWeight: 900,
+    margin: "0 0 10px", wordBreak: "keep-all",
   },
-  desc: {
-    color: "#64748b",
-    marginBottom: "24px",
-  },
-  form: {
-    display: "grid",
-    gap: "12px",
-  },
-  label: {
-    fontSize: "14px",
-    fontWeight: 800,
-    color: "#334155",
-    marginTop: "4px",
-  },
-  optional: {
-    color: "#64748b",
-    fontWeight: 500,
-  },
-  honeypot: {
-    position: "absolute",
-    left: "-10000px",
-    width: "1px",
-    height: "1px",
-    overflow: "hidden",
-  },
-  consentLabel: {
-    display: "flex",
-    alignItems: "flex-start",
-    gap: "10px",
-    color: "#334155",
-    fontSize: "14px",
-    lineHeight: 1.6,
-  },
-  consentHelp: {
-    margin: "-4px 0 4px 30px",
-    color: "#64748b",
-    fontSize: "12px",
-    lineHeight: 1.6,
-  },
-  input: {
-    padding: "14px",
-    border: "1px solid #cbd5e1",
-    borderRadius: "14px",
-    fontSize: "15px",
-  },
-  textarea: {
-    minHeight: "140px",
-    padding: "14px",
-    border: "1px solid #cbd5e1",
-    borderRadius: "14px",
-    fontSize: "15px",
-  },
-  textareaSmall: {
-    minHeight: "90px",
-    padding: "14px",
-    border: "1px solid #cbd5e1",
-    borderRadius: "14px",
-    fontSize: "15px",
-  },
-  button: {
-    padding: "15px",
-    border: "none",
-    borderRadius: "14px",
-    backgroundColor: "#1d4ed8",
-    color: "#fff",
-    fontWeight: 900,
-    fontSize: "16px",
-    cursor: "pointer",
-  },
-
+  desc: { color: "#64748b", lineHeight: 1.7, marginBottom: "22px", wordBreak: "keep-all" },
+  loading: { padding: "24px 0", color: "#64748b" },
   backButton: {
-    display: "inline-block",
-    marginBottom: "18px",
-    color: "#1d4ed8",
-    fontWeight: 900,
-    textDecoration: "none",
+    display: "inline-block", marginBottom: "18px", color: "#1d4ed8",
+    fontWeight: 900, textDecoration: "none",
   },
 }
