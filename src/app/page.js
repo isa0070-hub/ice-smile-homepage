@@ -188,7 +188,7 @@ export default async function Home() {
               textShadow: "0 2px 10px rgba(0,0,0,0.45)",
             }}
           >
-            강변 · 선릉 · 신도림 3개 지점｜방문 · 전국 택배 접수
+            강변 · 선릉 · 신도림｜방문 · 전국 택배 접수
           </p>
 
           <div className="home-hero-buttons" style={{ marginTop: "32px" }}>
