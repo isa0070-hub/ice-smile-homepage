@@ -471,6 +471,33 @@ export default async function BranchDetailPage({ params }) {
           <Link href="/repair-cases" style={styles.caseButton}>
             최근 수리사례 확인하기
           </Link>
+          {seo.slug === "gangbyeon" && (
+            <p style={styles.areaNotice}>
+              위 안내는 강변점까지의 방문 경로입니다. 출발 전에는 휴무일과
+              필요한 부품 재고를 확인해 주세요. 매장별 점검 내용과 비용은
+              기기 상태에 따라 달라집니다.
+            </p>
+          )}
+        </article>
+
+        <article style={styles.textCard}>
+          <h2 style={styles.sectionTitle}>사진으로 보는 수리 기록과 점검 가이드</h2>
+          <p style={styles.paragraph}>
+            실제 수리 기록과 증상별 확인사항을 블로그에서 살펴보세요.
+            글 속 기기와 같은 증상이어도 원인은 다를 수 있으므로,
+            방문하실 지점에 모델명과 현재 증상을 알려주세요.
+          </p>
+          <nav aria-label="수리 블로그와 지점 상담" style={styles.serviceHubLinks}>
+            <a href="https://notion38862.tistory.com/" style={styles.serviceHubLink}>
+              사진과 함께 보는 수리 기록
+            </a>
+            <a href="https://repaircheck-note.tistory.com/" style={styles.serviceHubLink}>
+              고장 증상별 수리 전 점검 가이드
+            </a>
+            <Link href={contactHref} style={styles.serviceHubLink}>
+              {seo.shortName}에 내 기기 증상 문의하기
+            </Link>
+          </nav>
         </article>
 
         {recentCases.length > 0 && (

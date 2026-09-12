@@ -101,7 +101,7 @@ export default function SiteHeader() {
             <Link href="/#repair-items" onClick={closeMenu} style={mobileNavStyle}>수리품목</Link>
             <Link href="/repair-cases" onClick={closeMenu} style={mobileNavStyle}>수리사례</Link>
             <Link href="/notices" onClick={closeMenu} style={mobileNavStyle}>공지사항</Link>
-            <button type="button" data-ga-contact="online_inquiry" onClick={openInquiry} style={mobileNavButtonStyle}>30초 온라인접수</button>
+            <button type="button" data-ga-contact="online_inquiry" onClick={openInquiry} style={mobileNavButtonStyle}>간편 온라인접수</button>
             <Link href="/branches" onClick={closeMenu} style={mobileNavStyle}>지점안내</Link>
 
             <PhoneContactButton buttonStyle={mobilePhoneButtonStyle} />
@@ -114,7 +114,7 @@ export default function SiteHeader() {
           <div role="dialog" aria-modal="true" aria-labelledby="inquiry-dialog-title" style={modalStyle} onClick={(e) => e.stopPropagation()}>
             <div style={modalHeaderStyle}>
               <div>
-                <h2 id="inquiry-dialog-title" style={{ margin: 0, fontSize: "26px", fontWeight: 900 }}>30초 온라인 접수</h2>
+                <h2 id="inquiry-dialog-title" style={{ margin: 0, fontSize: "26px", fontWeight: 900 }}>간편 온라인 접수</h2>
                 <p style={{ margin: "6px 0 0", color: "#64748b" }}>
                   사진이 없어도 괜찮습니다. 확인 후 연락드리겠습니다.
                 </p>

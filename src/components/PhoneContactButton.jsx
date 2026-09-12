@@ -1,12 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
+import { branchSeo, branchSlugs } from "@/lib/branchSeo";
 
 export default function PhoneContactButton({
   buttonStyle,
   buttonLabel = "전화 문의",
 }) {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname() || "";
+  const currentBranch = pathname.match(/^\/branches\/([^/]+)\/?$/)?.[1];
+  const orderedBranches = [...branchSlugs].sort(
+    (a, b) => Number(b === currentBranch) - Number(a === currentBranch)
+  );
 
   return (
     <>
@@ -33,20 +40,14 @@ export default function PhoneContactButton({
           <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
             <h2>지점 전화문의</h2>
 
-            <p>
-              <strong>강변역점</strong><br />
-              <a href="tel:02-3424-5295" style={phoneStyle}>02-3424-5295</a>
-            </p>
-
-            <p>
-              <strong>선릉점</strong><br />
-              <a href="tel:02-554-5295" style={phoneStyle}>02-554-5295</a>
-            </p>
-
-            <p>
-              <strong>신도림점</strong><br />
-              <a href="tel:02-2111-8899" style={phoneStyle}>02-2111-8899</a>
-            </p>
+            {orderedBranches.map((slug) => (
+              <p key={slug}>
+                <strong>{branchSeo[slug].shortName}</strong><br />
+                <a href={`tel:${branchSeo[slug].phone}`} style={phoneStyle}>
+                  {branchSeo[slug].phone}
+                </a>
+              </p>
+            ))}
 
             <button onClick={() => setOpen(false)} style={closeButtonStyle}>
               닫기

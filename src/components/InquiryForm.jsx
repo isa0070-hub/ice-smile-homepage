@@ -300,7 +300,7 @@ export default function InquiryForm({
         aria-busy={loading}
         style={styles.button}
       >
-        {loading ? "접수 중..." : "30초 온라인 접수하기"}
+        {loading ? "접수 중..." : "온라인 문의 접수하기"}
       </button>
     </form>
   );

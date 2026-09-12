@@ -14,19 +14,22 @@ export default function MobileContactBar() {
 
   if (excluded) return null;
 
+  const branchSlug = pathname.match(/^\/branches\/(gangbyeon|seolleung|sindorim)\/?$/)?.[1];
+  const contactHref = branchSlug ? `/contact?branch=${branchSlug}` : "/contact";
+
   return (
     <>
       <div className="mobile-contact-bar-spacer" aria-hidden="true" />
       <aside className="mobile-contact-bar" aria-label="빠른 수리 문의">
-        <PhoneContactButton buttonLabel="전화 문의" buttonStyle={phoneButtonStyle} />
+        <PhoneContactButton buttonLabel="지점 전화문의" buttonStyle={phoneButtonStyle} />
 
         {pathname === "/contact" ? (
           <a href="https://talk.naver.com/WCH5S2X" target="_blank" rel="noreferrer" style={inquiryButtonStyle}>
             네이버 톡톡
           </a>
         ) : (
-          <Link href="/contact" data-ga-contact="online_inquiry" style={inquiryButtonStyle}>
-            30초 온라인 문의
+          <Link href={contactHref} data-ga-contact="online_inquiry" style={inquiryButtonStyle}>
+            간편 수리문의
           </Link>
         )}
       </aside>

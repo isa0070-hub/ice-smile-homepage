@@ -55,7 +55,7 @@ export default function ContactPage() {
         </Link>
 
         <p style={styles.eyebrow}>사진 없이도 바로 접수</p>
-        <h1 style={styles.title}>30초 온라인 수리 문의</h1>
+        <h1 style={styles.title}>간편 온라인 수리 문의</h1>
         <p style={styles.desc}>
           성함·연락처·증상만 남기면 강변점·선릉점·신도림점에서 확인 후 연락드립니다.
         </p>
