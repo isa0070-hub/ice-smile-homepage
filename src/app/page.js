@@ -189,6 +189,15 @@ export default async function Home() {
               강변점 네이버톡톡
             </a>
 
+            <a
+              href="https://talk.naver.com/W189H6V"
+              target="_blank"
+              rel="noreferrer"
+              style={buttonStyle}
+            >
+              선릉점 네이버톡톡
+            </a>
+
             <Link href="/contact" style={buttonStyle}>
               온라인 수리문의
             </Link>

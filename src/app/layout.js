@@ -109,7 +109,16 @@ export default function RootLayout({ children }) {
                 rel="noreferrer"
                 style={footerTalkLinkStyle}
               >
-                강변점 상담 바로가기
+                강변점 상담
+              </a>
+              {" · "}
+              <a
+                href="https://talk.naver.com/W189H6V"
+                target="_blank"
+                rel="noreferrer"
+                style={footerTalkLinkStyle}
+              >
+                선릉점 상담
               </a>
             </p>
 

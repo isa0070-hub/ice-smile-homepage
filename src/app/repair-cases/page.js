@@ -665,6 +665,15 @@ export default async function RepairCasesPage({ searchParams }) {
           >
             강변점 네이버톡톡
           </a>
+
+          <a
+            href="https://talk.naver.com/W189H6V"
+            target="_blank"
+            rel="noreferrer"
+            style={bottomTalkLinkStyle}
+          >
+            선릉점 네이버톡톡
+          </a>
         </div>
       </section>
 
