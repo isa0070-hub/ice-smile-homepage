@@ -65,6 +65,13 @@ const nextConfig = {
       },
       {
         source:
+          "/repair-cases/lenovo-charging-port-not-replacement",
+        destination:
+          "/repair-cases/lenovo-charging-port-not-replacement-3",
+        statusCode: 301,
+      },
+      {
+        source:
           "/repair-cases/%EC%84%A0%EB%A6%89%EC%97%AD-%EB%85%B8%ED%8A%B8%EB%B6%81%EC%88%98%EB%A6%AC-%EB%A0%88%EB%85%B8%EB%B2%84%EB%85%B8%ED%8A%B8%EB%B6%81-%EC%95%A1%EC%A0%95-%ED%8C%8C%EC%86%90-%EB%8B%B9%EC%9D%BC-%EA%B5%90%EC%B2%B4-%EC%88%98%EB%A6%AC-%EC%99%84%EB%B2%BD-%EB%B3%B5%EC%9B%90-%ED%83%9D%EB%B0%B0-%EC%88%98%EB%A6%AC-%EA%B0%80%EB%8A%A5",
         destination:
           "/repair-cases/레노버노트북-액정파손교체수리",
