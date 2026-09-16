@@ -42,6 +42,7 @@ function getBranchInfo(branch) {
   return {
     seo,
     phone: seo.phone,
+    talkUrl: seo.talkUrl || "",
     address: [seo.address1, seo.address2].filter(Boolean).join(" "),
     pageUrl: getBranchCanonicalUrl(seo),
   };
@@ -454,14 +455,14 @@ function makeCanonicalUrl(item) {
   const casePath = getPublicRepairCasePath(item?.slug);
   return casePath ? `${BASE_URL}${casePath}` : `${BASE_URL}/repair-cases`;
 }
-function makeFaqItems(item, phoneNumber) {
+function makeFaqItems(item, phoneNumber, talkUrl = "") {
   const deviceModel = makeDeviceModelText(item);
   const branch = item?.branch || "아이스마일어게인";
   const keyword = makeMetaKeyword(item);
   const visitGuide = getBranchVisitGuide(item?.branch);
-  const contactMethod = phoneNumber
-    ? `${phoneNumber} 또는 네이버톡톡`
-    : "네이버톡톡 또는 온라인 문의";
+  const contactMethod = [phoneNumber, talkUrl ? "네이버톡톡" : "", "온라인 문의"]
+    .filter(Boolean)
+    .join(" 또는 ");
 
   return [
     {
@@ -480,7 +481,7 @@ function makeFaqItems(item, phoneNumber) {
   ];
 }
 
-function makeJsonLd({ item, detailImages = [], phoneNumber }) {
+function makeJsonLd({ item, detailImages = [], phoneNumber, talkUrl = "" }) {
   if (!item) return null;
 
   const canonicalUrl = makeCanonicalUrl(item);
@@ -507,7 +508,7 @@ function makeJsonLd({ item, detailImages = [], phoneNumber }) {
   ]
     .filter(Boolean)
     .map(toAbsoluteUrl);
-  const faqItems = makeFaqItems(item, phoneNumber);
+  const faqItems = makeFaqItems(item, phoneNumber, talkUrl);
 
   return {
     "@context": "https://schema.org",
@@ -866,6 +867,10 @@ export default async function RepairCaseDetailPage({ params }) {
 
   const branchInfo = getBranchInfo(item.branch);
   const phoneNumber = branchInfo?.phone || "";
+  const talkUrl = branchInfo?.talkUrl || "";
+  const contactHref = branchInfo?.seo?.slug
+    ? `/contact?branch=${encodeURIComponent(branchInfo.seo.slug)}`
+    : "/contact";
 
   const [detailImages, relatedCases] = await Promise.all([
     getPublicRepairCaseImages(item.id),
@@ -879,8 +884,9 @@ export default async function RepairCaseDetailPage({ params }) {
     item,
     detailImages: detailImages || [],
     phoneNumber,
+    talkUrl,
   });
-  const faqItems = makeFaqItems(item, phoneNumber);
+  const faqItems = makeFaqItems(item, phoneNumber, talkUrl);
   const displayTitle = makeDisplayTitle(item);
   const reviewedLegacyTitle = getLegacyRepairCaseTitle(item.slug);
   const deviceModel = makeDeviceModelText(item);
@@ -1060,20 +1066,26 @@ export default async function RepairCaseDetailPage({ params }) {
           <div style={summaryItemStyle}>
             <span style={summaryLabelStyle}>상담 방법</span>
             <strong style={summaryValueStyle}>
-              전화 · 네이버톡톡 · 온라인 문의
+              {talkUrl ? "전화 · 네이버톡톡 · 온라인 문의" : "전화 · 온라인 문의"}
             </strong>
           </div>
         </div>
 
         <div style={summaryActionBoxStyle}>
-          <a
-            href="https://talk.naver.com/WCH5S2X"
-            target="_blank"
-            rel="noreferrer"
-            style={summaryTalkButtonStyle}
-          >
-            네이버톡톡 문의
-          </a>
+          {talkUrl ? (
+            <a
+              href={talkUrl}
+              target="_blank"
+              rel="noreferrer"
+              style={summaryTalkButtonStyle}
+            >
+              {branchInfo?.seo?.shortName} 네이버톡톡
+            </a>
+          ) : (
+            <a href={contactHref} style={summaryTalkButtonStyle}>
+              {branchInfo?.seo?.shortName || "지점"} 온라인 문의
+            </a>
+          )}
 
           {phoneNumber ? (
             <a href={`tel:${phoneNumber}`} style={summaryPhoneButtonStyle}>
@@ -1380,18 +1392,24 @@ export default async function RepairCaseDetailPage({ params }) {
         </div>
 
         <div style={conversionButtonWrapStyle}>
-          <a
-            href="https://talk.naver.com/WCH5S2X"
-            target="_blank"
-            rel="noreferrer"
-            style={talkContactButtonStyle}
-          >
-            💬 네이버톡톡 문의
-          </a>
+          {talkUrl ? (
+            <a
+              href={talkUrl}
+              target="_blank"
+              rel="noreferrer"
+              style={talkContactButtonStyle}
+            >
+              💬 {branchInfo?.seo?.shortName} 네이버톡톡
+            </a>
+          ) : (
+            <a href={contactHref} style={talkContactButtonStyle}>
+              📝 {branchInfo?.seo?.shortName || "지점"} 온라인 문의
+            </a>
+          )}
 
           <PhoneContactButton buttonStyle={phoneContactButtonStyle} />
 
-          <a href="/contact" style={onlineContactButtonStyle}>
+          <a href={contactHref} style={onlineContactButtonStyle}>
             📝 온라인 수리문의
           </a>
         </div>
@@ -1408,22 +1426,34 @@ export default async function RepairCaseDetailPage({ params }) {
         </Link>
       </div>
 
-      <FloatingButtons phoneNumber={phoneNumber} />
+      <FloatingButtons
+        phoneNumber={phoneNumber}
+        talkUrl={talkUrl}
+        contactHref={contactHref}
+      />
     </main>
   );
 }
 
-function FloatingButtons({ phoneNumber }) {
+function FloatingButtons({ phoneNumber, talkUrl, contactHref }) {
   return (
     <div style={floatingMenuStyle}>
-      <a
-        href="https://talk.naver.com/WCH5S2X"
-        target="_blank"
-        style={floatingTalkButtonStyle}
-      >
-        <span style={floatingIconStyle}>💬</span>
-        <span>톡톡</span>
-      </a>
+      {talkUrl ? (
+        <a
+          href={talkUrl}
+          target="_blank"
+          rel="noreferrer"
+          style={floatingTalkButtonStyle}
+        >
+          <span style={floatingIconStyle}>💬</span>
+          <span>톡톡</span>
+        </a>
+      ) : (
+        <a href={contactHref} style={floatingTalkButtonStyle}>
+          <span style={floatingIconStyle}>📝</span>
+          <span>문의</span>
+        </a>
+      )}
 
       {/*
 <a href={`tel:${phoneNumber}`} style={floatingPhoneButtonStyle}>

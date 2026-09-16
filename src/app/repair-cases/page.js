@@ -663,7 +663,7 @@ export default async function RepairCasesPage({ searchParams }) {
             target="_blank"
             style={bottomTalkLinkStyle}
           >
-            네이버톡톡 문의
+            강변점 네이버톡톡
           </a>
         </div>
       </section>
@@ -682,7 +682,7 @@ function FloatingButtons() {
         style={floatingTalkButtonStyle}
       >
         <span style={floatingIconStyle}>💬</span>
-        <span>톡톡</span>
+        <span>강변점 톡톡</span>
       </a>
 
       {/*

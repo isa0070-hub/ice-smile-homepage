@@ -370,6 +370,17 @@ export default async function BranchDetailPage({ params }) {
                 </a>
               )}
 
+              {seo.talkUrl && (
+                <a
+                  href={seo.talkUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={styles.secondaryButton}
+                >
+                  {seo.shortName} 네이버톡톡
+                </a>
+              )}
+
               <Link href={contactHref} style={styles.secondaryButton}>
                 온라인 문의
               </Link>

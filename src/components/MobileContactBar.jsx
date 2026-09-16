@@ -24,9 +24,9 @@ export default function MobileContactBar() {
         <PhoneContactButton buttonLabel="지점 전화문의" buttonStyle={phoneButtonStyle} />
 
         {pathname === "/contact" ? (
-          <a href="https://talk.naver.com/WCH5S2X" target="_blank" rel="noreferrer" style={inquiryButtonStyle}>
-            네이버 톡톡
-          </a>
+          <Link href="/branches" style={inquiryButtonStyle}>
+            지점 안내
+          </Link>
         ) : (
           <Link href={contactHref} data-ga-contact="online_inquiry" style={inquiryButtonStyle}>
             간편 수리문의

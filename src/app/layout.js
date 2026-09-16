@@ -109,7 +109,7 @@ export default function RootLayout({ children }) {
                 rel="noreferrer"
                 style={footerTalkLinkStyle}
               >
-                상담 바로가기
+                강변점 상담 바로가기
               </a>
             </p>
 

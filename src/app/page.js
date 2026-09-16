@@ -186,7 +186,7 @@ export default async function Home() {
               rel="noreferrer"
               style={buttonStyle}
             >
-              네이버톡톡 문의
+              강변점 네이버톡톡
             </a>
 
             <Link href="/contact" style={buttonStyle}>

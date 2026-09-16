@@ -38,6 +38,7 @@ export const branchSeo = deepFreeze({
       longitude: 127.0958208,
     },
     naverMap: "https://map.naver.com/p/entry/place/31476004",
+    talkUrl: "https://talk.naver.com/WCH5S2X",
     image: "/images/gangbyeon-branch.jpg",
     mapImage: "/images/map-gangbyeon.svg",
     visitInfo:
