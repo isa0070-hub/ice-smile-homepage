@@ -1,4 +1,15 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+
 export default function FloatingNaverTalk() {
+  const pathname = usePathname();
+
+  // 관리자 화면에서는 고객용 고정 톡톡 숨김
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    return null;
+  }
+
   return (
     <a
       href="https://talk.naver.com/WCH5S2X"
