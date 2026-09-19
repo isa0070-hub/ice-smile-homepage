@@ -85,10 +85,18 @@ export default function AdminPage() {
       </div>
 
       <div style={summaryGridStyle}>
-        <div style={summaryCardStyle}>
+        <Link
+          href="/admin/online-inquiries"
+          style={{
+            ...summaryCardStyle,
+            textDecoration: "none",
+            color: "inherit",
+            cursor: "pointer",
+          }}
+        >
           <strong>온라인 접수</strong>
           <p>{counts.onlineInquiries}건</p>
-        </div>
+        </Link>
 
         <div style={summaryCardStyle}>
           <strong>등록된 수리사례</strong>
