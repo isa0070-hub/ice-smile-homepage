@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import NaverAdsAnalysisCopyButton from "@/components/NaverAdsAnalysisCopyButton";
 export const dynamic = "force-dynamic";
 
 function won(value = 0) {
@@ -389,6 +390,14 @@ export default async function AdsDashboard({
           >
             최근 30일
           </PeriodButton>
+        </div>
+
+        <div
+          style={{
+            marginBottom: 22,
+          }}
+        >
+          <NaverAdsAnalysisCopyButton />
         </div>
 
         <div
