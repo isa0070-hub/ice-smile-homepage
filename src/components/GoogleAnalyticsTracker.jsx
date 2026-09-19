@@ -3,6 +3,7 @@
 import Script from "next/script";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { trackPaidAdAction } from "@/lib/adActionTracker";
 
 const GA_MEASUREMENT_ID = "G-YELJDXWV3G";
 const PHONE_LIST_OPEN_SESSION_KEY = "ismile_phone_list_open_ga";
@@ -62,10 +63,20 @@ export function trackGoogleInquiryEvent(
   eventName,
   { formLocation = "unknown", preferredBranch = "" } = {}
 ) {
-  return sendGoogleEvent(eventName, {
+  const parameters = {
     form_location: cleanLabel(formLocation),
     preferred_branch: cleanLabel(preferredBranch),
+  };
+
+  void trackPaidAdAction(eventName, {
+    formLocation: parameters.form_location,
+    preferredBranch: parameters.preferred_branch,
   });
+
+  return sendGoogleEvent(
+    eventName,
+    parameters
+  );
 }
 
 export function trackGoogleLead(options = {}) {
@@ -317,6 +328,17 @@ export default function GoogleAnalyticsTracker() {
       ) {
         return;
       }
+
+      void trackPaidAdAction(
+        contactEvent.eventName,
+        {
+          contactType: contactEvent.contactType,
+          linkText: cleanLabel(
+            clickedElement.textContent
+          ),
+          linkUrl: contactEvent.linkUrl,
+        }
+      );
 
       window.gtag(
         "event",
