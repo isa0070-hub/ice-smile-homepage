@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import NaverAdsAnalysisCopyButton from "@/components/NaverAdsAnalysisCopyButton";
 import NaverAdsCoreMetrics from "@/components/NaverAdsCoreMetrics";
+import AdAttributionSummary from "@/components/AdAttributionSummary";
 export const dynamic = "force-dynamic";
 
 function won(value = 0) {
@@ -406,6 +407,11 @@ export default async function AdsDashboard({
           until={data.until}
           total={total}
           branches={branches}
+        />
+
+        <AdAttributionSummary
+          since={data.since}
+          until={data.until}
         />
 
         <div
