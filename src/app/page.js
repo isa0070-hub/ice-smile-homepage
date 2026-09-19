@@ -187,17 +187,10 @@ export default async function Home() {
               rel="noreferrer"
               style={buttonStyle}
             >
-              강변점 네이버톡톡
-            </a>
+                네이버 톡톡 상담
+              </a>
 
-            <a
-              href="https://talk.naver.com/WCH5S2X"
-              target="_blank"
-              rel="noreferrer"
-              style={buttonStyle}
-            >
-              선릉점 네이버톡톡
-            </a>
+            
 
             <Link href="/contact" style={buttonStyle}>
               온라인 수리문의

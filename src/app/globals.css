@@ -1276,3 +1276,73 @@ form {
 
 /* END BRANCHES MOBILE TITLE FIX */
 
+
+/* 고정 네이버 톡톡 상담 */
+.floating-naver-talk {
+  position: fixed;
+  right: 22px;
+  bottom: 110px;
+  z-index: 9997;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+
+  padding: 10px 14px 10px 10px;
+  border-radius: 999px;
+
+  background: #ffffff;
+  color: #111827;
+  border: 1px solid #dbe4ea;
+
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
+
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.floating-naver-talk-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 44px;
+  height: 34px;
+  padding: 0 8px;
+
+  border-radius: 999px;
+
+  background: #03c75a;
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.floating-naver-talk-text {
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.floating-naver-talk:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.2);
+}
+
+@media (max-width: 768px) {
+  .floating-naver-talk {
+    right: 12px;
+    bottom: calc(86px + env(safe-area-inset-bottom));
+    gap: 0;
+    padding: 8px;
+  }
+
+  .floating-naver-talk-text {
+    display: none;
+  }
+
+  .floating-naver-talk-badge {
+    min-width: 48px;
+    height: 38px;
+  }
+}

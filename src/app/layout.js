@@ -1,3 +1,4 @@
+import FloatingNaverTalk from "@/components/FloatingNaverTalk";
 import "./globals.css";
 import SiteHeader from "@/components/SiteHeader";
 import PopupNotice from "@/components/PopupNotice";
@@ -146,6 +147,7 @@ export default function RootLayout({ children }) {
 
           </div>
         </footer>
+        <FloatingNaverTalk />
         <MobileContactBar />
         <AdClickTracker />
         <GoogleAnalyticsTracker />
