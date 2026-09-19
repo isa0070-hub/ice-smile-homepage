@@ -135,8 +135,18 @@ async function getStats(credentials, ids, date) {
     if (data) {
       if (Array.isArray(data)) {
         results.push(...data);
+      } else if (Array.isArray(data.data)) {
+        const row = data.data[0] || {};
+
+        results.push({
+          id,
+          ...row,
+        });
       } else {
-        results.push(data);
+        results.push({
+          id,
+          ...data,
+        });
       }
     }
   }
