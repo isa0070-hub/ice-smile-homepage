@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import NaverAdsAnalysisCopyButton from "@/components/NaverAdsAnalysisCopyButton";
+import NaverAdsCoreMetrics from "@/components/NaverAdsCoreMetrics";
 export const dynamic = "force-dynamic";
 
 function won(value = 0) {
@@ -400,40 +401,12 @@ export default async function AdsDashboard({
           <NaverAdsAnalysisCopyButton />
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(190px, 1fr))",
-            gap: 14,
-            marginBottom: 22,
-          }}
-        >
-          <MetricCard
-            title="총 광고비"
-            value={won(total.cost)}
-          />
-
-          <MetricCard
-            title="총 노출수"
-            value={num(total.impressions)}
-          />
-
-          <MetricCard
-            title="총 클릭수"
-            value={num(total.clicks)}
-          />
-
-          <MetricCard
-            title="평균 CPC"
-            value={won(total.avgCpc)}
-          />
-
-          <MetricCard
-            title="전환수"
-            value={num(total.conversions)}
-          />
-        </div>
+        <NaverAdsCoreMetrics
+          since={data.since}
+          until={data.until}
+          total={total}
+          branches={branches}
+        />
 
         <div
           style={{
