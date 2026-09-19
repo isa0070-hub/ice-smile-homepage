@@ -113,17 +113,35 @@ async function getStats(credentials, ids, date) {
     "ccnt",
   ]);
 
-  const query =
-    `?ids=${encodeURIComponent(JSON.stringify(ids))}` +
-    `&fields=${encodeURIComponent(fields)}` +
-    `&timeRange=${encodeURIComponent(
-      JSON.stringify({
-        since: date,
-        until: date,
-      })
-    )}`;
+  const results = [];
 
-  return naverGet(uri, credentials, query);
+  for (const id of ids) {
+    const query =
+      `?id=${encodeURIComponent(id)}` +
+      `&fields=${encodeURIComponent(fields)}` +
+      `&timeRange=${encodeURIComponent(
+        JSON.stringify({
+          since: date,
+          until: date,
+        })
+      )}`;
+
+    const data = await naverGet(
+      uri,
+      credentials,
+      query
+    );
+
+    if (data) {
+      if (Array.isArray(data)) {
+        results.push(...data);
+      } else {
+        results.push(data);
+      }
+    }
+  }
+
+  return results;
 }
 
 function classify(account, group) {
