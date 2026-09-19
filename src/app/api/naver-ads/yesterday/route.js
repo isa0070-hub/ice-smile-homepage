@@ -114,7 +114,7 @@ async function getStats(credentials, ids, date) {
   ]);
 
   const query =
-    `?id=${encodeURIComponent(ids.join(","))}` +
+    `?ids=${encodeURIComponent(JSON.stringify(ids))}` +
     `&fields=${encodeURIComponent(fields)}` +
     `&timeRange=${encodeURIComponent(
       JSON.stringify({
