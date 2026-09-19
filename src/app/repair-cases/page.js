@@ -685,14 +685,7 @@ export default async function RepairCasesPage({ searchParams }) {
 function FloatingButtons() {
   return (
     <div style={floatingMenuStyle}>
-      <a
-        href="https://talk.naver.com/WCH5S2X"
-        target="_blank"
-        style={floatingTalkButtonStyle}
-      >
-        <span style={floatingIconStyle}>💬</span>
-        <span>강변점 톡톡</span>
-      </a>
+      
 
       {/*
 <a href="tel:02-3424-5295" style={floatingPhoneButtonStyle}>
