@@ -1084,162 +1084,160 @@ form {
   }
 }
 
-/* BEGIN HOME INQUIRY LAYOUT V2 */
 
-/* 다른 페이지에 영향을 주지 않도록 홈 접수 영역에만 적용 */
+/* BEGIN HOME INQUIRY LAYOUT V4 */
+
 .home-inquiry-trust-section {
   padding-top: 46px !important;
   padding-bottom: 46px !important;
 }
 
 .home-inquiry-trust-section .home-inquiry-trust-grid {
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  gap: 44px;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 36px;
   margin-top: 0;
 }
 
 .home-inquiry-trust-section .home-inquiry-copy {
-  min-width: 0;
-  max-width: 440px;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
   padding: 0;
-  align-items: flex-start;
-  justify-content: center;
+  align-items: center;
+  text-align: center;
 }
 
 .home-inquiry-trust-section .home-inquiry-heading {
-  max-width: 100%;
   margin: 0 0 18px;
-  font-size: clamp(28px, 2.5vw, 34px);
+  font-size: 34px;
   font-weight: 800;
   line-height: 1.35;
-  letter-spacing: -0.035em;
-  text-align: left;
+  letter-spacing: -0.04em;
+  text-align: center;
   color: #111827;
   word-break: keep-all;
-  overflow-wrap: anywhere;
 }
 
 .home-inquiry-trust-section .home-inquiry-description {
-  margin: 0;
-  font-size: 16px;
-  line-height: 1.85;
-  text-align: left;
+  max-width: 720px;
+  margin: 0 auto;
+  font-size: 17px;
+  line-height: 1.8;
+  text-align: center;
+  color: #334155;
   word-break: keep-all;
-  overflow-wrap: anywhere;
 }
 
 .home-inquiry-trust-section .home-inquiry-button-wrap {
   margin-top: 24px;
-  text-align: left;
+  text-align: center;
 }
 
 .home-inquiry-trust-section .home-inquiry-button-wrap a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 48px;
-  max-width: 100%;
+  min-height: 50px;
+  padding: 13px 28px !important;
   margin: 0 !important;
-  padding: 13px 24px !important;
-  font-size: 15px !important;
-  line-height: 1.4;
-  white-space: normal;
 }
 
+/* 큰 최근접수 박스 제거 */
 .home-inquiry-trust-section .recent-inquiry-panel {
-  min-width: 0;
-  padding: 16px 20px;
-  border-radius: 18px;
-  background: #f8fafc;
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
 }
 
+/* '최근 온라인 접수', '최근 6건' 문구 숨김 */
 .home-inquiry-trust-section .recent-inquiry-header {
-  margin-bottom: 6px;
+  display: none;
 }
 
-.home-inquiry-trust-section .recent-inquiry-header strong {
-  font-size: 17px;
-  line-height: 1.4;
-}
-
-.home-inquiry-trust-section .recent-inquiry-header span {
-  flex-shrink: 0;
-  padding: 4px 8px;
-  font-size: 11px;
+/* 2개 × 3줄 */
+.home-inquiry-trust-section .recent-inquiry-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 56px;
+  row-gap: 0;
 }
 
 .home-inquiry-trust-section .recent-inquiry-item {
   min-width: 0;
-  padding: 8px 0;
+  padding: 15px 4px;
+  border-top: 1px solid #e2e8f0;
 }
 
-.home-inquiry-trust-section .recent-inquiry-item:last-child {
-  padding-bottom: 0;
+.home-inquiry-trust-section .recent-inquiry-item:nth-child(-n+2) {
+  border-top: 0;
 }
 
 .home-inquiry-trust-section .recent-inquiry-customer {
-  margin-bottom: 2px;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.35;
+  margin-bottom: 5px;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.4;
+  color: #0f172a;
 }
 
 .home-inquiry-trust-section .recent-inquiry-detail {
-  font-size: 13px;
-  line-height: 1.45;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
+
+  font-size: 14px;
+  line-height: 1.5;
+  color: #64748b;
+
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 768px) {
   .home-inquiry-trust-section {
-    padding-top: 32px !important;
-    padding-bottom: 32px !important;
+    padding-top: 34px !important;
+    padding-bottom: 34px !important;
   }
 
   .home-inquiry-trust-section .home-inquiry-trust-grid {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 24px;
-    margin-top: 0;
-  }
-
-  .home-inquiry-trust-section .home-inquiry-copy {
-    max-width: none;
-    width: 100%;
+    gap: 28px;
   }
 
   .home-inquiry-trust-section .home-inquiry-heading {
-    margin-bottom: 14px;
-    font-size: 28px;
-    line-height: 1.35;
+    font-size: 27px;
   }
 
   .home-inquiry-trust-section .home-inquiry-description {
-    font-size: 16px;
-    line-height: 1.75;
+    font-size: 15px;
+    line-height: 1.7;
   }
 
-  .home-inquiry-trust-section .home-inquiry-button-wrap {
-    width: 100%;
-    margin-top: 20px;
+  .home-inquiry-trust-section .recent-inquiry-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 16px;
   }
 
-  .home-inquiry-trust-section .home-inquiry-button-wrap a {
-    width: 100%;
+  .home-inquiry-trust-section .recent-inquiry-item {
+    padding: 12px 2px;
   }
 
-  .home-inquiry-trust-section .recent-inquiry-panel {
-    padding: 16px;
+  .home-inquiry-trust-section .recent-inquiry-customer {
+    font-size: 12px;
   }
 
   .home-inquiry-trust-section .recent-inquiry-detail {
-    white-space: normal;
-    word-break: keep-all;
-    overflow-wrap: anywhere;
+    font-size: 12px;
+    line-height: 1.45;
   }
 }
 
-/* END HOME INQUIRY LAYOUT V2 */
+/* END HOME INQUIRY LAYOUT V4 */
+

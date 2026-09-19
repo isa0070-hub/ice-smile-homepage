@@ -45,7 +45,7 @@ export async function GET() {
         "customer_name,phone,preferred_branch,device,model,symptom,created_at"
       )
       .order("created_at", { ascending: false })
-      .limit(5);
+      .limit(6);
 
     if (error) {
       console.error("최근 온라인 접수 조회 실패:", error);

@@ -9,7 +9,7 @@ export default function RecentInquiryList() {
   useEffect(() => {
     let active = true;
 
-    fetch("/api/public/recent-inquiries", {
+    fetch("/api/public/recent-inquiries?v=6", {
       cache: "no-store",
     })
       .then((response) => {
@@ -49,7 +49,7 @@ export default function RecentInquiryList() {
       <div className="recent-inquiry-header">
         <strong>최근 온라인 접수</strong>
 
-        <span>최근 5건</span>
+        <span>최근 6건</span>
       </div>
 
       {!loaded ? (
