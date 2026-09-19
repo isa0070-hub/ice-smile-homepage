@@ -457,10 +457,11 @@ export default async function Home() {
         className="home-inquiry-trust-section"
         style={sectionStyle}
       >
-        <h2 style={titleStyle}>온라인 접수 · 상담 가능</h2>
-
         <div className="home-inquiry-trust-grid">
           <div className="home-inquiry-copy">
+            <h2 className="home-inquiry-heading">
+              온라인 접수 · 상담 가능
+            </h2>
             <p className="home-inquiry-description">
               방문 전 기종과 증상을 남겨주시면 수리 가능 여부,
               예상 비용, 소요 시간, 방문 또는 택배 접수 방법을

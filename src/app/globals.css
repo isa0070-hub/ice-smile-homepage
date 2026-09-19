@@ -1083,3 +1083,163 @@ form {
     word-break: keep-all;
   }
 }
+
+/* BEGIN HOME INQUIRY LAYOUT V2 */
+
+/* 다른 페이지에 영향을 주지 않도록 홈 접수 영역에만 적용 */
+.home-inquiry-trust-section {
+  padding-top: 46px !important;
+  padding-bottom: 46px !important;
+}
+
+.home-inquiry-trust-section .home-inquiry-trust-grid {
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 44px;
+  align-items: center;
+  margin-top: 0;
+}
+
+.home-inquiry-trust-section .home-inquiry-copy {
+  min-width: 0;
+  max-width: 440px;
+  padding: 0;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.home-inquiry-trust-section .home-inquiry-heading {
+  max-width: 100%;
+  margin: 0 0 18px;
+  font-size: clamp(28px, 2.5vw, 34px);
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: -0.035em;
+  text-align: left;
+  color: #111827;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.home-inquiry-trust-section .home-inquiry-description {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.85;
+  text-align: left;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.home-inquiry-trust-section .home-inquiry-button-wrap {
+  margin-top: 24px;
+  text-align: left;
+}
+
+.home-inquiry-trust-section .home-inquiry-button-wrap a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  max-width: 100%;
+  margin: 0 !important;
+  padding: 13px 24px !important;
+  font-size: 15px !important;
+  line-height: 1.4;
+  white-space: normal;
+}
+
+.home-inquiry-trust-section .recent-inquiry-panel {
+  min-width: 0;
+  padding: 16px 20px;
+  border-radius: 18px;
+  background: #f8fafc;
+  box-shadow: none;
+}
+
+.home-inquiry-trust-section .recent-inquiry-header {
+  margin-bottom: 6px;
+}
+
+.home-inquiry-trust-section .recent-inquiry-header strong {
+  font-size: 17px;
+  line-height: 1.4;
+}
+
+.home-inquiry-trust-section .recent-inquiry-header span {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.home-inquiry-trust-section .recent-inquiry-item {
+  min-width: 0;
+  padding: 8px 0;
+}
+
+.home-inquiry-trust-section .recent-inquiry-item:last-child {
+  padding-bottom: 0;
+}
+
+.home-inquiry-trust-section .recent-inquiry-customer {
+  margin-bottom: 2px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.home-inquiry-trust-section .recent-inquiry-detail {
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 768px) {
+  .home-inquiry-trust-section {
+    padding-top: 32px !important;
+    padding-bottom: 32px !important;
+  }
+
+  .home-inquiry-trust-section .home-inquiry-trust-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+    margin-top: 0;
+  }
+
+  .home-inquiry-trust-section .home-inquiry-copy {
+    max-width: none;
+    width: 100%;
+  }
+
+  .home-inquiry-trust-section .home-inquiry-heading {
+    margin-bottom: 14px;
+    font-size: 28px;
+    line-height: 1.35;
+  }
+
+  .home-inquiry-trust-section .home-inquiry-description {
+    font-size: 16px;
+    line-height: 1.75;
+  }
+
+  .home-inquiry-trust-section .home-inquiry-button-wrap {
+    width: 100%;
+    margin-top: 20px;
+  }
+
+  .home-inquiry-trust-section .home-inquiry-button-wrap a {
+    width: 100%;
+  }
+
+  .home-inquiry-trust-section .recent-inquiry-panel {
+    padding: 16px;
+  }
+
+  .home-inquiry-trust-section .recent-inquiry-detail {
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* END HOME INQUIRY LAYOUT V2 */
