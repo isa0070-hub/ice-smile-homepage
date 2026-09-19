@@ -215,52 +215,53 @@ async function downloadReport(
   downloadUrl,
   account
 ) {
-  const parsed =
-    new URL(
-      downloadUrl,
-      BASE_URL
-    );
+  const parsed = new URL(
+    downloadUrl,
+    BASE_URL
+  );
 
-  const token =
-    parsed.searchParams.get(
-      "authtoken"
-    );
-
-  if (!token) {
+  if (
+    parsed.hostname !==
+    "api.searchad.naver.com"
+  ) {
     throw new Error(
-      "전환 보고서 authtoken이 없습니다."
+      "허용되지 않은 보고서 다운로드 주소입니다."
     );
   }
 
-  const uri =
-    "/report-download";
-
-  const url =
-    `${BASE_URL}${uri}` +
-    `?authtoken=${encodeURIComponent(
-      token
-    )}`;
-
-  const response =
-    await fetch(
-      url,
-      {
-        method: "GET",
-
-        headers:
-          authHeaders(
-            "GET",
-            uri,
-            account
-          ),
-
-        cache: "no-store",
-      }
+  if (
+    parsed.pathname !==
+    "/report-download"
+  ) {
+    throw new Error(
+      `예상하지 못한 보고서 경로입니다: ${parsed.pathname}`
     );
+  }
+
+  // 네이버가 제공한 query string을 그대로 유지한다.
+  // authtoken뿐 아니라 fileVersion 등의 값도 함께 전달해야 한다.
+  const response = await fetch(
+    parsed.toString(),
+    {
+      method: "GET",
+
+      headers:
+        authHeaders(
+          "GET",
+          parsed.pathname,
+          account
+        ),
+
+      cache: "no-store",
+    }
+  );
 
   if (!response.ok) {
+    const errorText =
+      await response.text();
+
     throw new Error(
-      `보고서 다운로드 실패 (${response.status})`
+      `보고서 다운로드 실패 (${response.status}): ${errorText.slice(0, 500)}`
     );
   }
 
