@@ -197,6 +197,46 @@ export default function NaverAdsCoreMetrics({
     <>
       <div
         style={{
+          marginBottom: 14,
+          padding: "16px 18px",
+          borderRadius: 14,
+          background: "#f8fafc",
+          border: "1px solid #e2e8f0",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 13,
+            color: "#64748b",
+            marginBottom: 5,
+          }}
+        >
+          전체 광고비
+        </div>
+
+        <div
+          style={{
+            fontSize: 24,
+            fontWeight: 900,
+            color: "#111827",
+          }}
+        >
+          {won(total.cost)}
+        </div>
+
+        <div
+          style={{
+            marginTop: 5,
+            fontSize: 13,
+            color: "#475569",
+          }}
+        >
+          키워드 {won(keywordTotals.cost)} · 플레이스 {won(placeTotals.cost)}
+        </div>
+      </div>
+
+      <div
+        style={{
           display: "grid",
           gridTemplateColumns:
             "repeat(auto-fit, minmax(180px, 1fr))",
