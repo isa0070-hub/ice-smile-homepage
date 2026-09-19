@@ -667,7 +667,7 @@ export default async function RepairCasesPage({ searchParams }) {
           </a>
 
           <a
-            href="https://talk.naver.com/W189H6V"
+            href="https://talk.naver.com/WCH5S2X"
             target="_blank"
             rel="noreferrer"
             style={bottomTalkLinkStyle}

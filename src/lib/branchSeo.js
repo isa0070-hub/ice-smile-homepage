@@ -114,7 +114,7 @@ export const branchSeo = deepFreeze({
       longitude: 127.0496732,
     },
     naverMap: "https://map.naver.com/p/entry/place/20557661",
-    talkUrl: "https://talk.naver.com/W189H6V",
+    talkUrl: "https://talk.naver.com/WCH5S2X",
     image: "/images/seolleung-branch.jpg",
     mapImage: "/images/map-seolleung.svg",
     visitInfo:

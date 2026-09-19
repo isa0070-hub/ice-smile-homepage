@@ -113,7 +113,7 @@ export default function RootLayout({ children }) {
               </a>
               {" · "}
               <a
-                href="https://talk.naver.com/W189H6V"
+                href="https://talk.naver.com/WCH5S2X"
                 target="_blank"
                 rel="noreferrer"
                 style={footerTalkLinkStyle}

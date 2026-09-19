@@ -30,7 +30,7 @@ export function getOrganizationJsonLd() {
     image: `${SITE_URL}/opengraph-image.jpg`,
     sameAs: [
       "https://talk.naver.com/WCH5S2X",
-      "https://talk.naver.com/W189H6V",
+      "https://talk.naver.com/WCH5S2X",
       "https://pf.kakao.com/_ftxmXX",
     ],
     contactPoint: Object.values(branchSeo).map((seo) => ({
