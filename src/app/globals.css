@@ -951,3 +951,135 @@ form {
     letter-spacing: -1.5px !important;
   }
 }
+
+/* 홈 최근 온라인 접수 */
+.home-inquiry-trust-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+  gap: 30px;
+  align-items: stretch;
+  margin-top: 30px;
+}
+
+.home-inquiry-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding: 24px 12px;
+}
+
+.home-inquiry-description {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.85;
+  text-align: center;
+  word-break: keep-all;
+  color: #334155;
+}
+
+.home-inquiry-button-wrap {
+  margin-top: 28px;
+  text-align: center;
+}
+
+.recent-inquiry-panel {
+  min-width: 0;
+  padding: 22px 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 22px;
+  background: #f8fafc;
+}
+
+.recent-inquiry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.recent-inquiry-header strong {
+  font-size: 20px;
+  color: #0f172a;
+}
+
+.recent-inquiry-header span {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.recent-inquiry-list {
+  display: grid;
+}
+
+.recent-inquiry-item {
+  padding: 12px 2px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.recent-inquiry-customer {
+  margin-bottom: 4px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.recent-inquiry-detail {
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #64748b;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-inquiry-empty {
+  padding: 22px 0;
+  text-align: center;
+  color: #64748b;
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .home-inquiry-trust-grid {
+    grid-template-columns: 1fr;
+    gap: 22px;
+    margin-top: 22px;
+  }
+
+  .home-inquiry-copy {
+    padding: 4px 0;
+  }
+
+  .home-inquiry-description {
+    font-size: 16px;
+    line-height: 1.7;
+  }
+
+  .home-inquiry-button-wrap {
+    margin-top: 22px;
+  }
+
+  .recent-inquiry-panel {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .recent-inquiry-header strong {
+    font-size: 18px;
+  }
+
+  .recent-inquiry-item {
+    padding: 11px 0;
+  }
+
+  .recent-inquiry-detail {
+    white-space: normal;
+    word-break: keep-all;
+  }
+}

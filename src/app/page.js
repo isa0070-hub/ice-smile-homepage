@@ -16,6 +16,7 @@ import {
   getWebSiteJsonLd,
 } from "@/lib/siteSeo";
 import { getLegacyRepairCaseTitle } from "@/lib/legacyRepairCasePresentation";
+import RecentInquiryList from "@/components/RecentInquiryList";
 
 export const revalidate = 900;
 
@@ -452,18 +453,28 @@ export default async function Home() {
         </section>
       )}
 
-      <section style={sectionStyle}>
+      <section
+        className="home-inquiry-trust-section"
+        style={sectionStyle}
+      >
         <h2 style={titleStyle}>온라인 접수 · 상담 가능</h2>
 
-        <p style={{ textAlign: "center", fontSize: "18px", lineHeight: 1.8 }}>
-          방문 전 기종과 증상을 남겨주시면 수리 가능 여부, 예상 비용, 소요 시간,
-          방문 또는 택배 접수 방법을 빠르게 안내드립니다.
-        </p>
+        <div className="home-inquiry-trust-grid">
+          <div className="home-inquiry-copy">
+            <p className="home-inquiry-description">
+              방문 전 기종과 증상을 남겨주시면 수리 가능 여부,
+              예상 비용, 소요 시간, 방문 또는 택배 접수 방법을
+              빠르게 안내드립니다.
+            </p>
 
-        <div style={{ textAlign: "center", marginTop: "28px" }}>
-          <a href="/contact" style={darkButtonStyle}>
-            온라인 수리문의 하기
-          </a>
+            <div className="home-inquiry-button-wrap">
+              <a href="/contact" style={darkButtonStyle}>
+                온라인 수리문의 하기
+              </a>
+            </div>
+          </div>
+
+          <RecentInquiryList />
         </div>
       </section>
 
