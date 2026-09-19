@@ -1,3 +1,4 @@
+import { requireAdminRequest } from "@/lib/adminApi";
 import crypto from "crypto";
 import { NextResponse } from "next/server";
 
@@ -97,7 +98,10 @@ async function getAccountStructure(label, credentials) {
   };
 }
 
-export async function GET() {
+export async function GET(request) {
+  const authError = requireAdminRequest(request);
+  if (authError) return authError;
+
   try {
     const main = {
       customerId: process.env.NAVER_AD_CUSTOMER_ID,

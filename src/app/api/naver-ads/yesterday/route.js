@@ -1,3 +1,4 @@
+import { requireAdminRequest } from "@/lib/adminApi";
 import crypto from "crypto";
 import { NextResponse } from "next/server";
 
@@ -280,7 +281,10 @@ function summarize(rows) {
   return result;
 }
 
-export async function GET() {
+export async function GET(request) {
+  const authError = requireAdminRequest(request);
+  if (authError) return authError;
+
   try {
     const date = yesterdayKST();
 

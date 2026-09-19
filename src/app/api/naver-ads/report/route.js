@@ -1,3 +1,4 @@
+import { requireAdminRequest } from "@/lib/adminApi";
 import crypto from "crypto";
 import { NextResponse } from "next/server";
 
@@ -517,6 +518,9 @@ function buildDailySummary(
 }
 
 export async function GET(request) {
+  const authError = requireAdminRequest(request);
+  if (authError) return authError;
+
   try {
     const {
       searchParams,

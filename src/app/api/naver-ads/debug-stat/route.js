@@ -1,9 +1,13 @@
+import { requireAdminRequest } from "@/lib/adminApi";
 import crypto from "crypto";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(request) {
+  const authError = requireAdminRequest(request);
+  if (authError) return authError;
+
   try {
     const customerId = process.env.NAVER_AD_CUSTOMER_ID;
     const accessLicense = process.env.NAVER_AD_ACCESS_LICENSE;

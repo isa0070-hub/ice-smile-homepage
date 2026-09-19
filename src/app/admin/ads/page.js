@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 export const dynamic = "force-dynamic";
 
 function won(value = 0) {
@@ -219,10 +220,16 @@ export default async function AdsDashboard({
   let error;
 
   try {
+    const incomingHeaders = await headers();
+    const cookieHeader = incomingHeaders.get("cookie") || "";
+
     const response = await fetch(
       `${baseUrl}/api/naver-ads/report?period=${period}`,
       {
         cache: "no-store",
+        headers: {
+          cookie: cookieHeader,
+        },
       }
     );
 
