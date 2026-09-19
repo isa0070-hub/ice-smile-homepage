@@ -322,15 +322,42 @@ export default async function AdsDashboard({
 
           <div
             style={{
-              padding: "8px 12px",
-              borderRadius: 999,
-              background: "#ecfdf5",
-              color: "#047857",
-              fontWeight: 700,
-              fontSize: 13,
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              flexWrap: "wrap",
             }}
           >
-            API 연결 정상
+            <a
+              href="/admin"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "9px 14px",
+                borderRadius: 10,
+                background: "#1e3a8a",
+                color: "#ffffff",
+                textDecoration: "none",
+                fontSize: 13,
+                fontWeight: 800,
+              }}
+            >
+              ← 관리자 대시보드
+            </a>
+
+            <div
+              style={{
+                padding: "8px 12px",
+                borderRadius: 999,
+                background: "#ecfdf5",
+                color: "#047857",
+                fontWeight: 700,
+                fontSize: 13,
+              }}
+            >
+              API 연결 정상
+            </div>
           </div>
         </div>
 
