@@ -94,6 +94,33 @@ export default function NaverAdsCoreMetrics({
         branches?.gangbyeon?.keyword || {};
 
       return {
+        impressions:
+          Number(seolleung.impressions || 0) +
+          Number(gangbyeon.impressions || 0),
+
+        clicks:
+          Number(seolleung.clicks || 0) +
+          Number(gangbyeon.clicks || 0),
+
+        cost:
+          Number(seolleung.cost || 0) +
+          Number(gangbyeon.cost || 0),
+      };
+    }, [branches]);
+
+  const placeTotals =
+    useMemo(() => {
+      const seolleung =
+        branches?.seolleung?.place || {};
+
+      const gangbyeon =
+        branches?.gangbyeon?.place || {};
+
+      return {
+        impressions:
+          Number(seolleung.impressions || 0) +
+          Number(gangbyeon.impressions || 0),
+
         clicks:
           Number(seolleung.clicks || 0) +
           Number(gangbyeon.clicks || 0),
@@ -178,13 +205,13 @@ export default function NaverAdsCoreMetrics({
         }}
       >
         <Metric
-          label="광고비"
-          value={won(total.cost)}
+          label="키워드 광고비"
+          value={won(keywordTotals.cost)}
         />
 
         <Metric
-          label="클릭"
-          value={`${num(total.clicks)}회`}
+          label="키워드 클릭"
+          value={`${num(keywordTotals.clicks)}회`}
         />
 
         <Metric
@@ -225,11 +252,22 @@ export default function NaverAdsCoreMetrics({
           marginBottom: 22,
           color: "#64748b",
           fontSize: 12,
-          lineHeight: 1.6,
+          lineHeight: 1.7,
         }}
       >
-        문의행동은 전화 · 네이버 톡톡 · 온라인접수 완료를
-        기준으로 집계합니다.
+        <div>
+          문의행동은 전화 · 네이버 톡톡 · 온라인접수 완료를 기준으로 집계합니다.
+        </div>
+
+        <div
+          style={{
+            marginTop: 5,
+            color: "#475569",
+            fontWeight: 700,
+          }}
+        >
+          플레이스 광고 · {won(placeTotals.cost)} · {num(placeTotals.clicks)}클릭
+        </div>
       </div>
     </>
   );
