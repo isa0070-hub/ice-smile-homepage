@@ -26,41 +26,43 @@ function makeSignature(timestamp, method, uri, secretKey) {
     .digest("base64");
 }
 
-function credentials() {
-  const value = {
+function getCredentials() {
+  const credentials = {
     customerId: process.env.NAVER_AD_CUSTOMER_ID,
     accessLicense: process.env.NAVER_AD_ACCESS_LICENSE,
     secretKey: process.env.NAVER_AD_SECRET_KEY,
   };
 
   if (
-    !value.customerId ||
-    !value.accessLicense ||
-    !value.secretKey
+    !credentials.customerId ||
+    !credentials.accessLicense ||
+    !credentials.secretKey
   ) {
     throw new Error("네이버 광고 API 환경변수가 부족합니다.");
   }
 
-  return value;
+  return credentials;
 }
 
-async function naverGet(uri, query = "") {
-  const auth = credentials();
+async function naverGet(uri, params = {}) {
+  const credentials = getCredentials();
   const timestamp = Date.now().toString();
   const method = "GET";
 
+  const query = new URLSearchParams(params).toString();
+
   const response = await fetch(
-    `${BASE_URL}${uri}${query}`,
+    `${BASE_URL}${uri}${query ? `?${query}` : ""}`,
     {
       headers: {
         "X-Timestamp": timestamp,
-        "X-API-KEY": auth.accessLicense,
-        "X-Customer": auth.customerId,
+        "X-API-KEY": credentials.accessLicense,
+        "X-Customer": credentials.customerId,
         "X-Signature": makeSignature(
           timestamp,
           method,
           uri,
-          auth.secretKey
+          credentials.secretKey
         ),
       },
       cache: "no-store",
@@ -93,12 +95,13 @@ function kstToday() {
     day: "2-digit",
   }).formatToParts(new Date());
 
-  const obj = {};
+  const out = {};
+
   for (const part of parts) {
-    obj[part.type] = part.value;
+    out[part.type] = part.value;
   }
 
-  return `${obj.year}-${obj.month}-${obj.day}`;
+  return `${out.year}-${out.month}-${out.day}`;
 }
 
 function shiftDate(value, amount) {
@@ -110,8 +113,9 @@ function shiftDate(value, amount) {
 function getRange(period) {
   const yesterday = shiftDate(kstToday(), -1);
 
-  let days = 1;
-  if (period === "7d") days = 7;
+  let days = 7;
+
+  if (period === "yesterday") days = 1;
   if (period === "30d") days = 30;
 
   return {
@@ -121,110 +125,125 @@ function getRange(period) {
   };
 }
 
-async function getKeywords(adgroupId) {
-  const params = new URLSearchParams({
-    nccAdgroupId: adgroupId,
-  });
+function sumStats(rows = []) {
+  const result = {
+    impressions: 0,
+    clicks: 0,
+    cost: 0,
+    rawConversions: 0,
+  };
 
-  const data = await naverGet(
-    "/ncc/keywords",
-    `?${params.toString()}`
-  );
-
-  return Array.isArray(data) ? data : [];
-}
-
-async function getKeywordStat(keywordId, range) {
-  const fields = JSON.stringify([
-    "impCnt",
-    "clkCnt",
-    "salesAmt",
-    "ccnt",
-  ]);
-
-  const timeRange = JSON.stringify({
-    since: range.since,
-    until: range.until,
-  });
-
-  const params = new URLSearchParams({
-    id: keywordId,
-    fields,
-    timeRange,
-    timeIncrement: "allDays",
-  });
-
-  const response = await naverGet(
-    "/stats",
-    `?${params.toString()}`
-  );
-
-  const row =
-    Array.isArray(response?.data) && response.data.length
-      ? response.data[0]
-      : {};
-
-  const impressions = Number(row.impCnt || 0);
-  const clicks = Number(row.clkCnt || 0);
-  const cost = Number(row.salesAmt || 0);
-  const rawConversions = Number(row.ccnt || 0);
+  for (const row of rows) {
+    result.impressions += Number(row.impCnt || 0);
+    result.clicks += Number(row.clkCnt || 0);
+    result.cost += Number(row.salesAmt || 0);
+    result.rawConversions += Number(row.ccnt || 0);
+  }
 
   return {
-    impressions,
-    clicks,
-    cost,
-    rawConversions,
+    ...result,
+
     avgCpc:
-      clicks > 0
-        ? Math.round(cost / clicks)
+      result.clicks > 0
+        ? Math.round(result.cost / result.clicks)
         : 0,
+
     rawCvr:
-      clicks > 0
+      result.clicks > 0
         ? Number(
-            ((rawConversions / clicks) * 100).toFixed(2)
+            (
+              (result.rawConversions / result.clicks) *
+              100
+            ).toFixed(2)
           )
         : 0,
+
     rawCpa:
-      rawConversions > 0
-        ? Math.round(cost / rawConversions)
+      result.rawConversions > 0
+        ? Math.round(
+            result.cost / result.rawConversions
+          )
         : 0,
   };
 }
 
-async function mapLimit(items, limit, worker) {
-  const result = new Array(items.length);
+async function getKeywordStats(keywordId, range) {
+  const response = await naverGet("/stats", {
+    id: keywordId,
+
+    fields: JSON.stringify([
+      "impCnt",
+      "clkCnt",
+      "salesAmt",
+      "ccnt",
+    ]),
+
+    timeRange: JSON.stringify({
+      since: range.since,
+      until: range.until,
+    }),
+
+    timeIncrement: "1",
+  });
+
+  return sumStats(
+    Array.isArray(response?.data)
+      ? response.data
+      : []
+  );
+}
+
+async function mapLimit(items, concurrency, worker) {
+  const results = new Array(items.length);
   let cursor = 0;
 
   async function run() {
     while (true) {
       const index = cursor++;
 
-      if (index >= items.length) {
-        return;
-      }
+      if (index >= items.length) return;
 
-      result[index] = await worker(items[index]);
+      results[index] = await worker(
+        items[index],
+        index
+      );
     }
   }
 
   await Promise.all(
     Array.from(
-      { length: Math.min(limit, items.length) },
+      {
+        length: Math.min(
+          concurrency,
+          Math.max(items.length, 1)
+        ),
+      },
       () => run()
     )
   );
 
-  return result;
+  return results;
 }
 
 async function collectGroup(group, range) {
-  const keywords = await getKeywords(group.adgroupId);
+  const keywords = await naverGet(
+    "/ncc/keywords",
+    {
+      nccAdgroupId: group.adgroupId,
+    }
+  );
+
+  if (!Array.isArray(keywords)) {
+    throw new Error(
+      `${group.label} 키워드 목록 형식이 예상과 다릅니다.`
+    );
+  }
 
   const rows = await mapLimit(
     keywords,
-    6,
+    5,
     async (keyword) => {
-      const stat = await getKeywordStat(
+      const stats = await getKeywordStats(
         keyword.nccKeywordId,
         range
       );
@@ -234,18 +253,18 @@ async function collectGroup(group, range) {
         keyword: keyword.keyword,
         status: keyword.status,
         userLock: keyword.userLock,
-        ...stat,
+        bidAmt: Number(keyword.bidAmt || 0),
+        useGroupBidAmt: keyword.useGroupBidAmt,
+        ...stats,
       };
     }
   );
 
-  rows.sort((a, b) => {
-    if (b.cost !== a.cost) {
-      return b.cost - a.cost;
-    }
-
-    return b.clicks - a.clicks;
-  });
+  rows.sort(
+    (a, b) =>
+      b.cost - a.cost ||
+      b.clicks - a.clicks
+  );
 
   return {
     ...group,
@@ -255,11 +274,16 @@ async function collectGroup(group, range) {
 }
 
 export async function GET(request) {
-  const authError = requireAdminRequest(request);
-  if (authError) return authError;
+  const authError =
+    requireAdminRequest(request);
+
+  if (authError) {
+    return authError;
+  }
 
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } =
+      new URL(request.url);
 
     const requested =
       searchParams.get("period") || "7d";
@@ -278,7 +302,10 @@ export async function GET(request) {
 
     for (const group of TARGET_GROUPS) {
       groups.push(
-        await collectGroup(group, range)
+        await collectGroup(
+          group,
+          range
+        )
       );
     }
 
@@ -287,13 +314,16 @@ export async function GET(request) {
         ok: true,
         period,
         ...range,
+
         note:
-          "rawConversions는 네이버 /stats ccnt이며 아직 유효 문의 전환으로 확정하지 않습니다.",
+          "rawConversions는 네이버 ccnt이며 아직 실제 문의 전환으로 확정하지 않습니다.",
+
         groups,
       },
       {
         headers: {
-          "Cache-Control": "private, no-store",
+          "Cache-Control":
+            "private, no-store",
         },
       }
     );
@@ -311,7 +341,8 @@ export async function GET(request) {
       {
         status: 500,
         headers: {
-          "Cache-Control": "private, no-store",
+          "Cache-Control":
+            "private, no-store",
         },
       }
     );
