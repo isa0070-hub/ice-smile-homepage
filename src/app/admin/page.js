@@ -124,6 +124,21 @@ export default function AdminPage() {
               처음 방문한 수리사례를 확인합니다.
             </p>
           </button>
+
+          <button
+            type="button"
+            onClick={() => go("/admin/ads")}
+            style={analyticsMenuCardStyle}
+          >
+            <span style={menuIconStyle}>📈</span>
+
+            <strong>네이버 광고 현황</strong>
+
+            <p style={menuDescriptionStyle}>
+              어제·7일·30일 광고비와 클릭, 전환,
+              선릉점·강변점 키워드 및 플레이스 광고를 확인합니다.
+            </p>
+          </button>
         </div>
       </section>
 
