@@ -1241,3 +1241,38 @@ form {
 
 /* END HOME INQUIRY LAYOUT V4 */
 
+
+/* BEGIN BRANCHES MOBILE TITLE FIX */
+
+.branches-main-title {
+  max-width: 100%;
+  box-sizing: border-box;
+  word-break: keep-all;
+}
+
+@media (max-width: 768px) {
+  .branches-main-title {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+
+    font-size: clamp(27px, 7.8vw, 32px) !important;
+    line-height: 1.22 !important;
+    letter-spacing: -0.04em !important;
+
+    text-align: center !important;
+    white-space: normal !important;
+    word-break: keep-all !important;
+    overflow-wrap: normal !important;
+  }
+
+  .branches-main-title .seo-mobile-title-line {
+    display: inline;
+    white-space: normal;
+    word-break: keep-all;
+  }
+}
+
+/* END BRANCHES MOBILE TITLE FIX */
+
