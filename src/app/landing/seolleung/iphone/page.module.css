@@ -1,0 +1,1628 @@
+.page {
+  overflow: hidden;
+  color: #0f172a;
+  background: #ffffff;
+}
+
+.hero {
+  position: relative;
+  min-height: 525px;
+  background: #f8fbff;
+  border-bottom: 1px solid #e6edf6;
+}
+
+.heroGlow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(59,130,246,.13), transparent 31%),
+    linear-gradient(90deg, rgba(255,255,255,.98), rgba(247,251,255,.92));
+}
+
+.heroInner {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  min-height: 525px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 54% 46%;
+}
+
+.heroContent {
+  position: relative;
+  z-index: 3;
+  padding: 67px 22px 58px;
+}
+
+.eyebrow,
+.sectionEyebrow {
+  margin: 0 0 12px;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 950;
+  letter-spacing: .22em;
+}
+
+.title {
+  max-width: 650px;
+  margin: 0;
+  color: #101a2d;
+  font-size: clamp(51px, 5.5vw, 72px);
+  font-weight: 950;
+  line-height: 1.04;
+  letter-spacing: -.065em;
+}
+
+.titleBlue {
+  color: #2563eb;
+}
+
+.subtitle {
+  margin: 20px 0 0;
+  color: #18243a;
+  font-size: 25px;
+  font-weight: 900;
+  letter-spacing: -.035em;
+}
+
+.location {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 18px 0 0;
+  color: #64748b;
+  font-size: 16px;
+  font-weight: 750;
+}
+
+.location span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.primaryActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 31px;
+}
+
+.mainButton {
+  min-width: 260px;
+  min-height: 76px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-radius: 17px;
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 16px 34px rgba(15,23,42,.12);
+  transition: transform .16s ease, box-shadow .16s ease;
+}
+
+.mainButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 42px rgba(15,23,42,.17);
+}
+
+.mainButton strong {
+  display: block;
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.mainButton small {
+  display: block;
+  margin-top: 5px;
+  font-size: 13px;
+  opacity: .82;
+}
+
+.phoneButton {
+  background: linear-gradient(135deg, #0b1730, #122649);
+}
+
+.talkButton {
+  background: linear-gradient(135deg, #02b950, #03d668);
+}
+
+.buttonIcon,
+.naverIcon {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255,255,255,.16);
+  color: white;
+  font-size: 22px;
+  font-weight: 950;
+}
+
+.naverIcon {
+  background: #ffffff;
+  color: #03c75a;
+  font-size: 20px;
+}
+
+.secondaryActions {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.secondaryActions a {
+  color: #475569;
+  font-size: 14px;
+  font-weight: 850;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.secondaryActions span {
+  width: 1px;
+  height: 15px;
+  background: #cbd5e1;
+}
+
+.heroVisual {
+  position: relative;
+  min-height: 525px;
+  overflow: hidden;
+}
+
+.heroVisual::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, #f8fbff 0%, rgba(248,251,255,.76) 8%, transparent 36%);
+}
+
+.heroImage {
+  object-fit: cover;
+  object-position: center center;
+}
+
+.symptomSection {
+  position: relative;
+  z-index: 5;
+  max-width: 1210px;
+  margin: -6px auto 0;
+  padding: 0 18px 36px;
+}
+
+.symptomGrid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  border: 1px solid #e1e9f3;
+  border-radius: 20px;
+  background: rgba(255,255,255,.98);
+  box-shadow: 0 17px 50px rgba(15,23,42,.07);
+  overflow: hidden;
+}
+
+.symptomCard {
+  min-height: 192px;
+  padding: 25px 14px 23px;
+  text-align: center;
+  position: relative;
+}
+
+.symptomCard:not(:last-child) {
+  border-right: 1px solid #e7edf5;
+}
+
+.symptomIcon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #f8fbff, #eef5ff);
+  box-shadow: inset 0 0 0 1px #e2eaf4;
+  font-size: 34px;
+}
+
+.symptomCard h2 {
+  margin: 0;
+  color: #152139;
+  font-size: 16px;
+  font-weight: 950;
+  letter-spacing: -.025em;
+}
+
+.symptomCard p {
+  margin: 9px 0 0;
+  color: #718096;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.branchSection {
+  scroll-margin-top: 94px;
+  padding: 34px 20px 72px;
+  background: linear-gradient(180deg, #ffffff, #f8fbff);
+}
+
+.branchGrid {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: .9fr 1.55fr .85fr;
+  gap: 22px;
+  align-items: stretch;
+}
+
+.branchIntro,
+.mapFrame,
+.branchInfo {
+  border: 1px solid #e3eaf3;
+  border-radius: 21px;
+  background: rgba(255,255,255,.96);
+  box-shadow: 0 13px 38px rgba(15,23,42,.05);
+}
+
+.branchIntro {
+  padding: 40px 31px;
+}
+
+.branchIntro h2 {
+  margin: 0;
+  font-size: 31px;
+  letter-spacing: -.045em;
+}
+
+.branchIntro > p:last-child {
+  margin: 20px 0 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.9;
+}
+
+.mapFrame {
+  min-height: 330px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.mapImage {
+  display: block;
+  width: 116%;
+  height: 116%;
+  object-fit: contain;
+}
+
+.branchInfo {
+  padding: 25px 23px;
+}
+
+.infoRow {
+  padding: 0 0 17px;
+  margin-bottom: 17px;
+  display: flex;
+  gap: 12px;
+  border-bottom: 1px solid #e6edf5;
+}
+
+.infoRow:last-child {
+  margin-bottom: 0;
+}
+
+.infoIcon {
+  flex: 0 0 26px;
+  color: #64748b;
+  font-size: 17px;
+}
+
+.infoRow small {
+  display: block;
+  margin-bottom: 5px;
+  color: #8492a6;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.infoRow strong,
+.infoRow a {
+  color: #17233a;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.65;
+  text-decoration: none;
+}
+
+.infoRow a {
+  color: #2563eb;
+  font-size: 17px;
+}
+
+.caseSection {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 74px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 35px;
+}
+
+.caseSection h2 {
+  margin: 0;
+  font-size: 35px;
+  letter-spacing: -.045em;
+}
+
+.caseSection > div > p:last-child {
+  margin: 13px 0 0;
+  color: #64748b;
+  line-height: 1.75;
+}
+
+.caseButtons {
+  display: flex;
+  gap: 9px;
+}
+
+.caseButtons a {
+  min-height: 50px;
+  padding: 0 19px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dce5ef;
+  border-radius: 13px;
+  color: #17233a;
+  background: #f8fafc;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.finalCta {
+  padding: 72px 20px 105px;
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 0, #dcecff, transparent 53%),
+    #f7faff;
+}
+
+.finalCta p {
+  margin: 0;
+  color: #2563eb;
+  font-weight: 900;
+}
+
+.finalCta h2 {
+  margin: 11px 0 0;
+  font-size: 36px;
+  letter-spacing: -.045em;
+}
+
+.finalButtons {
+  margin-top: 27px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.finalButtons a {
+  min-width: 190px;
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  color: white;
+  background: #101a2f;
+  text-decoration: none;
+  font-weight: 950;
+}
+
+.finalButtons a:last-child {
+  background: #03c75a;
+}
+
+@media (max-width: 900px) {
+  .symptomGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .symptomCard {
+    border-bottom: 1px solid #e7edf5;
+  }
+
+  .branchGrid {
+    grid-template-columns: 1fr 1.4fr;
+  }
+
+  .branchInfo {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0 24px;
+  }
+}
+
+@media (max-width: 760px) {
+  .hero {
+    min-height: auto;
+  }
+
+  .heroInner {
+    min-height: auto;
+    display: block;
+  }
+
+  .heroContent {
+    padding: 48px 17px 42px;
+    text-align: center;
+  }
+
+  .eyebrow {
+    font-size: 10px;
+  }
+
+  .title {
+    margin: 0 auto;
+    font-size: 43px;
+    line-height: 1.05;
+  }
+
+  .subtitle {
+    margin-top: 17px;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  .location {
+    justify-content: center;
+    margin-top: 11px;
+    font-size: 12px;
+  }
+
+  .primaryActions {
+    margin-top: 24px;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .mainButton {
+    width: 100%;
+    min-width: 0;
+    min-height: 58px;
+    padding: 0 18px;
+    border-radius: 13px;
+    justify-content: center;
+  }
+
+  .mainButton strong {
+    font-size: 15px;
+  }
+
+  .mainButton small {
+    display: none;
+  }
+
+  .buttonIcon,
+  .naverIcon {
+    width: 34px;
+    height: 34px;
+    font-size: 17px;
+  }
+
+  .secondaryActions {
+    margin-top: 15px;
+    justify-content: center;
+    gap: 9px;
+  }
+
+  .secondaryActions a {
+    font-size: 11px;
+  }
+
+  .heroVisual {
+    display: none;
+  }
+
+  .symptomSection {
+    margin: 0 auto;
+    padding: 0 13px 32px;
+  }
+
+  .symptomGrid {
+    grid-template-columns: repeat(2, 1fr);
+    border-radius: 17px;
+  }
+
+  .symptomCard {
+    min-height: 155px;
+    padding: 19px 11px;
+    border-right: 0 !important;
+  }
+
+  .symptomCard:nth-child(odd) {
+    border-right: 1px solid #e7edf5 !important;
+  }
+
+  .symptomCard:nth-child(5),
+  .symptomCard:nth-child(6) {
+    border-bottom: 0;
+  }
+
+  .symptomIcon {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 12px;
+    font-size: 26px;
+  }
+
+  .symptomCard h2 {
+    font-size: 13px;
+  }
+
+  .symptomCard p {
+    font-size: 10px;
+  }
+
+  .branchSection {
+    padding: 28px 14px 58px;
+  }
+
+  .branchGrid {
+    grid-template-columns: 1fr;
+    gap: 13px;
+  }
+
+  .branchIntro {
+    padding: 27px 21px;
+  }
+
+  .branchIntro h2 {
+    font-size: 25px;
+  }
+
+  .branchIntro > p:last-child {
+    font-size: 12px;
+  }
+
+  .mapFrame {
+    min-height: 260px;
+  }
+
+  .mapImage {
+    width: 114%;
+    height: 114%;
+  }
+
+  .branchInfo {
+    grid-column: auto;
+    display: block;
+    padding: 21px 18px;
+  }
+
+  .caseSection {
+    padding: 54px 17px;
+    display: block;
+  }
+
+  .caseSection h2 {
+    font-size: 27px;
+  }
+
+  .caseSection > div > p:last-child {
+    font-size: 13px;
+  }
+
+  .caseButtons {
+    margin-top: 23px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .caseButtons a {
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  .finalCta {
+    padding: 58px 16px 105px;
+  }
+
+  .finalCta h2 {
+    font-size: 28px;
+  }
+
+  .finalButtons {
+    flex-direction: column;
+  }
+
+  .finalButtons a {
+    width: 100%;
+  }
+}
+
+/* 아이폰 증상 카드 실제 이미지 */
+.symptomImageWrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 0.92;
+  margin: 0 auto 17px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #f4f7fb;
+}
+
+.symptomImage {
+  object-fit: cover;
+}
+
+@media (max-width: 760px) {
+  .symptomImageWrap {
+    margin-bottom: 12px;
+    border-radius: 13px;
+  }
+}
+
+.symptomImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* =========================
+   랜딩 타이포그래피 정리
+   ========================= */
+
+.page {
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Apple SD Gothic Neo",
+    "Pretendard",
+    "Noto Sans KR",
+    "Segoe UI",
+    sans-serif;
+
+  word-break: keep-all;
+}
+
+/* 메인 제목 */
+.title {
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 1.08;
+  word-break: keep-all;
+  text-wrap: balance;
+}
+
+.titleBlue {
+  display: inline-block;
+}
+
+/* 메인 부제 */
+.subtitle {
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.45;
+}
+
+/* 위치 문구 */
+.location {
+  line-height: 1.6;
+  letter-spacing: -0.015em;
+}
+
+/* 버튼 글씨 */
+.mainButton strong {
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+}
+
+.mainButton small {
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+}
+
+/* 6개 증상 카드 */
+.symptomCard h2 {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 1.35;
+  word-break: keep-all;
+  text-align: center;
+}
+
+.symptomCard p {
+  min-height: 40px;
+  margin-top: 9px;
+  line-height: 1.65;
+  letter-spacing: -0.015em;
+  word-break: keep-all;
+}
+
+/* 선릉점 소개 */
+.branchIntro h2 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 1.25;
+  word-break: keep-all;
+  text-wrap: balance;
+}
+
+.branchIntro > p:last-child {
+  line-height: 1.85;
+  word-break: keep-all;
+}
+
+/* 지도 우측 정보 */
+.infoRow small {
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+
+.infoRow strong,
+.infoRow a {
+  line-height: 1.65;
+  letter-spacing: -0.02em;
+  word-break: keep-all;
+}
+
+/* 실제 수리사례 */
+.caseSection h2 {
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1.25;
+  word-break: keep-all;
+}
+
+/* 지점 영역 비율도 약간 조정 */
+.branchGrid {
+  grid-template-columns: 1fr 1.55fr 0.9fr;
+}
+
+@media (min-width: 1000px) {
+  .title {
+    white-space: nowrap;
+  }
+
+  .branchIntro h2 {
+    font-size: 29px;
+  }
+}
+
+@media (max-width: 760px) {
+  .title {
+    white-space: normal;
+    font-size: 42px;
+    line-height: 1.08;
+    letter-spacing: -0.05em;
+  }
+
+  .subtitle {
+    font-size: 16px;
+  }
+
+  .symptomCard h2 {
+    min-height: 37px;
+    font-size: 13px;
+  }
+
+  .symptomCard p {
+    min-height: 34px;
+    font-size: 10px;
+  }
+
+  .branchIntro h2 {
+    font-size: 25px;
+    line-height: 1.25;
+  }
+}
+
+/* ===================================
+   2차 UI 정리
+   증상 · 지도 · 수리사례
+   =================================== */
+
+/* 증상 카드 */
+.symptomCard {
+  padding: 14px 14px 22px;
+}
+
+.symptomImageWrap {
+  aspect-ratio: 1.18 / 1;
+  margin-bottom: 18px;
+  border-radius: 15px;
+}
+
+.symptomCard h2 {
+  min-height: auto;
+  font-size: 16px;
+  line-height: 1.35;
+  letter-spacing: -0.035em;
+}
+
+.symptomCard p {
+  min-height: 38px;
+  max-width: 180px;
+  margin: 9px auto 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #8492a6;
+}
+
+/* 새 지도 섹션 */
+.branchSection {
+  padding: 76px 22px;
+  background: #f7faff;
+  scroll-margin-top: 90px;
+}
+
+.branchWrap {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.branchHead {
+  margin-bottom: 27px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.branchHead h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 38px;
+  line-height: 1.15;
+  letter-spacing: -0.045em;
+  font-weight: 900;
+}
+
+.branchHead > div > p:last-child {
+  margin: 12px 0 0;
+  color: #64748b;
+  font-size: 15px;
+}
+
+.branchHeadPhone {
+  text-align: right;
+}
+
+.branchHeadPhone span {
+  display: block;
+  margin-bottom: 5px;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.branchHeadPhone a {
+  color: #2563eb;
+  font-size: 20px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.branchMapCard {
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  box-shadow: 0 20px 55px rgba(15, 23, 42, 0.07);
+}
+
+.cleanMapImage {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.branchBottom {
+  margin-top: 18px;
+  padding: 24px 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+}
+
+.branchAddress span {
+  display: block;
+  margin-bottom: 5px;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.branchAddress strong {
+  display: block;
+  color: #0f172a;
+  font-size: 16px;
+  line-height: 1.6;
+  font-weight: 900;
+}
+
+.branchAddress small {
+  display: block;
+  margin-top: 6px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.branchActions {
+  display: flex;
+  gap: 9px;
+}
+
+.branchPhone,
+.branchTalk {
+  min-width: 135px;
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 13px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.branchPhone {
+  background: #0f172a;
+}
+
+.branchTalk {
+  background: #03c75a;
+}
+
+/* 수리사례 */
+.caseSection {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 82px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+}
+
+.caseSection h2 {
+  margin: 0;
+  font-size: 36px;
+  line-height: 1.2;
+  letter-spacing: -0.045em;
+}
+
+.caseSection > div > p:last-child {
+  margin: 13px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.caseMoreButton {
+  flex: 0 0 auto;
+  min-height: 52px;
+  padding: 0 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 13px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 14px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+/* 모바일 */
+@media (max-width: 760px) {
+  .symptomCard {
+    padding: 10px 10px 18px;
+  }
+
+  .symptomImageWrap {
+    aspect-ratio: 1 / 0.88;
+  }
+
+  .symptomCard h2 {
+    font-size: 13px;
+  }
+
+  .symptomCard p {
+    min-height: 32px;
+    font-size: 10px;
+  }
+
+  .branchSection {
+    padding: 55px 14px;
+  }
+
+  .branchHead {
+    display: block;
+  }
+
+  .branchHead h2 {
+    font-size: 29px;
+  }
+
+  .branchHeadPhone {
+    display: none;
+  }
+
+  .branchMapCard {
+    border-radius: 18px;
+  }
+
+  .branchBottom {
+    padding: 20px 18px;
+    display: block;
+  }
+
+  .branchAddress strong {
+    font-size: 14px;
+  }
+
+  .branchActions {
+    margin-top: 18px;
+  }
+
+  .branchPhone,
+  .branchTalk {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .caseSection {
+    padding: 58px 17px;
+    display: block;
+  }
+
+  .caseSection h2 {
+    font-size: 28px;
+  }
+
+  .caseMoreButton {
+    width: 100%;
+    margin-top: 24px;
+  }
+}
+
+.heroImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 58% center;
+}
+
+/* 온라인 수리접수 CTA */
+.onlineActionWrap {
+  margin-top: 12px;
+  max-width: 532px;
+}
+
+.onlineActionButton {
+  min-height: 52px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 1.5px solid #2563eb;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.9);
+  color: #1d4ed8;
+  font-size: 15px;
+  font-weight: 900;
+  text-decoration: none;
+  transition: background .16s ease, transform .16s ease;
+}
+
+.onlineActionButton:hover {
+  background: #eff6ff;
+  transform: translateY(-1px);
+}
+
+.onlineActionIcon {
+  font-size: 19px;
+}
+
+@media (max-width: 760px) {
+  .onlineActionWrap {
+    max-width: none;
+    margin-top: 9px;
+  }
+
+  .onlineActionButton {
+    min-height: 50px;
+    font-size: 14px;
+  }
+}
+
+/* 히어로 배경 이미지 부드럽게 */
+.heroImage {
+  filter:
+    blur(2px)
+    brightness(0.94)
+    saturate(0.82)
+    contrast(0.93);
+
+  transform: scale(1.025);
+}
+
+/* 히어로 사진 최종 톤 - 선명도 유지 + 은은하게 */
+.heroImage {
+  filter:
+    brightness(1.04)
+    saturate(0.78)
+    contrast(0.88);
+
+  opacity: 0.86;
+  transform: scale(1.01);
+}
+
+/* 사진을 흐리지 않고 밝은 베일만 적용 */
+.heroVisual::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(248, 251, 255, 0.55) 0%,
+      rgba(248, 251, 255, 0.30) 22%,
+      rgba(255, 255, 255, 0.12) 52%,
+      rgba(255, 255, 255, 0.08) 100%
+    );
+}
+
+/* 실제 수리사례 미리보기 */
+.caseSection {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 72px 22px 78px;
+  display: block;
+}
+
+.caseHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  margin-bottom: 28px;
+}
+
+.caseHeader h2 {
+  margin: 0;
+  font-size: 36px;
+  line-height: 1.2;
+  letter-spacing: -0.045em;
+  font-weight: 900;
+}
+
+.caseHeader > div > p:last-child {
+  margin: 12px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.casePreviewGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.casePreviewCard {
+  overflow: hidden;
+  display: block;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  background: #ffffff;
+  color: #0f172a;
+  text-decoration: none;
+  box-shadow: 0 10px 32px rgba(15,23,42,.05);
+  transition:
+    transform .16s ease,
+    box-shadow .16s ease;
+}
+
+.casePreviewCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 17px 40px rgba(15,23,42,.09);
+}
+
+.casePreviewImage {
+  height: 180px;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.casePreviewImage img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.casePreviewCard > div:last-child {
+  padding: 21px 20px 22px;
+}
+
+.casePreviewCard span {
+  display: block;
+  margin-bottom: 7px;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.casePreviewCard strong {
+  display: block;
+  color: #0f172a;
+  font-size: 17px;
+  line-height: 1.4;
+  font-weight: 900;
+}
+
+.casePreviewCard small {
+  display: block;
+  margin-top: 15px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+@media (max-width: 760px) {
+  .caseSection {
+    padding: 54px 15px 60px;
+  }
+
+  .caseHeader {
+    display: block;
+  }
+
+  .caseHeader h2 {
+    font-size: 28px;
+  }
+
+  .caseMoreButton {
+    width: 100%;
+    margin-top: 20px;
+  }
+
+  .casePreviewGrid {
+    grid-template-columns: 1fr;
+    gap: 11px;
+  }
+
+  .casePreviewCard {
+    display: grid;
+    grid-template-columns: 118px 1fr;
+  }
+
+  .casePreviewImage {
+    height: 100%;
+    min-height: 130px;
+  }
+
+  .casePreviewCard > div:last-child {
+    padding: 18px 16px;
+  }
+
+  .casePreviewCard strong {
+    font-size: 15px;
+  }
+}
+
+/* 실제 수리사례 작은 제목만 중앙 정렬 */
+.caseHeader .sectionEyebrow {
+  text-align: center;
+}
+
+/* 실제 수리사례 텍스트 묶음만 중앙 정렬 */
+.caseHeader > div:first-child {
+  text-align: center;
+}
+
+.caseHeader .sectionEyebrow {
+  text-align: center;
+}
+
+.caseHeader h2 {
+  text-align: center;
+}
+
+.caseHeader > div:first-child > p:last-child {
+  text-align: center;
+}
+
+/* 기존 전체보기 버튼 위치는 그대로 유지 */
+.caseMoreButton {
+  margin-left: auto;
+}
+
+/* 실제 수리사례 PC 정렬 + 위쪽 공백 축소 */
+
+/* 위 선릉점 안내 영역 아래 여백 축소 */
+.branchSection {
+  padding-bottom: 34px;
+}
+
+/* 수리사례 시작 위치 위로 */
+.caseSection {
+  padding-top: 38px;
+}
+
+/* 제목 묶음은 페이지 정중앙 */
+.caseHeader {
+  position: relative;
+  display: block;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.caseHeader > div:first-child {
+  max-width: 680px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.caseHeader .sectionEyebrow,
+.caseHeader h2,
+.caseHeader > div:first-child > p:last-child {
+  text-align: center;
+}
+
+/* 전체보기 버튼은 PC에서 오른쪽 유지 */
+.caseMoreButton {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: auto;
+  margin: 0;
+  transform: translateY(-50%);
+}
+
+/* 모바일 */
+@media (max-width: 760px) {
+  .branchSection {
+    padding-bottom: 26px;
+  }
+
+  .caseSection {
+    padding-top: 38px;
+  }
+
+  .caseHeader {
+    margin-bottom: 26px;
+  }
+
+  .caseMoreButton {
+    position: static;
+    width: fit-content;
+    min-width: 230px;
+    margin: 20px auto 0;
+    transform: none;
+  }
+}
+
+/* PC 실제 수리사례 타이틀 마감 */
+@media (min-width: 761px) {
+  .caseSection {
+    padding-top: 20px;
+    padding-bottom: 82px;
+  }
+
+  .caseHeader {
+    margin-bottom: 54px;
+  }
+
+  .caseHeader .sectionEyebrow {
+    font-size: 15px;
+    margin-bottom: 16px;
+    letter-spacing: 0.18em;
+  }
+
+  .caseHeader h2 {
+    font-size: 46px;
+    line-height: 1.12;
+    letter-spacing: -0.05em;
+  }
+
+  .caseHeader > div:first-child > p:last-child {
+    margin-top: 16px;
+    font-size: 16px;
+    line-height: 1.7;
+  }
+
+  .caseMoreButton {
+    top: 42%;
+  }
+}
+
+/* PC 수리사례 최종 헤더 배치 */
+@media (min-width: 761px) {
+  .caseSection {
+    padding-top: 24px;
+  }
+
+  .caseHeader {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr) 220px;
+    align-items: center;
+    margin-bottom: 56px;
+  }
+
+  .caseHeader > div:first-child {
+    grid-column: 2;
+    max-width: 650px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .caseHeader h2 {
+    font-size: 42px;
+    line-height: 1.15;
+    white-space: nowrap;
+  }
+
+  .caseMoreButton {
+    position: static;
+    grid-column: 3;
+    justify-self: end;
+    width: auto;
+    margin: 0;
+    transform: none;
+  }
+}
+
+/* 모바일 오시는 길 제목 중앙 정렬 */
+@media (max-width: 760px) {
+  .branchHead {
+    display: block;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  .branchHead > div:first-child {
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .branchHead .sectionEyebrow {
+    text-align: center;
+  }
+
+  .branchHead h2 {
+    text-align: center;
+    font-size: 28px;
+  }
+
+  .branchHead > div:first-child > p:last-child {
+    margin: 10px auto 0;
+    text-align: center;
+  }
+}
+
+/* =========================
+   태블릿 / iPad 최적화
+   ========================= */
+@media (min-width: 761px) and (max-width: 1100px) {
+
+  /* 히어로 */
+  .heroInner {
+    grid-template-columns: 56% 44%;
+  }
+
+  .heroContent {
+    padding: 48px 20px 44px;
+  }
+
+  .title {
+    font-size: 48px;
+    line-height: 1.06;
+    letter-spacing: -0.05em;
+    white-space: normal;
+  }
+
+  .subtitle {
+    font-size: 19px;
+  }
+
+  .location {
+    font-size: 13px;
+  }
+
+  /* 전화 / 톡톡 */
+  .primaryActions {
+    gap: 8px;
+  }
+
+  .mainButton {
+    min-width: 0;
+    flex: 1;
+    min-height: 66px;
+    padding: 0 15px;
+  }
+
+  .mainButton strong {
+    font-size: 15px;
+  }
+
+  .mainButton small {
+    font-size: 11px;
+  }
+
+  .onlineActionWrap {
+    max-width: none;
+  }
+
+  /* 수리 증상은 iPad에서 3 × 2 */
+  .symptomGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .symptomCard {
+    border-bottom: 1px solid #e7edf5;
+  }
+
+  .symptomCard:nth-child(3) {
+    border-right: 0;
+  }
+
+  .symptomCard:nth-child(4),
+  .symptomCard:nth-child(5),
+  .symptomCard:nth-child(6) {
+    border-bottom: 0;
+  }
+
+  .symptomImageWrap {
+    aspect-ratio: 1.2 / 1;
+  }
+
+  /* 오시는 길 */
+  .branchHead h2 {
+    font-size: 34px;
+  }
+
+  /* 실제 수리사례 */
+  .caseHeader {
+    grid-template-columns: 170px minmax(0, 1fr) 170px;
+  }
+
+  .caseHeader h2 {
+    font-size: 35px;
+  }
+
+  .caseMoreButton {
+    padding: 0 15px;
+    font-size: 12px;
+  }
+}

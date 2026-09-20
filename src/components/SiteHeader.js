@@ -2,12 +2,30 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import InquiryForm from "@/components/InquiryForm"
 import PhoneContactButton from "@/components/PhoneContactButton"
 
 export default function SiteHeader() {
   const [isOpen, setIsOpen] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const pathname = usePathname() || ""
+
+  const landingMatch = pathname.match(
+    /^\/landing\/(gangbyeon|seolleung|sindorim)\/([^/]+)\/?$/
+  )
+
+  const landingBranchLabels = {
+    gangbyeon: "강변점",
+    seolleung: "선릉점",
+    sindorim: "신도림점",
+  }
+
+  const landingDeviceLabels = {
+    iphone: "아이폰수리",
+    ipad: "아이패드수리",
+    surface: "서피스수리",
+  }
 
   useEffect(() => {
     if (!isOpen) return
@@ -32,6 +50,40 @@ export default function SiteHeader() {
   const openInquiry = () => {
     setIsMenuOpen(false)
     setIsOpen(true)
+  }
+
+  if (landingMatch) {
+    const branchLabel =
+      landingBranchLabels[landingMatch[1]] || "수리지점"
+    const deviceLabel =
+      landingDeviceLabels[landingMatch[2]] || "수리상담"
+
+    return (
+      <header className="site-header" style={landingHeaderStyle}>
+        <div style={landingHeaderInnerStyle}>
+          <Link href="/" style={landingLogoStyle}>
+            <span style={landingLogoMainStyle}>i smile again</span>
+            <span style={landingLogoSubStyle}>아이스마일어게인</span>
+          </Link>
+
+          <div style={landingHeaderRightStyle}>
+            <Link
+              href={`/contact?branch=${landingMatch[1]}&device=${landingMatch[2]}`}
+              data-ga-contact="online_inquiry"
+              style={landingOnlineButtonStyle}
+            >
+              온라인 접수
+            </Link>
+
+            <div style={landingHeaderBadgeStyle}>
+              {branchLabel}
+              <span style={landingHeaderDividerStyle}>·</span>
+              {deviceLabel}
+            </div>
+          </div>
+        </div>
+      </header>
+    )
   }
 
   return (
@@ -294,3 +346,90 @@ const mobileHeaderActionsStyle = {
   alignItems: "center",
   gap: "4px",
 };
+
+
+const landingHeaderStyle = {
+  position: "fixed",
+  top: 0,
+  left: 0,
+  right: 0,
+  zIndex: 9999,
+  height: "78px",
+  background: "rgba(255,255,255,0.94)",
+  borderBottom: "1px solid rgba(226,232,240,0.9)",
+  boxShadow: "0 6px 24px rgba(15,23,42,0.05)",
+  backdropFilter: "blur(14px)",
+  WebkitBackdropFilter: "blur(14px)",
+}
+
+const landingHeaderInnerStyle = {
+  maxWidth: "1160px",
+  height: "78px",
+  margin: "0 auto",
+  padding: "0 22px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "16px",
+}
+
+const landingLogoStyle = {
+  display: "flex",
+  flexDirection: "column",
+  textDecoration: "none",
+  lineHeight: 1.05,
+}
+
+const landingLogoMainStyle = {
+  color: "#0f172a",
+  fontSize: "19px",
+  fontWeight: 950,
+  letterSpacing: "-0.03em",
+}
+
+const landingLogoSubStyle = {
+  marginTop: "5px",
+  color: "#94a3b8",
+  fontSize: "10px",
+  fontWeight: 800,
+}
+
+const landingHeaderBadgeStyle = {
+  display: "flex",
+  alignItems: "center",
+  padding: "8px 13px",
+  borderRadius: "999px",
+  background: "#eff6ff",
+  color: "#1d4ed8",
+  fontSize: "13px",
+  fontWeight: 900,
+  whiteSpace: "nowrap",
+}
+
+const landingHeaderDividerStyle = {
+  padding: "0 5px",
+  color: "#93c5fd",
+}
+
+
+const landingHeaderRightStyle = {
+  display: "flex",
+  alignItems: "center",
+  gap: "9px",
+}
+
+const landingOnlineButtonStyle = {
+  minHeight: "38px",
+  padding: "0 16px",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  borderRadius: "999px",
+  background: "#2563eb",
+  color: "#ffffff",
+  fontSize: "13px",
+  fontWeight: 900,
+  textDecoration: "none",
+  whiteSpace: "nowrap",
+  boxShadow: "0 6px 18px rgba(37,99,235,0.18)",
+}

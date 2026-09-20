@@ -5,8 +5,12 @@ import { usePathname } from "next/navigation";
 export default function FloatingNaverTalk() {
   const pathname = usePathname();
 
-  // 관리자 화면에서는 고객용 고정 톡톡 숨김
-  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+  // 관리자 화면과 광고 전용 랜딩에서는 고객용 고정 톡톡 숨김
+  if (
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/") ||
+    pathname.startsWith("/landing/")
+  ) {
     return null;
   }
 
