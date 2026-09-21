@@ -2548,3 +2548,19 @@
     word-break: keep-all !important;
   }
 }
+
+/* 큰 모니터 Surface 랜딩 폭 확장 */
+@media (min-width: 1600px) {
+
+  .surfaceHeroStatic {
+    width: calc(100% - 64px) !important;
+    max-width: 1920px !important;
+  }
+
+  .symptomSection {
+    width: calc(100% - 64px) !important;
+    max-width: 1680px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+}
