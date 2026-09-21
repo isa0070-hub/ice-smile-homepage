@@ -60,22 +60,22 @@ export default function SiteHeader() {
 
     return (
       <header className="site-header" style={landingHeaderStyle}>
-        <div style={landingHeaderInnerStyle}>
-          <Link href="/" style={landingLogoStyle}>
-            <span style={landingLogoMainStyle}>i smile again</span>
+        <div className="landing-header-inner" style={landingHeaderInnerStyle}>
+          <Link href="/" className="landing-header-logo" style={landingLogoStyle}>
+            <span className="landing-logo-main" style={landingLogoMainStyle}>i smile again</span>
             <span style={landingLogoSubStyle}>아이스마일어게인</span>
           </Link>
 
-          <div style={landingHeaderRightStyle}>
+          <div className="landing-header-right" style={landingHeaderRightStyle}>
             <Link
               href={`/contact?branch=${landingMatch[1]}&device=${landingMatch[2]}`}
               data-ga-contact="online_inquiry"
-              style={landingOnlineButtonStyle}
+              className="landing-online-button" style={landingOnlineButtonStyle}
             >
               온라인 접수
             </Link>
 
-            <div style={landingHeaderBadgeStyle}>
+            <div className="landing-header-badge" style={landingHeaderBadgeStyle}>
               {branchLabel}
               <span style={landingHeaderDividerStyle}>·</span>
               {deviceLabel}

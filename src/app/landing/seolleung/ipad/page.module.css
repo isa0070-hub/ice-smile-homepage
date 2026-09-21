@@ -2082,3 +2082,73 @@
     right: -4% !important;
   }
 }
+
+/* iPad 모바일 실제 수리사례 카드 글자 잘림 수정 */
+@media (max-width: 760px) {
+
+  .casePreviewGrid {
+    width: 100%;
+    gap: 10px;
+  }
+
+  .casePreviewCard {
+    display: grid;
+    grid-template-columns: 100px minmax(0, 1fr);
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .casePreviewImage {
+    width: 100px;
+    height: 100%;
+    min-height: 120px;
+    overflow: hidden;
+  }
+
+  .casePreviewImage img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .casePreviewCard > div:last-child {
+    min-width: 0;
+    padding: 14px 12px;
+    overflow: hidden;
+  }
+
+  .casePreviewCard span {
+    font-size: 10px;
+    line-height: 1.35;
+    white-space: normal;
+    word-break: keep-all;
+  }
+
+  .casePreviewCard strong {
+    font-size: 13px;
+    line-height: 1.4;
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+
+  .casePreviewCard small {
+    margin-top: 9px;
+    font-size: 9px;
+    line-height: 1.4;
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+
+  .caseMoreButton {
+    width: calc(100% - 24px);
+    min-width: 0;
+    box-sizing: border-box;
+    padding-left: 10px;
+    padding-right: 10px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+}

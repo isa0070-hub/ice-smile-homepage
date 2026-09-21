@@ -18,60 +18,124 @@ export const metadata = {
 
 const symptoms = [
   {
-    image: "/images/landing/surface/screen-damage.webp",
+    image: "/images/landing/surface/screen-damage-v2.webp",
     title: "액정 · 화면 파손",
     text: "화면 깨짐 · 터치불량 · 화면 이상",
   },
   {
-    image: "/images/landing/surface/battery.webp",
+    image: "/images/landing/surface/battery-v2.webp",
     title: "배터리 교체",
     text: "배터리 스웰링 · 빠른 방전 · 전원 꺼짐",
   },
   {
-    image: "/images/landing/surface/charging.webp",
+    image: "/images/landing/surface/charging-v2.webp",
     title: "충전불량",
     text: "전용 충전단자 · 충전 인식불량 · 전원 문제",
   },
   {
-    image: "/images/landing/surface/hinge.webp",
+    image: "/images/landing/surface/hinge-v2.webp",
     title: "힌지 · 프레임",
     text: "힌지 파손 · 프레임 손상 · 각도 유지불량",
   },
   {
-    image: "/images/landing/surface/other-fault.webp",
+    image: "/images/landing/surface/motherboard-v2.webp",
     title: "메인보드 수리",
     text: "전원불량 · 부팅불량 · 회로 점검",
   },
   {
-    image: "/images/landing/surface/hero-surface-repair.webp",
+    image: "/images/landing/surface/other-fault-v2.webp",
     title: "기타 서피스 고장",
-    text: "침수 · 발열 · 포트 · 기타 증상",
+    text: "전원 · 오류 · 부팅 · 기타 증상",
   },
 ];
 
 export default function SeolleungIphoneLandingPage() {
   return (
     <main className={styles.page}>
-      <section className={styles.hero}>
+      <section
+        className={styles.surfaceHeroStatic}
+        aria-label="강남 선릉 서피스수리"
+      >
+        <img
+          src="/images/landing/surface/surface-hero-static.png?v=2"
+          alt="강남 선릉 마이크로소프트 서피스수리"
+          className={styles.surfaceHeroStaticImage}
+        />
+
+        <div className={styles.surfaceHeroActions}>
+          <a
+            href="tel:02-554-5295"
+            data-ga-contact="phone_seolleung"
+            className={`${styles.surfaceHeroButton} ${styles.surfaceHeroPhone}`}
+          >
+            <span className={styles.surfaceHeroPhoneIcon}>☎</span>
+            <span>
+              <strong>전화 상담하기</strong>
+              <small>02-554-5295</small>
+            </span>
+          </a>
+
+          <a
+            href="https://talk.naver.com/WCH5S2X"
+            target="_blank"
+            rel="noreferrer"
+            data-ga-contact="naver_talk"
+            className={`${styles.surfaceHeroButton} ${styles.surfaceHeroTalk}`}
+          >
+            <span className={styles.surfaceHeroNaverIcon}>N</span>
+            <span>
+              <strong>네이버 톡톡 상담</strong>
+              <small>빠른 상담이 가능합니다</small>
+            </span>
+          </a>
+
+          <a
+            href="/contact?branch=seolleung&device=surface"
+            data-ga-contact="online_inquiry"
+            className={styles.surfaceHeroOnline}
+          >
+            온라인으로 수리 접수하기
+          </a>
+
+          <div className={styles.surfaceHeroQuickLinks}>
+            <a href="#seolleung-map">지도 바로 보기</a>
+            <span>｜</span>
+            <a href="/repair-services/surface">실제 수리사례 보기 ›</a>
+          </div>
+        </div>
+      </section>
+
+<section className={styles.hero}>
         <div className={styles.heroGlow} />
 
         <div className={styles.heroInner}>
           <div className={styles.heroContent}>
-            <p className={styles.eyebrow}>SEOLLEUNG</p>
+            <p className={styles.eyebrow}>강남 · 선릉 서피스수리 전문</p>
 
             <h1 className={styles.title}>
-              강남·선릉{" "}
-              <span className={styles.titleBlue}>서피스</span>수리
+              마이크로소프트 서피스,
+              <br />
+              <span className={styles.titleBlue}>
+                다시, 더 오래 함께합니다.
+              </span>
             </h1>
 
             <p className={styles.subtitle}>
-              액정 · 배터리 · 충전불량 · 힌지 · 메인보드
+              정확한 진단, 정직한 수리, 확실한 사후관리
             </p>
 
             <p className={styles.location}>
               <span>●</span>
-              선릉역 1번 출구 1분 · 샹제리제센터 A동 406호
+              선릉역 1번 출구 1분 · 아이스마일어게인 선릉점
             </p>
+
+            <div className={styles.heroVisual}>
+              <img
+                src="/images/microsoft-surface.jpg"
+                alt="마이크로소프트 서피스 수리 안내"
+                className={styles.heroImage}
+              />
+            </div>
 
             <div className={styles.primaryActions}>
               <a
@@ -123,13 +187,6 @@ export default function SeolleungIphoneLandingPage() {
             </div>
           </div>
 
-          <div className={styles.heroVisual}>
-            <img
-              src="/images/landing/surface/hero-surface-repair.webp"
-              alt="마이크로소프트 서피스를 정밀 수리하는 아이스마일어게인 수리기사"
-              className={styles.heroImage}
-            />
-          </div>
         </div>
       </section>
 
@@ -235,7 +292,7 @@ export default function SeolleungIphoneLandingPage() {
           <Link href="/repair-services/surface" className={styles.casePreviewCard}>
             <div className={styles.casePreviewImage}>
               <img
-                src="/images/landing/surface/screen-damage.webp"
+                src="/images/landing/surface/screen-damage-v2.webp"
                 alt="서피스 액정 파손 수리"
               />
             </div>
@@ -249,7 +306,7 @@ export default function SeolleungIphoneLandingPage() {
           <Link href="/repair-services/surface" className={styles.casePreviewCard}>
             <div className={styles.casePreviewImage}>
               <img
-                src="/images/landing/surface/battery.webp"
+                src="/images/landing/surface/battery-v2.webp"
                 alt="서피스 배터리 교체"
               />
             </div>
@@ -263,7 +320,7 @@ export default function SeolleungIphoneLandingPage() {
           <Link href="/repair-services/surface" className={styles.casePreviewCard}>
             <div className={styles.casePreviewImage}>
               <img
-                src="/images/landing/surface/hinge.webp"
+                src="/images/landing/surface/hinge-v2.webp"
                 alt="서피스 힌지 수리"
               />
             </div>

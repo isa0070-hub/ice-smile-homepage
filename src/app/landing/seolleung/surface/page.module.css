@@ -453,203 +453,7 @@
   }
 }
 
-@media (max-width: 760px) {
-  .hero {
-    min-height: auto;
-  }
 
-  .heroInner {
-    min-height: auto;
-    display: block;
-  }
-
-  .heroContent {
-    padding: 48px 17px 42px;
-    text-align: center;
-  }
-
-  .eyebrow {
-    font-size: 10px;
-  }
-
-  .title {
-    margin: 0 auto;
-    font-size: 43px;
-    line-height: 1.05;
-  }
-
-  .subtitle {
-    margin-top: 17px;
-    font-size: 16px;
-    line-height: 1.5;
-  }
-
-  .location {
-    justify-content: center;
-    margin-top: 11px;
-    font-size: 12px;
-  }
-
-  .primaryActions {
-    margin-top: 24px;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .mainButton {
-    width: 100%;
-    min-width: 0;
-    min-height: 58px;
-    padding: 0 18px;
-    border-radius: 13px;
-    justify-content: center;
-  }
-
-  .mainButton strong {
-    font-size: 15px;
-  }
-
-  .mainButton small {
-    display: none;
-  }
-
-  .buttonIcon,
-  .naverIcon {
-    width: 34px;
-    height: 34px;
-    font-size: 17px;
-  }
-
-  .secondaryActions {
-    margin-top: 15px;
-    justify-content: center;
-    gap: 9px;
-  }
-
-  .secondaryActions a {
-    font-size: 11px;
-  }
-
-  .heroVisual {
-    display: none;
-  }
-
-  .symptomSection {
-    margin: 0 auto;
-    padding: 0 13px 32px;
-  }
-
-  .symptomGrid {
-    grid-template-columns: repeat(2, 1fr);
-    border-radius: 17px;
-  }
-
-  .symptomCard {
-    min-height: 155px;
-    padding: 19px 11px;
-    border-right: 0 !important;
-  }
-
-  .symptomCard:nth-child(odd) {
-    border-right: 1px solid #e7edf5 !important;
-  }
-
-  .symptomCard:nth-child(5),
-  .symptomCard:nth-child(6) {
-    border-bottom: 0;
-  }
-
-  .symptomIcon {
-    width: 50px;
-    height: 50px;
-    margin-bottom: 12px;
-    font-size: 26px;
-  }
-
-  .symptomCard h2 {
-    font-size: 13px;
-  }
-
-  .symptomCard p {
-    font-size: 10px;
-  }
-
-  .branchSection {
-    padding: 28px 14px 58px;
-  }
-
-  .branchGrid {
-    grid-template-columns: 1fr;
-    gap: 13px;
-  }
-
-  .branchIntro {
-    padding: 27px 21px;
-  }
-
-  .branchIntro h2 {
-    font-size: 25px;
-  }
-
-  .branchIntro > p:last-child {
-    font-size: 12px;
-  }
-
-  .mapFrame {
-    min-height: 260px;
-  }
-
-  .mapImage {
-    width: 114%;
-    height: 114%;
-  }
-
-  .branchInfo {
-    grid-column: auto;
-    display: block;
-    padding: 21px 18px;
-  }
-
-  .caseSection {
-    padding: 54px 17px;
-    display: block;
-  }
-
-  .caseSection h2 {
-    font-size: 27px;
-  }
-
-  .caseSection > div > p:last-child {
-    font-size: 13px;
-  }
-
-  .caseButtons {
-    margin-top: 23px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .caseButtons a {
-    padding: 0 12px;
-    font-size: 12px;
-  }
-
-  .finalCta {
-    padding: 58px 16px 105px;
-  }
-
-  .finalCta h2 {
-    font-size: 28px;
-  }
-
-  .finalButtons {
-    flex-direction: column;
-  }
-
-  .finalButtons a {
-    width: 100%;
-  }
-}
 
 /* 아이폰 증상 카드 실제 이미지 */
 .symptomImageWrap {
@@ -666,12 +470,7 @@
   object-fit: cover;
 }
 
-@media (max-width: 760px) {
-  .symptomImageWrap {
-    margin-bottom: 12px;
-    border-radius: 13px;
-  }
-}
+
 
 .symptomImage {
   display: block;
@@ -809,33 +608,7 @@
   }
 }
 
-@media (max-width: 760px) {
-  .title {
-    white-space: normal;
-    font-size: 42px;
-    line-height: 1.08;
-    letter-spacing: -0.05em;
-  }
 
-  .subtitle {
-    font-size: 16px;
-  }
-
-  .symptomCard h2 {
-    min-height: 37px;
-    font-size: 13px;
-  }
-
-  .symptomCard p {
-    min-height: 34px;
-    font-size: 10px;
-  }
-
-  .branchIntro h2 {
-    font-size: 25px;
-    line-height: 1.25;
-  }
-}
 
 /* ===================================
    2차 UI 정리
@@ -1039,77 +812,7 @@
 }
 
 /* 모바일 */
-@media (max-width: 760px) {
-  .symptomCard {
-    padding: 10px 10px 18px;
-  }
 
-  .symptomImageWrap {
-    aspect-ratio: 1 / 0.88;
-  }
-
-  .symptomCard h2 {
-    font-size: 13px;
-  }
-
-  .symptomCard p {
-    min-height: 32px;
-    font-size: 10px;
-  }
-
-  .branchSection {
-    padding: 55px 14px;
-  }
-
-  .branchHead {
-    display: block;
-  }
-
-  .branchHead h2 {
-    font-size: 29px;
-  }
-
-  .branchHeadPhone {
-    display: none;
-  }
-
-  .branchMapCard {
-    border-radius: 18px;
-  }
-
-  .branchBottom {
-    padding: 20px 18px;
-    display: block;
-  }
-
-  .branchAddress strong {
-    font-size: 14px;
-  }
-
-  .branchActions {
-    margin-top: 18px;
-  }
-
-  .branchPhone,
-  .branchTalk {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .caseSection {
-    padding: 58px 17px;
-    display: block;
-  }
-
-  .caseSection h2 {
-    font-size: 28px;
-  }
-
-  .caseMoreButton {
-    width: 100%;
-    margin-top: 24px;
-  }
-}
 
 .heroImage {
   display: block;
@@ -1151,17 +854,7 @@
   font-size: 19px;
 }
 
-@media (max-width: 760px) {
-  .onlineActionWrap {
-    max-width: none;
-    margin-top: 9px;
-  }
 
-  .onlineActionButton {
-    min-height: 50px;
-    font-size: 14px;
-  }
-}
 
 /* 히어로 배경 이미지 부드럽게 */
 .heroImage {
@@ -1299,47 +992,7 @@
   font-weight: 800;
 }
 
-@media (max-width: 760px) {
-  .caseSection {
-    padding: 54px 15px 60px;
-  }
 
-  .caseHeader {
-    display: block;
-  }
-
-  .caseHeader h2 {
-    font-size: 28px;
-  }
-
-  .caseMoreButton {
-    width: 100%;
-    margin-top: 20px;
-  }
-
-  .casePreviewGrid {
-    grid-template-columns: 1fr;
-    gap: 11px;
-  }
-
-  .casePreviewCard {
-    display: grid;
-    grid-template-columns: 118px 1fr;
-  }
-
-  .casePreviewImage {
-    height: 100%;
-    min-height: 130px;
-  }
-
-  .casePreviewCard > div:last-child {
-    padding: 18px 16px;
-  }
-
-  .casePreviewCard strong {
-    font-size: 15px;
-  }
-}
 
 /* 실제 수리사례 작은 제목만 중앙 정렬 */
 .caseHeader .sectionEyebrow {
@@ -1411,27 +1064,7 @@
 }
 
 /* 모바일 */
-@media (max-width: 760px) {
-  .branchSection {
-    padding-bottom: 26px;
-  }
 
-  .caseSection {
-    padding-top: 38px;
-  }
-
-  .caseHeader {
-    margin-bottom: 26px;
-  }
-
-  .caseMoreButton {
-    position: static;
-    width: fit-content;
-    min-width: 230px;
-    margin: 20px auto 0;
-    transform: none;
-  }
-}
 
 /* PC 실제 수리사례 타이틀 마감 */
 @media (min-width: 761px) {
@@ -1504,32 +1137,7 @@
 }
 
 /* 모바일 오시는 길 제목 중앙 정렬 */
-@media (max-width: 760px) {
-  .branchHead {
-    display: block;
-    text-align: center;
-    margin-bottom: 24px;
-  }
 
-  .branchHead > div:first-child {
-    margin: 0 auto;
-    text-align: center;
-  }
-
-  .branchHead .sectionEyebrow {
-    text-align: center;
-  }
-
-  .branchHead h2 {
-    text-align: center;
-    font-size: 28px;
-  }
-
-  .branchHead > div:first-child > p:last-child {
-    margin: 10px auto 0;
-    text-align: center;
-  }
-}
 
 /* =========================
    태블릿 / iPad 최적화
@@ -1624,5 +1232,1319 @@
   .caseMoreButton {
     padding: 0 15px;
     font-size: 12px;
+  }
+}
+
+/* Surface 실제 수리사례 이미지 고화질 표시 */
+.casePreviewImage {
+  height: auto;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.casePreviewImage img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: auto;
+}
+
+/* ==================================================
+   Surface 고정 디자인 Hero
+   디자인 = 이미지 / 클릭요소 = 실제 HTML
+   ================================================== */
+
+.surfaceHeroStatic {
+  display: none;
+}
+
+/* PC + Tablet */
+@media (min-width: 761px) {
+
+  /* 기존 HTML hero는 모바일용으로만 남김 */
+  .hero {
+    display: none !important;
+  }
+
+  .surfaceHeroStatic {
+    position: relative;
+    display: block;
+
+    width: 100%;
+    max-width: 1536px;
+    aspect-ratio: 2 / 1;
+
+    margin: 0 auto;
+
+    background-image:
+      url("/images/landing/surface/surface-hero-static.png?v=1");
+
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center center;
+
+    overflow: hidden;
+  }
+
+  /* 실제 클릭영역 */
+  .surfaceHeroActions {
+    position: absolute;
+    z-index: 5;
+
+    left: 3.3%;
+    bottom: 4.2%;
+
+    width: 40%;
+
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .surfaceHeroButton {
+    min-width: 0;
+    min-height: 62px;
+
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 11px;
+
+    padding: 8px 17px;
+
+    border-radius: 10px;
+
+    color: #fff;
+    text-decoration: none;
+
+    box-shadow: 0 8px 25px rgba(15, 23, 42, .10);
+  }
+
+  .surfaceHeroPhone {
+    background: #0e2348;
+  }
+
+  .surfaceHeroTalk {
+    background: #03c75a;
+  }
+
+  .surfaceHeroPhoneIcon,
+  .surfaceHeroNaverIcon {
+    flex: 0 0 39px;
+
+    width: 39px;
+    height: 39px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 50%;
+    background: rgba(255,255,255,.16);
+
+    font-size: 18px;
+    font-weight: 950;
+  }
+
+  .surfaceHeroNaverIcon {
+    background: #fff;
+    color: #03c75a;
+  }
+
+  .surfaceHeroButton strong {
+    display: block;
+
+    font-size: 15px;
+    font-weight: 950;
+    line-height: 1.2;
+  }
+
+  .surfaceHeroButton small {
+    display: block;
+
+    margin-top: 4px;
+
+    font-size: 10px;
+    line-height: 1.2;
+
+    color: rgba(255,255,255,.82);
+  }
+
+  .surfaceHeroOnline {
+    grid-column: 1 / -1;
+
+    min-height: 46px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1.5px solid #2563eb;
+    border-radius: 9px;
+
+    background: rgba(255,255,255,.94);
+    color: #2563eb;
+
+    font-size: 14px;
+    font-weight: 950;
+    text-decoration: none;
+
+    box-shadow: 0 6px 20px rgba(37,99,235,.08);
+  }
+
+  .surfaceHeroQuickLinks {
+    grid-column: 1 / -1;
+
+    display: flex;
+    align-items: center;
+    gap: 9px;
+
+    padding: 2px 2px 0;
+
+    font-size: 11px;
+    font-weight: 850;
+  }
+
+  .surfaceHeroQuickLinks a {
+    color: #334155;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  .surfaceHeroQuickLinks span {
+    color: #cbd5e1;
+  }
+}
+
+
+/* iPad / 중간 폭 */
+@media (min-width: 761px) and (max-width: 1100px) {
+
+  .surfaceHeroActions {
+    left: 3%;
+    bottom: 3.5%;
+    width: 43%;
+    gap: 6px;
+  }
+
+  .surfaceHeroButton {
+    min-height: 52px;
+    padding: 6px 10px;
+    gap: 7px;
+  }
+
+  .surfaceHeroPhoneIcon,
+  .surfaceHeroNaverIcon {
+    flex-basis: 30px;
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+  }
+
+  .surfaceHeroButton strong {
+    font-size: 12px;
+  }
+
+  .surfaceHeroButton small {
+    font-size: 8px;
+  }
+
+  .surfaceHeroOnline {
+    min-height: 38px;
+    font-size: 11px;
+  }
+
+  .surfaceHeroQuickLinks {
+    font-size: 9px;
+  }
+}
+
+
+/* Mobile은 기존 HTML hero 유지 */
+
+
+/* Surface 고정 히어로 전체 이미지가 잘리지 않도록 */
+@media (min-width: 761px) {
+  .surfaceHeroStatic {
+    width: 100%;
+    max-width: 1536px;
+
+    /* 현재 와이드 이미지 비율에 맞춤 */
+    aspect-ratio: 8 / 3 !important;
+
+    background-size: contain !important;
+    background-position: center top !important;
+    background-repeat: no-repeat !important;
+    background-color: #ffffff;
+  }
+}
+
+/* Surface 히어로 하단 경계 자연스럽게 연결 */
+@media (min-width: 761px) {
+
+  .surfaceHeroStatic::after {
+    content: "";
+    position: absolute;
+    z-index: 2;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 52px;
+    pointer-events: none;
+
+    background: linear-gradient(
+      to bottom,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,0.70) 58%,
+      #ffffff 100%
+    );
+  }
+
+  /* 버튼은 페이드 위에 유지 */
+  .surfaceHeroActions {
+    z-index: 5;
+  }
+
+  /* 다음 섹션을 히어로에 조금 더 붙임 */
+  .symptomSection {
+    margin-top: 6px !important;
+  }
+}
+
+/* =========================================
+   Surface hero 최종 구조
+   실제 이미지 높이를 그대로 사용
+   ========================================= */
+
+@media (min-width: 761px) {
+
+  .surfaceHeroStatic {
+    position: relative;
+
+    display: block;
+
+    width: 100%;
+    max-width: 1536px;
+
+    margin: 0 auto;
+
+    aspect-ratio: auto !important;
+
+    background: none !important;
+    background-image: none !important;
+
+    overflow: hidden;
+  }
+
+  .surfaceHeroStaticImage {
+    display: block;
+
+    width: 100%;
+    height: auto;
+
+    margin: 0;
+    padding: 0;
+  }
+
+  /* 기존 하단 페이드 제거 */
+  .surfaceHeroStatic::before,
+  .surfaceHeroStatic::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  /* 버튼은 이미지 위에만 배치 */
+  .surfaceHeroActions {
+    position: absolute;
+    z-index: 10;
+
+    left: 3.4%;
+    bottom: 3.7%;
+
+    width: 40%;
+
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  /* 이미지 다음에 증상카드가 바로 시작 */
+  .symptomSection {
+    margin-top: 0 !important;
+    padding-top: 20px !important;
+    transform: none !important;
+  }
+}
+
+
+/* Tablet */
+@media (min-width: 761px) and (max-width: 1100px) {
+
+  .surfaceHeroActions {
+    left: 3%;
+    bottom: 3%;
+    width: 43%;
+  }
+}
+
+/* Surface 고정 히어로 버튼 최종 위치 */
+@media (min-width: 1101px) {
+  .surfaceHeroActions {
+    left: 3.4% !important;
+    bottom: 1.2% !important;
+    width: 40% !important;
+    gap: 7px;
+  }
+
+  .surfaceHeroButton {
+    min-height: 54px;
+    padding: 7px 15px;
+  }
+
+  .surfaceHeroOnline {
+    min-height: 41px;
+  }
+
+  /* 히어로 안에서는 빠른 링크 숨김 */
+  .surfaceHeroQuickLinks {
+    display: none !important;
+  }
+
+  /* 증상 영역과 자연스럽게 연결 */
+  .symptomSection {
+    margin-top: 0 !important;
+    padding-top: 18px !important;
+  }
+}
+
+/* Surface 모바일 히어로 복구 */
+
+
+/* ==================================================
+   Surface MOBILE FINAL
+   PC 고정 히어로와 완전히 분리
+   ================================================== */
+
+
+
+/* ==================================================
+   Surface Mobile Final Layout
+   제목 → 제품사진 → 전화/톡톡 → 온라인접수
+   ================================================== */
+
+
+/* ==================================================
+   SURFACE MOBILE HARD RESET
+   PC / Tablet 영향 없음
+   ================================================== */
+
+
+/* ==========================================
+   Surface Mobile - 이미지 없는 전환형 Hero
+   PC / Tablet 영향 없음
+   ========================================== */
+
+
+/* ==================================================
+   SURFACE MOBILE - iPad landing style
+   PC / Tablet 영향 없음
+   ================================================== */
+
+/* ==========================================
+   MOBILE = iPad landing 동일 구성
+   ========================================== */
+
+@media (max-width: 760px) {
+  .hero {
+    min-height: auto;
+  }
+
+  .heroInner {
+    min-height: auto;
+    display: block;
+  }
+
+  .heroContent {
+    padding: 48px 17px 42px;
+    text-align: center;
+  }
+
+  .eyebrow {
+    font-size: 10px;
+  }
+
+  .title {
+    margin: 0 auto;
+    font-size: 43px;
+    line-height: 1.05;
+  }
+
+  .subtitle {
+    margin-top: 17px;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  .location {
+    justify-content: center;
+    margin-top: 11px;
+    font-size: 12px;
+  }
+
+  .primaryActions {
+    margin-top: 24px;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .mainButton {
+    width: 100%;
+    min-width: 0;
+    min-height: 58px;
+    padding: 0 18px;
+    border-radius: 13px;
+    justify-content: center;
+  }
+
+  .mainButton strong {
+    font-size: 15px;
+  }
+
+  .mainButton small {
+    display: none;
+  }
+
+  .buttonIcon,
+  .naverIcon {
+    width: 34px;
+    height: 34px;
+    font-size: 17px;
+  }
+
+  .secondaryActions {
+    margin-top: 15px;
+    justify-content: center;
+    gap: 9px;
+  }
+
+  .secondaryActions a {
+    font-size: 11px;
+  }
+
+  .heroVisual {
+    display: none;
+  }
+
+  .symptomSection {
+    margin: 0 auto;
+    padding: 0 13px 32px;
+  }
+
+  .symptomGrid {
+    grid-template-columns: repeat(2, 1fr);
+    border-radius: 17px;
+  }
+
+  .symptomCard {
+    min-height: 155px;
+    padding: 19px 11px;
+    border-right: 0 !important;
+  }
+
+  .symptomCard:nth-child(odd) {
+    border-right: 1px solid #e7edf5 !important;
+  }
+
+  .symptomCard:nth-child(5),
+  .symptomCard:nth-child(6) {
+    border-bottom: 0;
+  }
+
+  .symptomIcon {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 12px;
+    font-size: 26px;
+  }
+
+  .symptomCard h2 {
+    font-size: 13px;
+  }
+
+  .symptomCard p {
+    font-size: 10px;
+  }
+
+  .branchSection {
+    padding: 28px 14px 58px;
+  }
+
+  .branchGrid {
+    grid-template-columns: 1fr;
+    gap: 13px;
+  }
+
+  .branchIntro {
+    padding: 27px 21px;
+  }
+
+  .branchIntro h2 {
+    font-size: 25px;
+  }
+
+  .branchIntro > p:last-child {
+    font-size: 12px;
+  }
+
+  .mapFrame {
+    min-height: 260px;
+  }
+
+  .mapImage {
+    width: 114%;
+    height: 114%;
+  }
+
+  .branchInfo {
+    grid-column: auto;
+    display: block;
+    padding: 21px 18px;
+  }
+
+  .caseSection {
+    padding: 54px 17px;
+    display: block;
+  }
+
+  .caseSection h2 {
+    font-size: 27px;
+  }
+
+  .caseSection > div > p:last-child {
+    font-size: 13px;
+  }
+
+  .caseButtons {
+    margin-top: 23px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .caseButtons a {
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  .finalCta {
+    padding: 58px 16px 105px;
+  }
+
+  .finalCta h2 {
+    font-size: 28px;
+  }
+
+  .finalButtons {
+    flex-direction: column;
+  }
+
+  .finalButtons a {
+    width: 100%;
+  }
+}
+
+@media (max-width: 760px) {
+  .symptomImageWrap {
+    margin-bottom: 12px;
+    border-radius: 13px;
+  }
+}
+
+@media (max-width: 760px) {
+  .title {
+    white-space: normal;
+    font-size: 42px;
+    line-height: 1.08;
+    letter-spacing: -0.05em;
+  }
+
+  .subtitle {
+    font-size: 16px;
+  }
+
+  .symptomCard h2 {
+    min-height: 37px;
+    font-size: 13px;
+  }
+
+  .symptomCard p {
+    min-height: 34px;
+    font-size: 10px;
+  }
+
+  .branchIntro h2 {
+    font-size: 25px;
+    line-height: 1.25;
+  }
+}
+
+@media (max-width: 760px) {
+  .symptomCard {
+    padding: 10px 10px 18px;
+  }
+
+  .symptomImageWrap {
+    aspect-ratio: 1 / 0.88;
+  }
+
+  .symptomCard h2 {
+    font-size: 13px;
+  }
+
+  .symptomCard p {
+    min-height: 32px;
+    font-size: 10px;
+  }
+
+  .branchSection {
+    padding: 55px 14px;
+  }
+
+  .branchHead {
+    display: block;
+  }
+
+  .branchHead h2 {
+    font-size: 29px;
+  }
+
+  .branchHeadPhone {
+    display: none;
+  }
+
+  .branchMapCard {
+    border-radius: 18px;
+  }
+
+  .branchBottom {
+    padding: 20px 18px;
+    display: block;
+  }
+
+  .branchAddress strong {
+    font-size: 14px;
+  }
+
+  .branchActions {
+    margin-top: 18px;
+  }
+
+  .branchPhone,
+  .branchTalk {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .caseSection {
+    padding: 58px 17px;
+    display: block;
+  }
+
+  .caseSection h2 {
+    font-size: 28px;
+  }
+
+  .caseMoreButton {
+    width: 100%;
+    margin-top: 24px;
+  }
+}
+
+@media (max-width: 760px) {
+  .onlineActionWrap {
+    max-width: none;
+    margin-top: 9px;
+  }
+
+  .onlineActionButton {
+    min-height: 50px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 760px) {
+  .caseSection {
+    padding: 54px 15px 60px;
+  }
+
+  .caseHeader {
+    display: block;
+  }
+
+  .caseHeader h2 {
+    font-size: 28px;
+  }
+
+  .caseMoreButton {
+    width: 100%;
+    margin-top: 20px;
+  }
+
+  .casePreviewGrid {
+    grid-template-columns: 1fr;
+    gap: 11px;
+  }
+
+  .casePreviewCard {
+    display: grid;
+    grid-template-columns: 118px 1fr;
+  }
+
+  .casePreviewImage {
+    height: 100%;
+    min-height: 130px;
+  }
+
+  .casePreviewCard > div:last-child {
+    padding: 18px 16px;
+  }
+
+  .casePreviewCard strong {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 760px) {
+  .branchSection {
+    padding-bottom: 26px;
+  }
+
+  .caseSection {
+    padding-top: 38px;
+  }
+
+  .caseHeader {
+    margin-bottom: 26px;
+  }
+
+  .caseMoreButton {
+    position: static;
+    width: fit-content;
+    min-width: 230px;
+    margin: 20px auto 0;
+    transform: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .branchHead {
+    display: block;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  .branchHead > div:first-child {
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .branchHead .sectionEyebrow {
+    text-align: center;
+  }
+
+  .branchHead h2 {
+    text-align: center;
+    font-size: 28px;
+  }
+
+  .branchHead > div:first-child > p:last-child {
+    margin: 10px auto 0;
+    text-align: center;
+  }
+}
+
+@media (max-width: 760px) {
+  .heroQuote {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .symptomImageWrap {
+    height: 125px;
+    margin-bottom: 12px;
+  }
+}
+
+@media (max-width: 760px) {
+  .symptomSection {
+    margin-top: 18px !important;
+  }
+}
+
+@media (max-width: 760px) {
+
+  .casePreviewGrid {
+    width: 100%;
+    gap: 10px;
+  }
+
+  .casePreviewCard {
+    display: grid;
+    grid-template-columns: 100px minmax(0, 1fr);
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .casePreviewImage {
+    width: 100px;
+    height: 100%;
+    min-height: 120px;
+    overflow: hidden;
+  }
+
+  .casePreviewImage img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .casePreviewCard > div:last-child {
+    min-width: 0;
+    padding: 14px 12px;
+    overflow: hidden;
+  }
+
+  .casePreviewCard span {
+    font-size: 10px;
+    line-height: 1.35;
+    white-space: normal;
+    word-break: keep-all;
+  }
+
+  .casePreviewCard strong {
+    font-size: 13px;
+    line-height: 1.4;
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+
+  .casePreviewCard small {
+    margin-top: 9px;
+    font-size: 9px;
+    line-height: 1.4;
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+
+  .caseMoreButton {
+    width: calc(100% - 24px);
+    min-width: 0;
+    box-sizing: border-box;
+    padding-left: 10px;
+    padding-right: 10px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+}
+
+
+@media (max-width: 760px) {
+  .surfaceHeroStatic {
+    display: none !important;
+  }
+
+  /* iPad 모바일과 동일하게 메인 제품 이미지는 표시하지 않음 */
+  .heroVisual {
+    display: none !important;
+  }
+}
+
+
+/* ==========================================
+   Surface Mobile 최종 정리
+   iPad 모바일과 동일한 구성
+   ========================================== */
+@media (max-width: 760px) {
+
+  /* PC용 이미지 히어로 숨김 */
+  .surfaceHeroStatic {
+    display: none !important;
+  }
+
+  /* 모바일 메인 영역 반드시 표시 */
+  .page .hero {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: linear-gradient(
+      180deg,
+      #f3f7ff 0%,
+      #f8fbff 65%,
+      #ffffff 100%
+    ) !important;
+    overflow: visible !important;
+  }
+
+  .page .heroInner {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  .page .heroContent {
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 52px 18px 34px !important;
+    text-align: center !important;
+  }
+
+  /* 모바일 메인 제품사진 없음 */
+  .page .heroVisual {
+    display: none !important;
+  }
+
+  .page .eyebrow {
+    display: block !important;
+    margin: 0 auto 22px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: #2563eb !important;
+    font-size: 11px !important;
+    font-weight: 900 !important;
+    letter-spacing: .16em !important;
+    text-align: center !important;
+  }
+
+  .page .title {
+    max-width: 380px !important;
+    margin: 0 auto !important;
+    font-size: 40px !important;
+    line-height: 1.06 !important;
+    letter-spacing: -.06em !important;
+    text-align: center !important;
+    white-space: normal !important;
+  }
+
+  .page .subtitle {
+    margin: 29px auto 0 !important;
+    font-size: 15px !important;
+    line-height: 1.45 !important;
+    text-align: center !important;
+  }
+
+  .page .location {
+    max-width: 350px !important;
+    margin: 19px auto 0 !important;
+    font-size: 12px !important;
+    line-height: 1.55 !important;
+    text-align: center !important;
+  }
+
+  /* 전화 / 톡톡 각각 한 줄 */
+  .page .primaryActions {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 10px !important;
+    margin: 29px 0 0 !important;
+  }
+
+  .page .mainButton {
+    width: 100% !important;
+    min-height: 68px !important;
+    box-sizing: border-box !important;
+    justify-content: center !important;
+    border-radius: 16px !important;
+  }
+
+  .page .mainButton strong {
+    font-size: 16px !important;
+  }
+
+  .page .mainButton small {
+    font-size: 10px !important;
+  }
+
+  .page .onlineActionWrap {
+    width: 100% !important;
+    margin: 11px 0 0 !important;
+  }
+
+  .page .onlineActionButton {
+    width: 100% !important;
+    min-height: 60px !important;
+    box-sizing: border-box !important;
+    border-radius: 16px !important;
+    font-size: 14px !important;
+  }
+
+  .page .secondaryActions {
+    display: flex !important;
+    justify-content: center !important;
+    margin-top: 20px !important;
+    font-size: 11px !important;
+  }
+
+  .surfaceTrustRow,
+  .heroQuote {
+    display: none !important;
+  }
+
+  /* 증상 6개: 모바일은 무조건 한 줄 카드 */
+  .page .symptomSection {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 24px 14px 90px !important;
+    background: #ffffff !important;
+  }
+
+  .page .symptomGrid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 11px !important;
+    width: 100% !important;
+  }
+
+  .page .symptomCard {
+    display: grid !important;
+    grid-template-columns: 110px minmax(0, 1fr) !important;
+    grid-template-rows: auto 1fr !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 126px !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    border-radius: 18px !important;
+  }
+
+  .page .symptomImageWrap {
+    grid-column: 1 !important;
+    grid-row: 1 / 3 !important;
+    width: 110px !important;
+    height: 100% !important;
+    min-height: 126px !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  .page .symptomImage {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+  }
+
+  .page .symptomCard h2 {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    margin: 0 !important;
+    padding: 20px 15px 4px !important;
+    font-size: 14px !important;
+    line-height: 1.35 !important;
+    text-align: left !important;
+    word-break: keep-all !important;
+  }
+
+  .page .symptomCard p {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+    margin: 0 !important;
+    padding: 3px 15px 18px !important;
+    font-size: 10px !important;
+    line-height: 1.5 !important;
+    text-align: left !important;
+    word-break: keep-all !important;
+  }
+}
+
+/* ==========================================
+   Surface Mobile Hero Text FINAL
+   숨겨진 메인 문구 복구
+   ========================================== */
+@media (max-width: 760px) {
+
+  .page .heroContent {
+    display: block !important;
+    padding: 48px 18px 34px !important;
+  }
+
+  .page .eyebrow {
+    display: block !important;
+    width: auto !important;
+    margin: 0 auto 22px !important;
+    padding: 0 !important;
+
+    color: #2563eb !important;
+    background: transparent !important;
+    border: 0 !important;
+
+    font-size: 11px !important;
+    font-weight: 900 !important;
+    letter-spacing: .16em !important;
+    text-align: center !important;
+  }
+
+  .page .title {
+    display: block !important;
+    visibility: visible !important;
+
+    width: 100% !important;
+    max-width: 370px !important;
+    margin: 0 auto !important;
+
+    color: #0f172a !important;
+
+    font-size: 40px !important;
+    line-height: 1.07 !important;
+    font-weight: 950 !important;
+    letter-spacing: -.06em !important;
+
+    text-align: center !important;
+    white-space: normal !important;
+  }
+
+  .page .titleBlue {
+    display: inline !important;
+    color: #2563eb !important;
+  }
+
+  .page .subtitle {
+    display: block !important;
+    visibility: visible !important;
+
+    margin: 29px auto 0 !important;
+
+    color: #111827 !important;
+
+    font-size: 15px !important;
+    line-height: 1.45 !important;
+    font-weight: 900 !important;
+
+    text-align: center !important;
+  }
+
+  .page .location {
+    display: block !important;
+    visibility: visible !important;
+
+    max-width: 350px !important;
+    margin: 19px auto 0 !important;
+
+    color: #64748b !important;
+
+    font-size: 12px !important;
+    line-height: 1.55 !important;
+    font-weight: 750 !important;
+
+    text-align: center !important;
+  }
+
+  .page .primaryActions {
+    margin-top: 30px !important;
+  }
+}
+
+/* ==================================================
+   Surface 모바일 증상영역 = iPad 모바일과 동일
+   ================================================== */
+@media (max-width: 760px) {
+
+  .page .symptomSection {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 22px 12px 90px !important;
+    background: #fff !important;
+  }
+
+  .page .symptomGrid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    width: 100% !important;
+    gap: 0 !important;
+
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 20px !important;
+    overflow: hidden !important;
+    background: #fff !important;
+  }
+
+  .page .symptomCard {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+
+    margin: 0 !important;
+    padding: 10px 8px 16px !important;
+
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+
+  .page .symptomCard:nth-child(odd) {
+    border-right: 1px solid #e2e8f0 !important;
+  }
+
+  .page .symptomCard:nth-child(-n+4) {
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+
+  .page .symptomImageWrap {
+    width: 100% !important;
+    height: 112px !important;
+    min-height: 112px !important;
+    margin: 0 0 11px !important;
+
+    border-radius: 14px !important;
+    overflow: hidden !important;
+  }
+
+  .page .symptomImage {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    object-position: center !important;
+  }
+
+  .page .symptomCard h2 {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 2px !important;
+
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+    font-weight: 900 !important;
+
+    text-align: center !important;
+    word-break: keep-all !important;
+  }
+
+  .page .symptomCard p {
+    display: block !important;
+    margin: 8px 0 0 !important;
+    padding: 0 3px !important;
+
+    color: #94a3b8 !important;
+
+    font-size: 9px !important;
+    line-height: 1.55 !important;
+
+    text-align: center !important;
+    word-break: keep-all !important;
   }
 }
