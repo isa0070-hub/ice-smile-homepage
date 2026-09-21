@@ -2549,18 +2549,23 @@
   }
 }
 
-/* 큰 모니터 Surface 랜딩 폭 확장 */
-@media (min-width: 1600px) {
+
+/* SURFACE DESKTOP WIDTH ALIGN START */
+/* PC에서 히어로와 증상영역 좌우 기준선 통일 */
+@media (min-width: 1101px) {
 
   .surfaceHeroStatic {
-    width: calc(100% - 64px) !important;
-    max-width: 1920px !important;
+    width: calc(100% - 48px) !important;
+    max-width: 1240px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
   }
 
   .symptomSection {
-    width: calc(100% - 64px) !important;
-    max-width: 1680px !important;
+    width: calc(100% - 48px) !important;
+    max-width: 1240px !important;
     margin-left: auto !important;
     margin-right: auto !important;
   }
 }
+/* SURFACE DESKTOP WIDTH ALIGN END */
