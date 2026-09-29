@@ -48,6 +48,7 @@ export function buildTelegramInquiryMessage(inquiry, inquiryId) {
     "🔔 새 온라인 접수",
     "",
     `접수번호: ${telegramSingleLine(String(inquiryId ?? "-"))}`,
+    `접수일시: ${new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", dateStyle: "medium", timeStyle: "medium" }).format(new Date())}`,
     `성함: ${telegramSingleLine(inquiry.customer_name)}`,
     `연락처: ${telegramSingleLine(inquiry.phone)}`,
     `희망지점: ${telegramSingleLine(inquiry.preferred_branch)}`,
@@ -74,6 +75,7 @@ export function buildTelegramInquiryLinkMessage(inquiryId) {
   return [
     "🔔 새 온라인 접수 1건이 등록되었습니다.",
     `접수번호: ${telegramSingleLine(String(inquiryId ?? "-"))}`,
+    `접수일시: ${new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", dateStyle: "medium", timeStyle: "medium" }).format(new Date())}`,
     "고객 정보와 문의 내용은 관리자 화면에서 확인해 주세요.",
     TELEGRAM_ADMIN_URL,
   ].join("\n");
