@@ -118,6 +118,16 @@ export default function PlaceMonitorPage() {
   const d4Tasks = scheduleTasks.filter((task) => task.checkpoint === "D4");
   const d4Completed = d4Tasks.filter((task) => task.status === "COMPLETED").length;
   const d4Registered = d4Tasks.length === 5;
+  const calibrationTasks = scheduleTasks.filter((task) =>
+    task.checkpoint?.startsWith("CAL-"),
+  );
+  const calibrationRounds = Object.values(
+    calibrationTasks.reduce((rounds, task) => {
+      rounds[task.checkpoint] ||= [];
+      rounds[task.checkpoint].push(task);
+      return rounds;
+    }, {}),
+  ).sort((a, b) => new Date(a[0].due_at) - new Date(b[0].due_at));
 
   return (
     <main className={styles.page}>
@@ -198,6 +208,32 @@ export default function PlaceMonitorPage() {
         <p className={styles.scheduleNote}>
           예약 등록과 실제 측정 완료는 별도 상태입니다. 결과가 저장되기 전에는
           D4 순위를 표시하지 않습니다.
+        </p>
+      </section>
+
+      <section className={styles.schedulePanel} aria-labelledby="calibration-title">
+        <div>
+          <p className={styles.eyebrow}>판독 교정 · 한시 운영</p>
+          <h2 id="calibration-title">교정 관측 현재·다음 회차</h2>
+        </div>
+        {calibrationRounds.length ? (
+          <dl>
+            {calibrationRounds.map((round) => (
+              <div key={round[0].checkpoint}>
+                <dt>{round[0].checkpoint}</dt>
+                <dd>
+                  {formatDate(round[0].due_at)} · {round.filter((task) => task.status === "COMPLETED").length}/5 완료
+                </dd>
+              </div>
+            ))}
+          </dl>
+        ) : (
+          <p className={styles.empty}>동기화된 교정 관측 정보가 없습니다.</p>
+        )}
+        <p className={styles.scheduleNote}>
+          2026-10-02까지만 11시·14시·17시에 실행하며 각 센서는 회차당 1회만
+          측정합니다. D7 DB 기준시각과 허용창은 보존하고 실제 자동실행 트리거는
+          2026-10-03 11:00 KST입니다.
         </p>
       </section>
 

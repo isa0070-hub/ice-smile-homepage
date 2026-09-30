@@ -60,6 +60,16 @@ test("the explicitly named D4 additional observation is accepted", () => {
   assert.equal(normalizePlaceMonitorItem(item)?.checkpoint, "D4");
 });
 
+test("bounded classifier calibration checkpoints are accepted", () => {
+  const item = validItem();
+  item.checkpoint = "CAL-20260930-1400";
+  item.experiment_id = "CLASSIFIER-CAL-001";
+  item.source_version = "0.13.1";
+  assert.equal(normalizePlaceMonitorItem(item)?.checkpoint, "CAL-20260930-1400");
+  item.checkpoint = "CAL-unbounded";
+  assert.equal(normalizePlaceMonitorItem(item), null);
+});
+
 test("status-only sync accepts five D4 reservations", () => {
   const tasks = Array.from({ length: 5 }, (_, index) => ({
     task_key: `SURFACE-PHOTO-001:D4:sensor-${index}`,
@@ -84,4 +94,29 @@ test("status-only sync accepts five D4 reservations", () => {
   });
   assert.equal(result.items.length, 0);
   assert.equal(result.observerStatus.schedule_tasks.length, 5);
+});
+
+test("status-only sync accepts rolling calibration rounds within the task cap", () => {
+  const tasks = Array.from({ length: 10 }, (_, index) => ({
+    task_key: `CLASSIFIER-CAL-001:CAL-20260930-${index < 5 ? "1400" : "1700"}:sensor-${index % 5}`,
+    checkpoint: `CAL-20260930-${index < 5 ? "1400" : "1700"}`,
+    sensor_id: `sensor-${index % 5}`,
+    due_at: index < 5 ? "2026-09-30T14:00:00+09:00" : "2026-09-30T17:00:00+09:00",
+    window_start: index < 5 ? "2026-09-30T14:00:00+09:00" : "2026-09-30T17:00:00+09:00",
+    window_end: index < 5 ? "2026-09-30T15:00:00+09:00" : "2026-09-30T18:00:00+09:00",
+    status: "PENDING",
+    measurement_id: null,
+    completed_at: null,
+  }));
+  const result = normalizePlaceMonitorSyncPayload({
+    items: [],
+    observer_status: {
+      source_id: "seolleung-place-observer-v13",
+      source_version: "0.13.1",
+      generated_at: "2026-09-30T13:30:00+09:00",
+      phase: "AUTO_OBSERVATION_ENABLED",
+      schedule_tasks: tasks,
+    },
+  });
+  assert.equal(result.observerStatus.schedule_tasks.length, 10);
 });

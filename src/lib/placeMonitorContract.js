@@ -14,6 +14,7 @@ export const PLACE_MONITOR_STATUSES = new Set([
 const MEASUREMENT_ID_PATTERN = /^mea_[a-f0-9]{16,64}$/u;
 const SENSOR_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/u;
 const CHECKPOINTS = new Set(["D1", "D3", "D4", "D7"]);
+const CALIBRATION_CHECKPOINT_PATTERN = /^CAL-\d{8}-\d{4}$/u;
 const SCHEDULE_STATUSES = new Set(["PENDING", "RUNNING", "COMPLETED", "FAILED"]);
 const MAX_CONDITIONS_BYTES = 2_048;
 const MAX_OBSERVER_STATUS_BYTES = 12_000;
@@ -40,6 +41,10 @@ function isIsoDate(value) {
   );
 }
 
+function isAllowedCheckpoint(value) {
+  return CHECKPOINTS.has(value) || CALIBRATION_CHECKPOINT_PATTERN.test(value);
+}
+
 export function normalizePlaceMonitorItem(value) {
   if (!isPlainObject(value)) return null;
 
@@ -53,7 +58,7 @@ export function normalizePlaceMonitorItem(value) {
   const targetFound = value.target_found;
   const organicRank = value.organic_rank;
   const errorSummary = optionalText(value.error_summary, 300);
-  const checkpoint = optionalText(value.checkpoint, 8);
+  const checkpoint = optionalText(value.checkpoint, 24);
   const experimentId = optionalText(value.experiment_id, 80);
   const sourceVersion = optionalText(value.source_version, 32);
   const searchConditions = value.search_conditions ?? {};
@@ -81,7 +86,7 @@ export function normalizePlaceMonitorItem(value) {
     (!targetFound && organicRank !== null) ||
     errorSummary === undefined ||
     checkpoint === undefined ||
-    (checkpoint !== null && !CHECKPOINTS.has(checkpoint)) ||
+    (checkpoint !== null && !isAllowedCheckpoint(checkpoint)) ||
     experimentId === undefined ||
     sourceVersion === undefined ||
     !isPlainObject(searchConditions) ||
@@ -137,7 +142,7 @@ export function normalizePlaceMonitorObserverStatus(value) {
 
   const normalizedTasks = tasks.map((task) => {
     if (!isPlainObject(task)) return null;
-    const checkpoint = optionalText(task.checkpoint, 8);
+    const checkpoint = optionalText(task.checkpoint, 24);
     const measurementId = optionalText(task.measurement_id, 80);
     const completedAt = task.completed_at || null;
     if (
@@ -145,7 +150,7 @@ export function normalizePlaceMonitorObserverStatus(value) {
       task.task_key.length > 160 ||
       checkpoint === null ||
       checkpoint === undefined ||
-      !CHECKPOINTS.has(checkpoint) ||
+      !isAllowedCheckpoint(checkpoint) ||
       typeof task.sensor_id !== "string" ||
       !SENSOR_ID_PATTERN.test(task.sensor_id) ||
       !isIsoDate(task.due_at) ||
