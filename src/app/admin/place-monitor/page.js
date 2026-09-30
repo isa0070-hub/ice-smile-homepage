@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import PlaceMonitorAnalysisCopy from "@/components/PlaceMonitorAnalysisCopy";
 import { adminFetch } from "@/lib/adminClient";
 import styles from "./page.module.css";
 
@@ -59,6 +60,7 @@ export default function PlaceMonitorPage() {
     limits: {},
   });
   const [history, setHistory] = useState([]);
+  const [historyScope, setHistoryScope] = useState("이력 미조회");
   const [sensor, setSensor] = useState("");
   const [loadingLatest, setLoadingLatest] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -84,10 +86,14 @@ export default function PlaceMonitorPage() {
   const loadHistory = useCallback(async () => {
     setLoadingHistory(true);
     try {
+      const requestedSensor = sensor;
       const params = new URLSearchParams({ mode: "history", limit: "50" });
-      if (sensor) params.set("sensor", sensor);
+      if (requestedSensor) params.set("sensor", requestedSensor);
       const result = await adminFetch(`/api/admin/place-monitor?${params}`);
       setHistory(result.items || []);
+      setHistoryScope(
+        requestedSensor ? SENSOR_LABELS[requestedSensor] || requestedSensor : "전체 센서",
+      );
       setError("");
     } catch (requestError) {
       setError(requestError.message || "과거 기록을 불러오지 못했습니다.");
@@ -189,6 +195,13 @@ export default function PlaceMonitorPage() {
           </p>
         </section>
       ) : null}
+
+      <PlaceMonitorAnalysisCopy
+        dashboard={dashboard}
+        history={history}
+        selectedSensorFilter={sensor ? SENSOR_LABELS[sensor] || sensor : "전체 센서"}
+        historyScope={historyScope}
+      />
 
       <section className={styles.schedulePanel} aria-labelledby="schedule-title">
         <div>

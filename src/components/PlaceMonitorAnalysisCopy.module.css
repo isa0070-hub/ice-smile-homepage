@@ -1,0 +1,124 @@
+.panel {
+  max-width: 1180px;
+  margin: 0 auto 34px;
+  padding: 24px;
+  border: 1px solid #cbd9ee;
+  border-radius: 20px;
+  color: #14233a;
+  background: linear-gradient(135deg, #f7fbff, #ffffff 62%);
+  box-shadow: 0 14px 34px rgba(25, 49, 84, 0.06);
+}
+
+.heading {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.8fr) minmax(300px, 1.2fr);
+  gap: 24px;
+  align-items: end;
+}
+
+.heading h2 {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: -0.04em;
+}
+
+.heading > p {
+  margin: 0;
+  color: #607089;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: #3375de;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.question {
+  display: grid;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.question > span,
+.fallback > span {
+  color: #304561;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.question small {
+  margin-left: 5px;
+  color: #748196;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.question textarea,
+.fallback textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #cfd9e7;
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: #1f334e;
+  background: #fff;
+  font: inherit;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.question em {
+  color: #758399;
+  font-size: 12px;
+  font-style: normal;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.actions button {
+  border: 0;
+  border-radius: 11px;
+  padding: 12px 18px;
+  color: #fff;
+  background: #173f78;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.actions button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.actions span {
+  color: #53647b;
+  font-size: 13px;
+}
+
+.fallback {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.fallback textarea {
+  min-height: 260px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 760px) {
+  .heading { grid-template-columns: 1fr; gap: 10px; }
+  .actions { align-items: stretch; flex-direction: column; }
+}
