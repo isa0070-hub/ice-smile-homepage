@@ -147,6 +147,21 @@ export default function AdminPage() {
               선릉점·강변점 키워드 및 플레이스 광고를 확인합니다.
             </p>
           </button>
+
+          <button
+            type="button"
+            onClick={() => go("/admin/place-monitor")}
+            style={analyticsMenuCardStyle}
+          >
+            <span style={menuIconStyle}>🧭</span>
+
+            <strong>선릉 플레이스 자연순위</strong>
+
+            <p style={menuDescriptionStyle}>
+              맥북 측정 프로그램이 만든 자연순위 요약과 측정 상태를
+              확인합니다.
+            </p>
+          </button>
         </div>
       </section>
 

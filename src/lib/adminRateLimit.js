@@ -70,6 +70,13 @@ async function consumeLimit(rateKey, limit) {
 }
 
 export async function consumeAdminLoginRateLimits(request) {
+  if (
+    process.env.NODE_ENV !== "production" &&
+    process.env.ADMIN_LOCAL_TEST_MODE === "1"
+  ) {
+    return { allowed: true, retryAfter: 0, rateKeys: [] };
+  }
+
   const rateKey = makeRateKey(
     IP_RATE_LIMIT.scope,
     getClientIp(request),
