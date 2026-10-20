@@ -1,4 +1,9 @@
 import { requireAdminRequest } from "@/lib/adminApi";
+import {
+  classifyNaverAdgroup,
+  combineNaverAdStats,
+  sameNaverAdStat,
+} from "@/lib/naverAdsReport";
 import crypto from "crypto";
 import { NextResponse } from "next/server";
 
@@ -160,56 +165,6 @@ async function getAdgroups(credentials) {
   return groups;
 }
 
-function classify(account, group) {
-  if (account === "main") {
-    if (group.campaignType === "PLACE") {
-      return {
-        branch: "gangbyeon",
-        adType: "place",
-      };
-    }
-
-    if (
-      group.name.includes("강변") ||
-      group.campaignName.includes("강변")
-    ) {
-      return {
-        branch: "gangbyeon",
-        adType: "keyword",
-      };
-    }
-
-    if (
-      group.name.includes("선릉") ||
-      group.campaignName === "파워링크#1"
-    ) {
-      return {
-        branch: "seolleung",
-        adType: "keyword",
-      };
-    }
-  }
-
-  if (account === "seolleung") {
-    if (group.campaignType === "PLACE") {
-      return {
-        branch: "seolleung",
-        adType: "place",
-      };
-    }
-
-    return {
-      branch: "seolleung",
-      adType: "other",
-    };
-  }
-
-  return {
-    branch: "unknown",
-    adType: "other",
-  };
-}
-
 function emptyStat() {
   return {
     impressions: 0,
@@ -342,7 +297,7 @@ async function collectAccount(
 
   for (const group of groups) {
     const classification =
-      classify(account, group);
+      classifyNaverAdgroup(account, group);
 
     const rawDaily =
       await getPeriodStats(
@@ -492,6 +447,12 @@ function buildDailySummary(
           row.branch === "gangbyeon"
       );
 
+    const shared =
+      trackedRows.filter(
+        (row) =>
+          row.branch === "shared"
+      );
+
     return {
       date,
 
@@ -512,6 +473,9 @@ function buildDailySummary(
 
         gangbyeon:
           summarize(gangbyeon),
+
+        shared:
+          summarize(shared),
       },
     };
   });
@@ -632,6 +596,12 @@ export async function GET(request) {
           row.branch === "gangbyeon"
       );
 
+    const shared =
+      trackedRows.filter(
+        (row) =>
+          row.branch === "shared"
+      );
+
     const daily =
       buildDailySummary(
         rows,
@@ -662,41 +632,53 @@ export async function GET(request) {
         daily.map((day) => day.unclassified)
       );
 
-    function sameStat(a, b) {
-      return (
-        a.impressions === b.impressions &&
-        a.clicks === b.clicks &&
-        a.cost === b.cost &&
-        a.conversions === b.conversions
+    const partitionTotal =
+      combineNaverAdStats(
+        trackedTotal,
+        unclassified
       );
-    }
+
+    const branchTotal =
+      combineNaverAdStats(
+        summarize(seolleung),
+        summarize(gangbyeon),
+        summarize(shared)
+      );
 
     const validation = {
       passed:
-        sameStat(total, dailyTotal) &&
-        sameStat(
+        sameNaverAdStat(total, dailyTotal) &&
+        sameNaverAdStat(
           trackedTotal,
           dailyTrackedTotal
         ) &&
-        sameStat(
+        sameNaverAdStat(
           unclassified,
           dailyUnclassified
-        ),
+        ) &&
+        sameNaverAdStat(total, partitionTotal) &&
+        sameNaverAdStat(trackedTotal, branchTotal),
 
       totalMatchesDaily:
-        sameStat(total, dailyTotal),
+        sameNaverAdStat(total, dailyTotal),
 
       trackedMatchesDaily:
-        sameStat(
+        sameNaverAdStat(
           trackedTotal,
           dailyTrackedTotal
         ),
 
       unclassifiedMatchesDaily:
-        sameStat(
+        sameNaverAdStat(
           unclassified,
           dailyUnclassified
         ),
+
+      totalMatchesPartition:
+        sameNaverAdStat(total, partitionTotal),
+
+      trackedMatchesBranches:
+        sameNaverAdStat(trackedTotal, branchTotal),
 
       totalCost:
         total.cost,
@@ -727,10 +709,10 @@ export async function GET(request) {
       // 두 네이버 광고계정 전체
       total,
 
-      // 선릉/강변으로 정상 분류된 광고
+      // 선릉/강변/공통으로 정상 분류된 광고
       trackedTotal,
 
-      // 아직 분류하지 않은 캠페인
+      // 아직 분류하지 않은 캠페인/광고그룹
       unclassified,
 
       validation,
@@ -779,6 +761,31 @@ export async function GET(request) {
           place:
             summarize(
               gangbyeon.filter(
+                (row) =>
+                  row.adType ===
+                  "place"
+              )
+            ),
+        },
+
+        shared: {
+          total:
+            summarize(
+              shared
+            ),
+
+          keyword:
+            summarize(
+              shared.filter(
+                (row) =>
+                  row.adType ===
+                  "keyword"
+              )
+            ),
+
+          place:
+            summarize(
+              shared.filter(
                 (row) =>
                   row.adType ===
                   "place"

@@ -2,6 +2,12 @@ import "server-only";
 
 import { BetaAnalyticsDataClient } from "@google-analytics/data";
 import { supabase } from "@/lib/supabase";
+import {
+  classifyPaidPortal,
+  classifyPortal,
+  isOrganicTraffic,
+  isPaidTraffic,
+} from "@/lib/trafficClassification";
 
 const PERIOD_CONFIG = {
   yesterday: {
@@ -21,28 +27,6 @@ const PERIOD_CONFIG = {
   },
 };
 
-const PAID_CHANNELS = new Set([
-  "Paid Search",
-  "Cross-network",
-  "Display",
-  "Paid Social",
-  "Paid Video",
-  "Paid Shopping",
-  "Other Advertising",
-]);
-
-const PAID_MEDIUMS = new Set([
-  "cpc",
-  "ppc",
-  "paid",
-  "paidsearch",
-  "paid_search",
-  "display",
-  "cpm",
-  "cpv",
-  "cpa",
-]);
-
 const INQUIRY_EVENT_NAMES = [
   "phone_list_open",
   "phone_click",
@@ -58,10 +42,6 @@ let analyticsClient = null;
 
 function cleanText(value = "") {
   return String(value || "").trim();
-}
-
-function normalize(value = "") {
-  return cleanText(value).toLowerCase();
 }
 
 function getGa4PropertyId() {
@@ -137,63 +117,6 @@ function getAnalyticsClient() {
   });
 
   return analyticsClient;
-}
-
-function isOrganicTraffic(channel, medium) {
-  return (
-    channel === "Organic Search" ||
-    normalize(medium) === "organic"
-  );
-}
-
-function isPaidTraffic(channel, medium) {
-  const normalizedMedium = normalize(medium);
-
-  return (
-    PAID_CHANNELS.has(channel) ||
-    PAID_MEDIUMS.has(normalizedMedium)
-  );
-}
-
-function classifyPortal(source = "") {
-  const normalizedSource = normalize(source);
-
-  if (normalizedSource.includes("naver")) {
-    return "naver";
-  }
-
-  if (normalizedSource.includes("google")) {
-    return "google";
-  }
-
-  return "other";
-}
-
-function classifyPaidPortal({
-  source = "",
-  channel = "",
-  campaign = "",
-}) {
-  const normalizedSource = normalize(source);
-  const normalizedCampaign = normalize(campaign);
-
-  // UTM 캠페인이 powerlink로 확인되는 경우만 파워링크
-  if (
-    normalizedSource.includes("naver") &&
-    normalizedCampaign.includes("powerlink")
-  ) {
-    return "naver";
-  }
-
-  // Google의 검색광고로 확실히 분류된 경우
-  if (
-    normalizedSource.includes("google") &&
-    channel === "Paid Search"
-  ) {
-    return "google";
-  }
-
-  return "other";
 }
 
 function normalizeLandingPath(value = "") {
@@ -385,9 +308,6 @@ export async function getSearchTrafficSummary(
     const medium =
       row.dimensionValues?.[2]?.value || "";
     
-    const campaign =
-      row.dimensionValues?.[3]?.value || "";
-    
     const landingPath = normalizeLandingPath(
       row.dimensionValues?.[4]?.value || ""
     );
@@ -421,7 +341,7 @@ export async function getSearchTrafficSummary(
       const paidPortal = classifyPaidPortal({
         source,
         channel,
-        campaign,
+        medium,
       });
 
       paid.total += sessions;

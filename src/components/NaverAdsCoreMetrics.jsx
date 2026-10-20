@@ -75,6 +75,7 @@ export default function NaverAdsCoreMetrics({
   until,
   total,
   branches,
+  unclassified,
 }) {
   const [conversion, setConversion] =
     useState(null);
@@ -87,47 +88,45 @@ export default function NaverAdsCoreMetrics({
 
   const keywordTotals =
     useMemo(() => {
-      const seolleung =
-        branches?.seolleung?.keyword || {};
-
-      const gangbyeon =
-        branches?.gangbyeon?.keyword || {};
+      const rows = Object.values(branches || {}).map(
+        (branch) => branch?.keyword || {}
+      );
 
       return {
-        impressions:
-          Number(seolleung.impressions || 0) +
-          Number(gangbyeon.impressions || 0),
-
-        clicks:
-          Number(seolleung.clicks || 0) +
-          Number(gangbyeon.clicks || 0),
-
-        cost:
-          Number(seolleung.cost || 0) +
-          Number(gangbyeon.cost || 0),
+        impressions: rows.reduce(
+          (sum, row) => sum + Number(row.impressions || 0),
+          0
+        ),
+        clicks: rows.reduce(
+          (sum, row) => sum + Number(row.clicks || 0),
+          0
+        ),
+        cost: rows.reduce(
+          (sum, row) => sum + Number(row.cost || 0),
+          0
+        ),
       };
     }, [branches]);
 
   const placeTotals =
     useMemo(() => {
-      const seolleung =
-        branches?.seolleung?.place || {};
-
-      const gangbyeon =
-        branches?.gangbyeon?.place || {};
+      const rows = Object.values(branches || {}).map(
+        (branch) => branch?.place || {}
+      );
 
       return {
-        impressions:
-          Number(seolleung.impressions || 0) +
-          Number(gangbyeon.impressions || 0),
-
-        clicks:
-          Number(seolleung.clicks || 0) +
-          Number(gangbyeon.clicks || 0),
-
-        cost:
-          Number(seolleung.cost || 0) +
-          Number(gangbyeon.cost || 0),
+        impressions: rows.reduce(
+          (sum, row) => sum + Number(row.impressions || 0),
+          0
+        ),
+        clicks: rows.reduce(
+          (sum, row) => sum + Number(row.clicks || 0),
+          0
+        ),
+        cost: rows.reduce(
+          (sum, row) => sum + Number(row.cost || 0),
+          0
+        ),
       };
     }, [branches]);
 
@@ -231,7 +230,7 @@ export default function NaverAdsCoreMetrics({
             color: "#475569",
           }}
         >
-          키워드 {won(keywordTotals.cost)} · 플레이스 {won(placeTotals.cost)}
+          키워드 {won(keywordTotals.cost)} · 플레이스 {won(placeTotals.cost)} · 미분류 {won(unclassified?.cost)}
         </div>
       </div>
 

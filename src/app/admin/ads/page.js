@@ -18,6 +18,34 @@ function periodLabel(period) {
   return "어제";
 }
 
+function kstTimestamp(value) {
+  if (!value) return "확인 불가";
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(new Date(value));
+}
+
+function branchLabel(branch) {
+  if (branch === "seolleung") return "선릉점";
+  if (branch === "gangbyeon") return "강변점";
+  if (branch === "shared") return "공통 · 미지정";
+  return "미분류";
+}
+
+function adTypeLabel(adType) {
+  if (adType === "keyword") return "키워드";
+  if (adType === "place") return "플레이스";
+  return "미분류";
+}
+
 function MetricCard({ title, value }) {
   return (
     <div
@@ -214,10 +242,16 @@ export default async function AdsDashboard({
     ? params.period
     : "yesterday";
 
-  const baseUrl =
-    process.env.VERCEL_PROJECT_PRODUCTION_URL
-      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-      : "https://www.ismileagain.co.kr";
+  const previewHost =
+    process.env.VERCEL_ENV === "preview"
+      ? process.env.VERCEL_URL
+      : null;
+
+  const baseUrl = previewHost
+    ? `https://${previewHost}`
+    : process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : "https://www.ismileagain.co.kr";
 
   let data;
   let error;
@@ -266,13 +300,14 @@ export default async function AdsDashboard({
     );
   }
 
-  const { total, branches } = data;
+  const {
+    total,
+    branches,
+    unclassified,
+    validation,
+  } = data;
 
-  const visibleDetails = data.details.filter(
-    (row) =>
-      row.adType === "keyword" ||
-      row.adType === "place"
-  );
+  const visibleDetails = data.details;
 
   return (
     <main
@@ -321,6 +356,16 @@ export default async function AdsDashboard({
               {" · "}
               {periodLabel(period)}
             </div>
+
+            <div
+              style={{
+                marginTop: 5,
+                color: "#475569",
+                fontSize: 13,
+              }}
+            >
+              데이터 기준일 {data.until} (KST) · API 조회 {kstTimestamp(data.generatedAt)} KST
+            </div>
           </div>
 
           <div
@@ -359,7 +404,9 @@ export default async function AdsDashboard({
                 fontSize: 13,
               }}
             >
-              API 연결 정상
+              {validation?.passed
+                ? "API 연결 · 합계 검증 정상"
+                : "API 연결 정상 · 합계 확인 필요"}
             </div>
           </div>
         </div>
@@ -407,6 +454,7 @@ export default async function AdsDashboard({
           until={data.until}
           total={total}
           branches={branches}
+          unclassified={unclassified}
         />
 
         <AdAttributionSummary
@@ -432,6 +480,61 @@ export default async function AdsDashboard({
             title="강변점"
             data={branches.gangbyeon}
           />
+
+          <BranchTable
+            title="공통 · 미지정 지점"
+            data={branches.shared}
+          />
+        </div>
+
+        <div
+          style={{
+            marginBottom: 22,
+            padding: 20,
+            borderRadius: 16,
+            background: unclassified.cost > 0
+              ? "#fff7ed"
+              : "#f8fafc",
+            border: unclassified.cost > 0
+              ? "1px solid #fdba74"
+              : "1px solid #e2e8f0",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 18,
+              fontWeight: 800,
+              color: "#111827",
+              marginBottom: 6,
+            }}
+          >
+            미분류 광고 (항상 표시)
+          </div>
+
+          <div
+            style={{
+              color: "#64748b",
+              fontSize: 13,
+              lineHeight: 1.6,
+              marginBottom: 14,
+            }}
+          >
+            지점 또는 광고 유형 규칙에 아직 연결되지 않은 실적입니다. 전체 합계에는 포함되며 숨기지 않습니다.
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(160px, 1fr))",
+              gap: 12,
+            }}
+          >
+            <MetricCard title="광고비" value={won(unclassified.cost)} />
+            <MetricCard title="노출" value={num(unclassified.impressions)} />
+            <MetricCard title="클릭" value={num(unclassified.clicks)} />
+            <MetricCard title="전환" value={num(unclassified.conversions)} />
+          </div>
         </div>
 
         <div
@@ -511,15 +614,11 @@ export default async function AdsDashboard({
                     }}
                   >
                     <td style={{ padding: 12 }}>
-                      {row.branch === "seolleung"
-                        ? "선릉점"
-                        : "강변점"}
+                      {branchLabel(row.branch)}
                     </td>
 
                     <td style={{ padding: 12 }}>
-                      {row.adType === "keyword"
-                        ? "키워드"
-                        : "플레이스"}
+                      {adTypeLabel(row.adType)}
                     </td>
 
                     <td
