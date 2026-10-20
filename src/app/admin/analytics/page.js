@@ -3,6 +3,10 @@ import { redirect } from "next/navigation";
 import { hasAdminServerSession } from "@/lib/adminApi";
 import { getSearchTrafficSummary } from "@/lib/ga4Analytics";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import {
+  buildAdTrafficComparison,
+  getKstPeriodRange,
+} from "@/lib/adminAnalyticsComparison";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,49 +35,12 @@ const PERIODS = [
   },
 ];
 
-const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 const MAX_AD_CLICK_ROWS = 5000;
 
 function formatNumber(value) {
   return Number(value || 0).toLocaleString("ko-KR");
-}
-
-function getPeriodRange(periodKey) {
-  const now = new Date();
-  const shiftedNow = new Date(
-    now.getTime() + KST_OFFSET_MS
-  );
-
-  const startOfToday = new Date(
-    Date.UTC(
-      shiftedNow.getUTCFullYear(),
-      shiftedNow.getUTCMonth(),
-      shiftedNow.getUTCDate()
-    ) - KST_OFFSET_MS
-  );
-
-  if (periodKey === "yesterday") {
-    return {
-      start: new Date(
-        startOfToday.getTime() - DAY_MS
-      ),
-      end: new Date(startOfToday.getTime() - 1),
-      label: "전일",
-    };
-  }
-
-  const days = periodKey === "30d" ? 30 : 7;
-
-  return {
-    start: new Date(
-      startOfToday.getTime() -
-        (days - 1) * DAY_MS
-    ),
-    end: now,
-    label: `최근 ${days}일`,
-  };
 }
 
 function formatDateTime(value) {
@@ -597,7 +564,7 @@ function analyzeNaverAdClicks(rows) {
 async function getNaverAdClickAnalysis(
   periodKey
 ) {
-  const range = getPeriodRange(periodKey);
+  const range = getKstPeriodRange(periodKey);
   const rows = [];
   const pageSize = 1000;
 
@@ -666,6 +633,7 @@ async function getNaverAdClickAnalysis(
 
   return {
     ...analyzeNaverAdClicks(rows),
+    periodKey,
     periodLabel: range.label,
     reachedLimit:
       rows.length >= MAX_AD_CLICK_ROWS,
@@ -1397,6 +1365,14 @@ export default async function AdminAnalyticsPage({
     );
   }
 
+  const adTrafficComparison =
+    buildAdTrafficComparison({
+      ga4PaidSessions: analytics.paid.total,
+      ga4PeriodKey: analytics.periodKey,
+      websiteAnalysis: adClickAnalysis,
+      websiteError: adClickError,
+    });
+
   return (
     <main style={pageStyle}>
       <div style={containerStyle}>
@@ -1502,6 +1478,96 @@ export default async function AdminAnalyticsPage({
             value={analytics.paid.total}
             description="파워링크와 검색광고 유입"
           />
+        </section>
+
+        <section style={comparisonSectionStyle}>
+          <div style={comparisonHeadingStyle}>
+            <div>
+              <h2 style={sectionTitleStyle}>
+                광고 유입 두 기준
+              </h2>
+
+              <p style={sectionDescriptionStyle}>
+                같은 선택 기간을 GA4 세션과 홈페이지
+                도착 기록으로 각각 확인합니다.
+              </p>
+            </div>
+
+            <span style={comparisonPeriodStyle}>
+              {adTrafficComparison.samePeriod
+                ? "동일 기간 · 홈페이지 기록 KST"
+                : "기간 또는 원본 확인 필요"}
+            </span>
+          </div>
+
+          <div style={comparisonGridStyle}>
+            <div style={comparisonCardStyle}>
+              <p style={comparisonLabelStyle}>
+                GA4 유료 세션
+              </p>
+
+              <strong style={comparisonValueStyle}>
+                {adTrafficComparison.ga4Available
+                  ? `${formatNumber(
+                      adTrafficComparison.ga4PaidSessions
+                    )}회`
+                  : "확인 불가"}
+              </strong>
+
+              <p style={comparisonDescriptionStyle}>
+                GA4가 유료 채널·매체로 귀속한 세션
+              </p>
+            </div>
+
+            <div style={comparisonCardStyle}>
+              <p style={comparisonLabelStyle}>
+                홈페이지 광고 유입 기록
+              </p>
+
+              <strong style={comparisonValueStyle}>
+                {adTrafficComparison.websiteAvailable
+                  ? `${formatNumber(
+                      adTrafficComparison.websiteAdVisits
+                    )}건`
+                  : "확인 불가"}
+              </strong>
+
+              <p style={comparisonDescriptionStyle}>
+                NaPm·n_* 등 광고 표지가 있는 홈페이지
+                도착 기록
+                {adTrafficComparison.duplicateVisitCount > 0
+                  ? ` · 동일 클릭 중복 ${formatNumber(
+                      adTrafficComparison.duplicateVisitCount
+                    )}건 제외`
+                  : " · 동일 클릭 중복 제외 기준"}
+              </p>
+            </div>
+          </div>
+
+          <div
+            style={
+              adTrafficComparison.showAttributionWarning
+                ? comparisonWarningStyle
+                : comparisonNoticeStyle
+            }
+          >
+            {adTrafficComparison.showAttributionWarning ? (
+              <>
+                <strong>
+                  GA4 유료 세션은 0이지만 홈페이지 광고
+                  유입 기록이 있습니다.
+                </strong>{" "}
+                UTM 누락이나 GA4 채널 귀속 차이를 함께
+                확인해야 하며, 실제 광고 방문이 없었다는
+                뜻은 아닙니다.
+              </>
+            ) : (
+              <>
+                두 값은 집계 단위와 중복 처리 기준이 달라
+                합산하거나 1:1로 비교하지 않습니다.
+              </>
+            )}
+          </div>
         </section>
 
         {!analytics.hasData && (
@@ -1725,6 +1791,87 @@ const inquirySectionStyle = {
   borderRadius: "22px",
   background: "#eff6ff",
   border: "1px solid #bfdbfe",
+};
+
+const comparisonSectionStyle = {
+  marginTop: "22px",
+  padding: "24px",
+  borderRadius: "22px",
+  background: "#ffffff",
+  border: "1px solid #cbd5e1",
+  boxShadow:
+    "0 10px 26px rgba(15, 23, 42, 0.05)",
+};
+
+const comparisonHeadingStyle = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: "16px",
+  flexWrap: "wrap",
+};
+
+const comparisonPeriodStyle = {
+  display: "inline-block",
+  padding: "7px 10px",
+  borderRadius: "999px",
+  background: "#f1f5f9",
+  color: "#475569",
+  fontSize: "12px",
+  fontWeight: "900",
+};
+
+const comparisonGridStyle = {
+  display: "grid",
+  gridTemplateColumns:
+    "repeat(auto-fit, minmax(230px, 1fr))",
+  gap: "14px",
+};
+
+const comparisonCardStyle = {
+  padding: "20px",
+  borderRadius: "17px",
+  background: "#f8fafc",
+  border: "1px solid #e2e8f0",
+};
+
+const comparisonLabelStyle = {
+  margin: "0 0 12px",
+  color: "#475569",
+  fontSize: "14px",
+  fontWeight: "900",
+};
+
+const comparisonValueStyle = {
+  display: "block",
+  color: "#0f172a",
+  fontSize: "34px",
+  lineHeight: 1.1,
+};
+
+const comparisonDescriptionStyle = {
+  margin: "13px 0 0",
+  color: "#64748b",
+  fontSize: "13px",
+  lineHeight: 1.65,
+};
+
+const comparisonNoticeStyle = {
+  marginTop: "14px",
+  padding: "14px 16px",
+  borderRadius: "14px",
+  background: "#eff6ff",
+  border: "1px solid #bfdbfe",
+  color: "#1e3a8a",
+  fontSize: "14px",
+  lineHeight: 1.7,
+};
+
+const comparisonWarningStyle = {
+  ...comparisonNoticeStyle,
+  background: "#fff7ed",
+  borderColor: "#fed7aa",
+  color: "#9a3412",
 };
 
 const metricCardStyle = {
