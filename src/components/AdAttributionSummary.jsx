@@ -14,17 +14,16 @@ export default function AdAttributionSummary({
   since,
   until,
 }) {
-  const [data, setData] =
-    useState(null);
+  const rangeKey = `${since}:${until}`;
 
-  const [error, setError] =
-    useState("");
+  const [result, setResult] = useState({
+    rangeKey: "",
+    data: null,
+    error: "",
+  });
 
   useEffect(() => {
     let active = true;
-
-    setData(null);
-    setError("");
 
     fetch(
       `/api/admin/ad-attribution?since=${encodeURIComponent(
@@ -56,24 +55,40 @@ export default function AdAttributionSummary({
       .then((result) => {
         if (!active) return;
 
-        setData(
-          result?.data ||
-          result
-        );
+        setResult({
+          rangeKey,
+          data:
+            result?.data ||
+            result,
+          error: "",
+        });
       })
       .catch((e) => {
         if (!active) return;
 
-        setError(
-          e?.message ||
-            "조회 실패"
-        );
+        setResult({
+          rangeKey,
+          data: null,
+          error:
+            e?.message ||
+            "조회 실패",
+        });
       });
 
     return () => {
       active = false;
     };
-  }, [since, until]);
+  }, [since, until, rangeKey]);
+
+  const current =
+    result.rangeKey === rangeKey
+      ? result
+      : {
+          data: null,
+          error: "",
+        };
+
+  const { data, error } = current;
 
   if (error) {
     return null;
@@ -115,7 +130,7 @@ export default function AdAttributionSummary({
           marginBottom: 12,
         }}
       >
-        홈페이지 실측 문의행동
+        홈페이지 실측 문의행동 · 전체 캠페인
       </div>
 
       <div
@@ -152,8 +167,7 @@ export default function AdAttributionSummary({
           fontSize: 12,
         }}
       >
-        광고 클릭 이후 홈페이지에서 실제 발생한 행동만 집계 ·
-        배포 이후 데이터부터 누적
+        광고그룹 보기 필터와 무관하게 전체 홈페이지 광고 유입에서 실제 발생한 행동만 집계 · 배포 이후 데이터부터 누적
       </div>
 
       {data.keywords?.length > 0 ? (

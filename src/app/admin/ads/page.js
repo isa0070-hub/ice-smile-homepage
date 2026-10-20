@@ -1,16 +1,8 @@
 import { headers } from "next/headers";
 import NaverAdsAnalysisCopyButton from "@/components/NaverAdsAnalysisCopyButton";
-import NaverAdsCoreMetrics from "@/components/NaverAdsCoreMetrics";
 import AdAttributionSummary from "@/components/AdAttributionSummary";
+import NaverAdsScopeReport from "@/components/NaverAdsScopeReport";
 export const dynamic = "force-dynamic";
-
-function won(value = 0) {
-  return `${Number(value).toLocaleString("ko-KR")}원`;
-}
-
-function num(value = 0) {
-  return Number(value).toLocaleString("ko-KR");
-}
 
 function periodLabel(period) {
   if (period === "7d") return "최근 7일";
@@ -33,52 +25,6 @@ function kstTimestamp(value) {
   }).format(new Date(value));
 }
 
-function branchLabel(branch) {
-  if (branch === "seolleung") return "선릉점";
-  if (branch === "gangbyeon") return "강변점";
-  if (branch === "shared") return "공통 · 미지정";
-  return "미분류";
-}
-
-function adTypeLabel(adType) {
-  if (adType === "keyword") return "키워드";
-  if (adType === "place") return "플레이스";
-  return "미분류";
-}
-
-function MetricCard({ title, value }) {
-  return (
-    <div
-      style={{
-        background: "#fff",
-        border: "1px solid #e5e7eb",
-        borderRadius: 16,
-        padding: 22,
-      }}
-    >
-      <div
-        style={{
-          fontSize: 14,
-          color: "#6b7280",
-          marginBottom: 10,
-        }}
-      >
-        {title}
-      </div>
-
-      <div
-        style={{
-          fontSize: 28,
-          fontWeight: 800,
-          color: "#111827",
-        }}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
-
 function PeriodButton({ href, active, children }) {
   return (
     <a
@@ -99,135 +45,6 @@ function PeriodButton({ href, active, children }) {
     >
       {children}
     </a>
-  );
-}
-
-function BranchTable({ title, data }) {
-  const rows = [
-    ["키워드 광고", data.keyword],
-    ["플레이스 광고", data.place],
-    ["지점 합계", data.total],
-  ];
-
-  return (
-    <div
-      style={{
-        background: "#fff",
-        border: "1px solid #e5e7eb",
-        borderRadius: 16,
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          padding: "18px 20px",
-          fontSize: 20,
-          fontWeight: 800,
-          borderBottom: "1px solid #e5e7eb",
-        }}
-      >
-        {title}
-      </div>
-
-      <div style={{ overflowX: "auto" }}>
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            minWidth: 620,
-          }}
-        >
-          <thead>
-            <tr style={{ background: "#f9fafb" }}>
-              {[
-                "구분",
-                "광고비",
-                "노출",
-                "클릭",
-                "평균 CPC",
-                "전환",
-              ].map((h) => (
-                <th
-                  key={h}
-                  style={{
-                    padding: 13,
-                    fontSize: 13,
-                    color: "#6b7280",
-                    textAlign:
-                      h === "구분" ? "left" : "right",
-                  }}
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-
-          <tbody>
-            {rows.map(([label, row], index) => (
-              <tr
-                key={label}
-                style={{
-                  borderTop: "1px solid #f1f5f9",
-                  fontWeight: index === 2 ? 800 : 500,
-                  background:
-                    index === 2 ? "#f9fafb" : "#fff",
-                }}
-              >
-                <td style={{ padding: 14 }}>
-                  {label}
-                </td>
-
-                <td
-                  style={{
-                    padding: 14,
-                    textAlign: "right",
-                  }}
-                >
-                  {won(row.cost)}
-                </td>
-
-                <td
-                  style={{
-                    padding: 14,
-                    textAlign: "right",
-                  }}
-                >
-                  {num(row.impressions)}
-                </td>
-
-                <td
-                  style={{
-                    padding: 14,
-                    textAlign: "right",
-                  }}
-                >
-                  {num(row.clicks)}
-                </td>
-
-                <td
-                  style={{
-                    padding: 14,
-                    textAlign: "right",
-                  }}
-                >
-                  {won(row.avgCpc)}
-                </td>
-
-                <td
-                  style={{
-                    padding: 14,
-                    textAlign: "right",
-                  }}
-                >
-                  {num(row.conversions)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
   );
 }
 
@@ -300,14 +117,23 @@ export default async function AdsDashboard({
     );
   }
 
-  const {
-    total,
-    branches,
-    unclassified,
-    validation,
-  } = data;
+  const { validation } = data;
 
-  const visibleDetails = data.details;
+  const scopeDetails = data.details.map((row) => ({
+    account: row.account,
+    branch: row.branch,
+    adType: row.adType,
+    campaignId: row.campaignId,
+    campaignName: row.campaignName,
+    adgroupId: row.adgroupId,
+    adgroupName: row.adgroupName,
+    status: row.status,
+    impressions: row.impressions,
+    clicks: row.clicks,
+    cost: row.cost,
+    conversions: row.conversions,
+    avgCpc: row.avgCpc,
+  }));
 
   return (
     <main
@@ -449,245 +275,14 @@ export default async function AdsDashboard({
           <NaverAdsAnalysisCopyButton />
         </div>
 
-        <NaverAdsCoreMetrics
-          since={data.since}
-          until={data.until}
-          total={total}
-          branches={branches}
-          unclassified={unclassified}
-        />
-
         <AdAttributionSummary
           since={data.since}
           until={data.until}
         />
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(480px, 1fr))",
-            gap: 18,
-            marginBottom: 22,
-          }}
-        >
-          <BranchTable
-            title="선릉점"
-            data={branches.seolleung}
-          />
-
-          <BranchTable
-            title="강변점"
-            data={branches.gangbyeon}
-          />
-
-          <BranchTable
-            title="공통 · 미지정 지점"
-            data={branches.shared}
-          />
-        </div>
-
-        <div
-          style={{
-            marginBottom: 22,
-            padding: 20,
-            borderRadius: 16,
-            background: unclassified.cost > 0
-              ? "#fff7ed"
-              : "#f8fafc",
-            border: unclassified.cost > 0
-              ? "1px solid #fdba74"
-              : "1px solid #e2e8f0",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 18,
-              fontWeight: 800,
-              color: "#111827",
-              marginBottom: 6,
-            }}
-          >
-            미분류 광고 (항상 표시)
-          </div>
-
-          <div
-            style={{
-              color: "#64748b",
-              fontSize: 13,
-              lineHeight: 1.6,
-              marginBottom: 14,
-            }}
-          >
-            지점 또는 광고 유형 규칙에 아직 연결되지 않은 실적입니다. 전체 합계에는 포함되며 숨기지 않습니다.
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fit, minmax(160px, 1fr))",
-              gap: 12,
-            }}
-          >
-            <MetricCard title="광고비" value={won(unclassified.cost)} />
-            <MetricCard title="노출" value={num(unclassified.impressions)} />
-            <MetricCard title="클릭" value={num(unclassified.clicks)} />
-            <MetricCard title="전환" value={num(unclassified.conversions)} />
-          </div>
-        </div>
-
-        <div
-          style={{
-            background: "#fff",
-            border: "1px solid #e5e7eb",
-            borderRadius: 16,
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              padding: "18px 20px",
-              fontSize: 20,
-              fontWeight: 800,
-              borderBottom: "1px solid #e5e7eb",
-            }}
-          >
-            광고그룹 상세
-          </div>
-
-          <div style={{ overflowX: "auto" }}>
-            <table
-              style={{
-                width: "100%",
-                borderCollapse: "collapse",
-                minWidth: 950,
-              }}
-            >
-              <thead>
-                <tr
-                  style={{
-                    background: "#f9fafb",
-                  }}
-                >
-                  {[
-                    "지점",
-                    "종류",
-                    "광고그룹",
-                    "상태",
-                    "광고비",
-                    "노출",
-                    "클릭",
-                    "CPC",
-                    "전환",
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      style={{
-                        padding: 12,
-                        fontSize: 13,
-                        color: "#6b7280",
-                        textAlign: [
-                          "광고비",
-                          "노출",
-                          "클릭",
-                          "CPC",
-                          "전환",
-                        ].includes(h)
-                          ? "right"
-                          : "left",
-                      }}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-
-              <tbody>
-                {visibleDetails.map((row) => (
-                  <tr
-                    key={`${row.account}-${row.adgroupId}`}
-                    style={{
-                      borderTop:
-                        "1px solid #f1f5f9",
-                    }}
-                  >
-                    <td style={{ padding: 12 }}>
-                      {branchLabel(row.branch)}
-                    </td>
-
-                    <td style={{ padding: 12 }}>
-                      {adTypeLabel(row.adType)}
-                    </td>
-
-                    <td
-                      style={{
-                        padding: 12,
-                        fontWeight: 600,
-                      }}
-                    >
-                      {row.adgroupName}
-                    </td>
-
-                    <td style={{ padding: 12 }}>
-                      {row.status === "ELIGIBLE"
-                        ? "운영중"
-                        : row.status === "PAUSED"
-                        ? "중지"
-                        : row.status}
-                    </td>
-
-                    <td
-                      style={{
-                        padding: 12,
-                        textAlign: "right",
-                      }}
-                    >
-                      {won(row.cost)}
-                    </td>
-
-                    <td
-                      style={{
-                        padding: 12,
-                        textAlign: "right",
-                      }}
-                    >
-                      {num(row.impressions)}
-                    </td>
-
-                    <td
-                      style={{
-                        padding: 12,
-                        textAlign: "right",
-                      }}
-                    >
-                      {num(row.clicks)}
-                    </td>
-
-                    <td
-                      style={{
-                        padding: 12,
-                        textAlign: "right",
-                      }}
-                    >
-                      {won(row.avgCpc)}
-                    </td>
-
-                    <td
-                      style={{
-                        padding: 12,
-                        textAlign: "right",
-                      }}
-                    >
-                      {num(row.conversions)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <NaverAdsScopeReport
+          details={scopeDetails}
+        />
       </div>
     </main>
   );
