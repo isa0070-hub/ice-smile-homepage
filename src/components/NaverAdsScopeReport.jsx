@@ -12,6 +12,7 @@ import {
 import {
   V2_CAMPAIGN_ID,
 } from "@/lib/naverAdsReport";
+import UtmAttributionReport from "@/components/UtmAttributionReport";
 
 function won(value = 0) {
   return `${Number(value).toLocaleString("ko-KR")}원`;
@@ -216,6 +217,9 @@ const BRANCHES = [
 
 export default function NaverAdsScopeReport({
   details = [],
+  attribution = null,
+  attributionError = "",
+  naverError = "",
 }) {
   const [scope, setScope] = useState(
     NAVER_AD_SCOPES.V2
@@ -336,6 +340,27 @@ export default function NaverAdsScopeReport({
         </div>
       </div>
 
+      <UtmAttributionReport
+        attribution={attribution}
+        error={attributionError}
+        scope={scope}
+      />
+
+      {naverError ? (
+        <div
+          style={{
+            marginBottom: 22,
+            padding: 20,
+            background: "#fef2f2",
+            border: "1px solid #fca5a5",
+            borderRadius: 16,
+            color: "#991b1b",
+          }}
+        >
+          네이버 광고 API 성과를 불러오지 못했습니다. 홈페이지 자체 UTM·문의행동 집계와는 별도 경로입니다. {naverError}
+        </div>
+      ) : (
+        <>
       <div
         style={{
           display: "grid",
@@ -606,6 +631,8 @@ export default function NaverAdsScopeReport({
           </div>
         )}
       </div>
+        </>
+      )}
     </section>
   );
 }

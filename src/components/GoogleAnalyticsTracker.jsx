@@ -4,6 +4,10 @@ import Script from "next/script";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { trackPaidAdAction } from "@/lib/adActionTracker";
+import {
+  createAdContactClickHandler,
+  registerAdContactClickTracking,
+} from "@/lib/adContactTracking";
 
 const GA_MEASUREMENT_ID = "G-YELJDXWV3G";
 const PHONE_LIST_OPEN_SESSION_KEY = "ismile_phone_list_open_ga";
@@ -294,89 +298,49 @@ export default function GoogleAnalyticsTracker() {
   // 전화·톡톡·온라인 문의 클릭 기록
   useEffect(() => {
     if (
-      !isReady ||
       excluded ||
-      typeof window === "undefined" ||
-      typeof window.gtag !== "function"
+      typeof window === "undefined"
     ) {
       return;
     }
 
-    function handleContactClick(event) {
-      if (!(event.target instanceof Element)) {
-        return;
-      }
+    const handleContactClick =
+      createAdContactClickHandler({
+        classifyContactClick,
+        trackPaidAction: trackPaidAdAction,
+        cleanLabel,
+        hasPhoneListOpenInSession,
+        markPhoneListOpenInSession,
+        trackAnalytics(contactEvent, clickedElement) {
+          if (typeof window.gtag !== "function") {
+            return;
+          }
 
-      const clickedElement = event.target.closest(
-        "a[href], button, [role='button'], [data-ga-contact]"
-      );
+          window.gtag(
+            "event",
+            contactEvent.eventName,
+            {
+              contact_type: contactEvent.contactType,
+              link_text: cleanLabel(
+                clickedElement.textContent
+              ),
+              link_url: contactEvent.linkUrl,
+              page_title: document.title,
+              page_location: window.location.href,
+              page_path:
+                window.location.pathname +
+                window.location.search,
+              send_to: GA_MEASUREMENT_ID,
+            }
+          );
+        },
+      });
 
-      if (!clickedElement) {
-        return;
-      }
-
-      const contactEvent =
-        classifyContactClick(clickedElement);
-
-      if (!contactEvent) {
-        return;
-      }
-
-      if (
-        contactEvent.eventName === "phone_list_open" &&
-        hasPhoneListOpenInSession()
-      ) {
-        return;
-      }
-
-      void trackPaidAdAction(
-        contactEvent.eventName,
-        {
-          contactType: contactEvent.contactType,
-          linkText: cleanLabel(
-            clickedElement.textContent
-          ),
-          linkUrl: contactEvent.linkUrl,
-        }
-      );
-
-      window.gtag(
-        "event",
-        contactEvent.eventName,
-        {
-          contact_type: contactEvent.contactType,
-          link_text: cleanLabel(
-            clickedElement.textContent
-          ),
-          link_url: contactEvent.linkUrl,
-          page_title: document.title,
-          page_location: window.location.href,
-          page_path:
-            window.location.pathname +
-            window.location.search,
-          send_to: GA_MEASUREMENT_ID,
-        }
-      );
-
-      if (contactEvent.eventName === "phone_list_open") {
-        markPhoneListOpenInSession();
-      }
-    }
-
-document.addEventListener(
-  "click",
-  handleContactClick,
-  true
- );
-
-return () => {
-  document.removeEventListener(
-    "click",
-    handleContactClick,
-    true
-  );
-};
-}, [pathname, excluded, isReady]);
+    return registerAdContactClickTracking(
+      document,
+      handleContactClick
+    );
+  }, [pathname, excluded]);
   
 if (excluded) {
     return null;

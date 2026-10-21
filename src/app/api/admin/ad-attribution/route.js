@@ -4,6 +4,11 @@ import {
   requireAdminRequest,
 } from "@/lib/adminApi";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import {
+  UTM_INQUIRY_EVENTS,
+  buildUtmAttribution,
+  getKstDateRange,
+} from "@/lib/utmAttribution";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,14 +19,23 @@ const VALID_EVENTS = new Set([
   "generate_lead",
 ]);
 
-function validDate(value) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(String(value || ""));
-}
+const UTM_VISIT_LIMIT = 10_000;
+const UTM_EVENT_LIMIT_PER_BATCH = 5_000;
+const PAGE_SIZE = 1_000;
 
-function nextDate(value) {
-  const date = new Date(`${value}T12:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + 1);
-  return date.toISOString().slice(0, 10);
+function validDate(value) {
+  const text = String(value || "");
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+    return false;
+  }
+
+  const date = new Date(`${text}T00:00:00Z`);
+
+  return (
+    Number.isFinite(date.getTime()) &&
+    date.toISOString().slice(0, 10) === text
+  );
 }
 
 function asObject(value) {
@@ -95,6 +109,94 @@ async function loadVisits(ids) {
   return result;
 }
 
+async function loadUtmVisits(startIso, endExclusiveIso) {
+  const rows = [];
+
+  for (
+    let from = 0;
+    from < UTM_VISIT_LIMIT;
+    from += PAGE_SIZE
+  ) {
+    const to = Math.min(
+      from + PAGE_SIZE - 1,
+      UTM_VISIT_LIMIT - 1
+    );
+
+    const { data, error } = await supabaseAdmin
+      .from("ad_click_visits")
+      .select(
+        [
+          "id",
+          "clicked_at",
+          "traffic_source",
+          "traffic_medium",
+          "campaign",
+          "query_params",
+        ].join(",")
+      )
+      .gte("clicked_at", startIso)
+      .lt("clicked_at", endExclusiveIso)
+      .order("clicked_at", { ascending: false })
+      .range(from, to);
+
+    if (error) throw error;
+
+    const batch = data || [];
+    rows.push(...batch);
+
+    if (batch.length < PAGE_SIZE) break;
+  }
+
+  return {
+    rows,
+    reachedLimit: rows.length >= UTM_VISIT_LIMIT,
+  };
+}
+
+async function loadUtmEvents(visitIds) {
+  const rows = [];
+  let reachedLimit = false;
+
+  for (let i = 0; i < visitIds.length; i += 100) {
+    const visitBatch = visitIds.slice(i, i + 100);
+
+    for (
+      let from = 0;
+      from < UTM_EVENT_LIMIT_PER_BATCH;
+      from += PAGE_SIZE
+    ) {
+      const to = Math.min(
+        from + PAGE_SIZE - 1,
+        UTM_EVENT_LIMIT_PER_BATCH - 1
+      );
+
+      const { data, error } = await supabaseAdmin
+        .from("ad_click_events")
+        .select("visit_id,event_type,created_at")
+        .in("visit_id", visitBatch)
+        .in("event_type", [...UTM_INQUIRY_EVENTS])
+        .order("created_at", { ascending: true })
+        .range(from, to);
+
+      if (error) throw error;
+
+      const batch = data || [];
+      rows.push(...batch);
+
+      if (batch.length < PAGE_SIZE) break;
+
+      if (
+        from + PAGE_SIZE >=
+        UTM_EVENT_LIMIT_PER_BATCH
+      ) {
+        reachedLimit = true;
+      }
+    }
+  }
+
+  return { rows, reachedLimit };
+}
+
 export async function GET(request) {
   const authError = requireAdminRequest(request);
   if (authError) return authError;
@@ -105,20 +207,50 @@ export async function GET(request) {
     const since = searchParams.get("since");
     const until = searchParams.get("until");
 
-    if (!validDate(since) || !validDate(until)) {
+    if (
+      !validDate(since) ||
+      !validDate(until) ||
+      since > until
+    ) {
       return adminErrorResponse(
         "조회 기간 형식이 올바르지 않습니다.",
         400
       );
     }
 
-    const sinceIso = new Date(
-      `${since}T00:00:00+09:00`
-    ).toISOString();
+    const {
+      startIso: sinceIso,
+      endExclusiveIso: untilExclusiveIso,
+    } = getKstDateRange(since, until);
 
-    const untilExclusiveIso = new Date(
-      `${nextDate(until)}T00:00:00+09:00`
-    ).toISOString();
+    const utmVisitResult = await loadUtmVisits(
+      sinceIso,
+      untilExclusiveIso
+    );
+
+    const utmEventResult = await loadUtmEvents(
+      utmVisitResult.rows.map((visit) => String(visit.id))
+    );
+
+    const utm = {
+      available: true,
+      rows: buildUtmAttribution(
+        utmVisitResult.rows,
+        utmEventResult.rows
+      ),
+      visitCount: utmVisitResult.rows.length,
+      reachedLimit:
+        utmVisitResult.reachedLimit ||
+        utmEventResult.reachedLimit,
+      definitions: {
+        visits:
+          "선택한 KST 기간에 저장된 광고 방문 행 수",
+        actionEvents:
+          "해당 방문에 연결된 전화 버튼·네이버 톡톡·온라인접수 클릭 및 접수 저장 성공 이벤트 행 수",
+        uniqueActionVisits:
+          "문의행동 이벤트가 하나 이상 연결된 고유 광고 방문 수",
+      },
+    };
 
     const { data: events, error: eventError } =
       await supabaseAdmin
@@ -153,6 +285,7 @@ export async function GET(request) {
       return adminSuccessResponse({
         since,
         until,
+        utm,
         summary: {
           ...emptyCounts(),
           inquiryVisits: 0,
@@ -295,6 +428,7 @@ export async function GET(request) {
     return adminSuccessResponse({
       since,
       until,
+      utm,
 
       summary: {
         ...summary,

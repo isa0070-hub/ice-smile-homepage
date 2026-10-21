@@ -1,95 +1,12 @@
-"use client";
-
-import {
-  useEffect,
-  useState,
-} from "react";
-
 function num(value = 0) {
   return Number(value || 0)
     .toLocaleString("ko-KR");
 }
 
 export default function AdAttributionSummary({
-  since,
-  until,
+  data,
+  error = "",
 }) {
-  const rangeKey = `${since}:${until}`;
-
-  const [result, setResult] = useState({
-    rangeKey: "",
-    data: null,
-    error: "",
-  });
-
-  useEffect(() => {
-    let active = true;
-
-    fetch(
-      `/api/admin/ad-attribution?since=${encodeURIComponent(
-        since
-      )}&until=${encodeURIComponent(
-        until
-      )}`,
-      {
-        cache: "no-store",
-        credentials: "same-origin",
-      }
-    )
-      .then(async (response) => {
-        const result =
-          await response.json();
-
-        if (
-          !response.ok ||
-          result?.success === false
-        ) {
-          throw new Error(
-            result?.message ||
-              "조회 실패"
-          );
-        }
-
-        return result;
-      })
-      .then((result) => {
-        if (!active) return;
-
-        setResult({
-          rangeKey,
-          data:
-            result?.data ||
-            result,
-          error: "",
-        });
-      })
-      .catch((e) => {
-        if (!active) return;
-
-        setResult({
-          rangeKey,
-          data: null,
-          error:
-            e?.message ||
-            "조회 실패",
-        });
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [since, until, rangeKey]);
-
-  const current =
-    result.rangeKey === rangeKey
-      ? result
-      : {
-          data: null,
-          error: "",
-        };
-
-  const { data, error } = current;
-
   if (error) {
     return null;
   }
@@ -144,15 +61,15 @@ export default function AdAttributionSummary({
         }}
       >
         <span>
-          📞 전화 {num(summary.phone)}건
+          📞 전화 버튼 클릭 {num(summary.phone)}건
         </span>
 
         <span>
-          💬 톡톡 {num(summary.naverTalk)}건
+          💬 톡톡 버튼 클릭 {num(summary.naverTalk)}건
         </span>
 
         <span>
-          📝 온라인접수 {num(summary.onlineInquiry)}건
+          📝 온라인접수 저장 성공 {num(summary.onlineInquiry)}건
         </span>
 
         <span>

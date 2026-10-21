@@ -10,6 +10,36 @@ function periodLabel(period) {
   return "어제";
 }
 
+function getKstToday() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(
+    parts.map((part) => [part.type, part.value])
+  );
+
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function shiftDate(value, amount) {
+  const date = new Date(`${value}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + amount);
+  return date.toISOString().slice(0, 10);
+}
+
+function periodRange(period) {
+  const until = shiftDate(getKstToday(), -1);
+  const days = period === "30d" ? 30 : period === "7d" ? 7 : 1;
+
+  return {
+    since: shiftDate(until, -(days - 1)),
+    until,
+  };
+}
+
 function kstTimestamp(value) {
   if (!value) return "확인 불가";
 
@@ -70,12 +100,17 @@ export default async function AdsDashboard({
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : "https://www.ismileagain.co.kr";
 
+  const fallbackRange = periodRange(period);
+
   let data;
   let error;
+  let attributionData;
+  let attributionError;
+  let cookieHeader = "";
 
   try {
     const incomingHeaders = await headers();
-    const cookieHeader = incomingHeaders.get("cookie") || "";
+    cookieHeader = incomingHeaders.get("cookie") || "";
 
     const response = await fetch(
       `${baseUrl}/api/naver-ads/report?period=${period}`,
@@ -104,17 +139,45 @@ export default async function AdsDashboard({
     error = e.message;
   }
 
-  if (error || !data) {
-    return (
-      <main style={{ padding: 30 }}>
-        <h1>네이버 광고 현황</h1>
-        <p style={{ color: "#dc2626" }}>
-          데이터를 불러오지 못했습니다.
-          <br />
-          {error}
-        </p>
-      </main>
+  if (!data) {
+    data = {
+      ...fallbackRange,
+      generatedAt: null,
+      validation: null,
+      details: [],
+    };
+  }
+
+  try {
+    const attributionResponse = await fetch(
+      `${baseUrl}/api/admin/ad-attribution?since=${encodeURIComponent(
+        data.since
+      )}&until=${encodeURIComponent(data.until)}`,
+      {
+        cache: "no-store",
+        headers: {
+          cookie: cookieHeader,
+        },
+      }
     );
+
+    const attributionResult =
+      await attributionResponse.json();
+
+    if (
+      !attributionResponse.ok ||
+      attributionResult?.success === false
+    ) {
+      throw new Error(
+        attributionResult?.message ||
+          `홈페이지 집계 API 오류 ${attributionResponse.status}`
+      );
+    }
+
+    attributionData = attributionResult;
+  } catch (e) {
+    attributionError =
+      e?.message || "홈페이지 집계 데이터를 불러오지 못했습니다.";
   }
 
   const { validation } = data;
@@ -232,6 +295,8 @@ export default async function AdsDashboard({
             >
               {validation?.passed
                 ? "API 연결 · 합계 검증 정상"
+                : error
+                ? "네이버 API 접근 실패"
                 : "API 연결 정상 · 합계 확인 필요"}
             </div>
           </div>
@@ -276,12 +341,19 @@ export default async function AdsDashboard({
         </div>
 
         <AdAttributionSummary
-          since={data.since}
-          until={data.until}
+          data={attributionData}
+          error={attributionError}
         />
 
         <NaverAdsScopeReport
           details={scopeDetails}
+          attribution={attributionData?.utm}
+          attributionError={attributionError}
+          naverError={
+            error
+              ? "현재 기간의 네이버 API 수치는 표시하지 않습니다."
+              : ""
+          }
         />
       </div>
     </main>
