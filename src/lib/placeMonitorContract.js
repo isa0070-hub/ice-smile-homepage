@@ -1,3 +1,4 @@
+import { normalizeSensorRegistry, normalizeRuntimeStatus } from './placeMonitorStatusMetadata.js';
 export const PLACE_MONITOR_STATUSES = new Set([
   "VALID",
   "NOT_IN_OBSERVED_RANGE",
@@ -17,7 +18,7 @@ const CHECKPOINTS = new Set(["D1", "D3", "D4", "D7"]);
 const CALIBRATION_CHECKPOINT_PATTERN = /^CAL-\d{8}-\d{4}$/u;
 const SCHEDULE_STATUSES = new Set(["PENDING", "RUNNING", "COMPLETED", "FAILED"]);
 const MAX_CONDITIONS_BYTES = 2_048;
-const MAX_OBSERVER_STATUS_BYTES = 12_000;
+const MAX_OBSERVER_STATUS_BYTES = 16_000;
 
 function isPlainObject(value) {
   return Boolean(
@@ -129,8 +130,11 @@ export function normalizePlaceMonitorObserverStatus(value) {
   const generatedAt = value.generated_at;
   const phase = optionalText(value.phase, 64);
   const tasks = value.schedule_tasks;
+  const registry = value.sensor_registry === undefined ? undefined : normalizeSensorRegistry(value.sensor_registry);
+  const runtimeStatus = value.runtime_status === undefined ? undefined : normalizeRuntimeStatus(value.runtime_status);
 
   if (
+    registry === null || runtimeStatus === null ||
     sourceId !== "seolleung-place-observer-v13" ||
     sourceVersion === undefined ||
     !isIsoDate(generatedAt) ||
@@ -179,6 +183,8 @@ export function normalizePlaceMonitorObserverStatus(value) {
     generated_at: new Date(generatedAt).toISOString(),
     phase,
     schedule_tasks: normalizedTasks,
+    ...(registry === undefined ? {} : {sensor_registry:registry,registered_sensor_ids:registry.map(x=>x[0])}),
+    ...(runtimeStatus === undefined ? {} : {runtime_status:runtimeStatus}),
   };
 }
 

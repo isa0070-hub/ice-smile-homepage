@@ -1,3 +1,4 @@
+import {encodeObserverStatus, decodeObserverStatus} from './placeMonitorStatusMetadata.js';
 import "server-only";
 
 import { readFile, rename, writeFile } from "node:fs/promises";
@@ -30,7 +31,6 @@ const SELECT_FIELDS = [
   "synced_at",
 ].join(",");
 
-const DASHBOARD_ROWS_CAP = 50;
 const HISTORY_ROWS_CAP = 50;
 
 function localFixturePath() {
@@ -118,7 +118,7 @@ export async function storePlaceMonitorPayload(items, observerStatus) {
   const { error: observerStatusError } = await supabaseAdmin
     .from("place_monitor_observer_status")
     .upsert({
-      ...observerStatus,
+      ...encodeObserverStatus(observerStatus),
       synced_at: new Date().toISOString(),
     }, { onConflict: "source_id" });
 
@@ -144,51 +144,31 @@ export async function storePlaceMonitorPayload(items, observerStatus) {
 }
 
 export async function getPlaceMonitorDashboard() {
-  const localRows = await readLocalFixture();
+  const localRows=await readLocalFixture();
   if (localRows) {
-    const dashboard = buildPlaceMonitorDashboard(
-      localRows.rows.slice(-DASHBOARD_ROWS_CAP),
-    );
-    dashboard.last_sync_at = localRows.lastSyncAt;
-    dashboard.observer_status = localRows.observerStatus;
-    return dashboard;
+    const observer=decodeObserverStatus(localRows.observerStatus);
+    const dashboard=buildPlaceMonitorDashboard(localRows.rows,new Date(),observer?.sensor_registry);
+    return {...dashboard,last_sync_at:localRows.lastSyncAt,observer_status:observer};
   }
-
-  const [measurementsResult, syncStatusResult, observerStatusResult] = await Promise.all([
-    supabaseAdmin
-      .from("place_monitor_measurements")
-      .select(SELECT_FIELDS)
-      .order("measured_at", { ascending: false })
-      .limit(DASHBOARD_ROWS_CAP),
-    supabaseAdmin
-      .from("place_monitor_sync_status")
-      .select("last_sync_at")
-      .eq("source_id", "seolleung-place-observer-v13")
-      .maybeSingle(),
-    supabaseAdmin
-      .from("place_monitor_observer_status")
+  const [sync, observerResult]=await Promise.all([
+    supabaseAdmin.from("place_monitor_sync_status").select("last_sync_at")
+      .eq("source_id","seolleung-place-observer-v13").maybeSingle(),
+    supabaseAdmin.from("place_monitor_observer_status")
       .select("source_id,source_version,generated_at,phase,schedule_tasks,synced_at")
-      .eq("source_id", "seolleung-place-observer-v13")
-      .maybeSingle(),
+      .eq("source_id","seolleung-place-observer-v13").maybeSingle(),
   ]);
-
-  const { data, error } = measurementsResult;
-
-  if (error) {
-    throwStoreError(error, "최신 순위 측정 결과를 불러오지 못했습니다.");
-  }
-
-  if (syncStatusResult.error) {
-    throwStoreError(syncStatusResult.error, "동기화 상태를 불러오지 못했습니다.");
-  }
-  if (observerStatusResult.error) {
-    throwStoreError(observerStatusResult.error, "관측기 예약 상태를 불러오지 못했습니다.");
-  }
-
-  const dashboard = buildPlaceMonitorDashboard(data || []);
-  dashboard.last_sync_at = syncStatusResult.data?.last_sync_at || null;
-  dashboard.observer_status = observerStatusResult.data || null;
-  return dashboard;
+  if (sync.error) throwStoreError(sync.error,"동기화 상태를 불러오지 못했습니다.");
+  if (observerResult.error) throwStoreError(observerResult.error,"관측기 상태를 불러오지 못했습니다.");
+  const observer=decodeObserverStatus(observerResult.data);
+  const registry=observer?.sensor_registry;
+  // Existing indexed DISTINCT ON view: one latest row per sensor first.
+  // The bounded registry determines the result size, independent of history.
+  let query=supabaseAdmin.from("place_monitor_latest").select(SELECT_FIELDS);
+  if (registry?.length) query=query.in("sensor_id",registry.map(x=>x[0]));
+  const measurements=registry?.length === 0 ? {data:[],error:null} : await query.limit(registry?.length || 256);
+  if (measurements.error) throwStoreError(measurements.error,"센서별 최신 관측을 불러오지 못했습니다.");
+  return {...buildPlaceMonitorDashboard(measurements.data||[],new Date(),registry),
+    last_sync_at:sync.data?.last_sync_at||null,observer_status:observer};
 }
 
 export async function getPlaceMonitorHistory({

@@ -1,3 +1,4 @@
+import {normalizeRuntimeStatus} from './placeMonitorStatusMetadata.js';
 const KST_TIME_ZONE = "Asia/Seoul";
 
 const GOOD_STATUSES = new Set(["VALID", "NOT_IN_OBSERVED_RANGE"]);
@@ -222,16 +223,17 @@ function latestSensorSection(sensor) {
   const success = safeMeasurement(sensor?.last_successful);
   const lines = [
     `- 센서 ID: ${safeText(sensor?.sensor_id)}`,
-    `  검색어: ${attempt?.query || success?.query || "미수신"}`,
+    `  검색어: ${attempt?.query || success?.query || sensor?.query || "미수신"}`,
     `  검색 화면: ${attempt?.result_surface || success?.result_surface || "미수신"}`,
   ];
 
   if (!attempt) {
-    lines.push("  마지막 시도: 미수신", "  마지막 정상 측정: 미수신");
+    lines.push("  관측 상태: 미관측 · 등록되어 있으나 저장된 측정 없음", "  마지막 시도: 미수신", "  마지막 정상 측정: 미수신");
     return lines.join("\n");
   }
 
   lines.push(
+    `  자료 날짜: ${{TODAY:'오늘 자료',OLDER:'과거 자료',UNKNOWN:'시각 미확인',FUTURE:'미래 시각 확인 필요'}[sensor.freshness]||'원본 측정시각 확인'}`,
     `  마지막 시도: ${formatKst(attempt.measured_at)} | ${STATUS_LABELS[attempt.measurement_status] || attempt.measurement_status}`,
     `  광고 제외 자연순위: ${rankText(attempt)}`,
     `  요청 범위: 미수신 | 실제 확인 범위: ${attempt.observed_n === null ? "미수신" : attempt.observed_n === 0 ? "관측 자료 0건" : `TOP ${attempt.observed_n}`}`,
@@ -247,7 +249,7 @@ function latestSensorSection(sensor) {
   if (attempt.error_summary) lines.push(`  안전한 오류 요약: ${attempt.error_summary}`);
 
   if (!success) {
-    lines.push("  마지막 정상 측정: 없음");
+    lines.push("  마지막 정상 측정: 이번 최신 요약에서 확인 불가 · 과거 이력 부재를 뜻하지 않음");
   } else if (success.measurement_id === attempt.measurement_id) {
     lines.push("  마지막 정상 측정: 위 마지막 시도와 동일");
   } else {
@@ -339,10 +341,14 @@ function automationSection({ sensors, lastSyncAt, observerStatus, copiedAt }) {
     `- 홈페이지 마지막 동기화: ${formatKst(lastSyncAt)}`,
     `- 관측기 상태 생성시각: ${formatKst(observerStatus?.generated_at)}`,
     `- 관측기 단계: ${safeText(observerStatus?.phase)}`,
-    upcoming
-      ? `- 관측기 보고 예정 작업: ${upcoming.checkpoint} / ${upcoming.sensor_id} / 예정 ${formatKst(upcoming.due_at)} / 허용창 ${formatKst(upcoming.window_start)} 이상~${formatKst(upcoming.window_end)} 미만 / 상태 ${upcoming.status}`
+    observerStatus?.runtime_status?.branches?.length
+      ? "- 관측기 보고 예정 작업: 아래 지점별 확인 일정 기준"
+      : upcoming ? `- 관측기 보고 예정 작업: ${upcoming.checkpoint} / ${upcoming.sensor_id} / 예정 ${formatKst(upcoming.due_at)} / 허용창 ${formatKst(upcoming.window_start)} 이상~${formatKst(upcoming.window_end)} 미만 / 상태 ${upcoming.status}`
       : "- 관측기 보고 예정 작업: 화면 보유 자료에서 확인되지 않음",
-    "- 실행 트리거 등록 확인: 미수신",
+    ...(observerStatus?.runtime_status?.branches?.length ? observerStatus.runtime_status.branches.flatMap(branch=>[
+      `- ${branch.branch_id==='gangbyeon'?'강변':'선릉'} 다음 실행: ${branch.schedule_confirmed?formatKst(branch.next_due_at):'미확인'} / 센서 ${branch.next_sensor_id||'미수신'} / 일정 확인 ${formatKst(observerStatus.runtime_status.checked_at)}`,
+      `- ${branch.branch_id==='gangbyeon'?'강변':'선릉'} 실행 트리거 등록 확인: ${{REGISTERED:'등록 확인',UNCONFIRMED:'미확인',NOT_REGISTERED:'미등록 확인'}[branch.trigger.status]} / 확인 ${formatKst(branch.trigger.checked_at)} / ${branch.trigger.label}`,
+    ]):["- 실행 트리거 등록 확인: 미수신"]),
     `- 예정 작업 확인 기준시각: 관측기 상태 생성시각 ${formatKst(observerStatus?.generated_at)}`,
     failures.length
       ? `- 최신 오류·보류: ${failures.map((item) => `${item.sensor_id}=${item.measurement_status}`).join(", ")}`
@@ -362,6 +368,7 @@ export function createPlaceMonitorPacketSnapshot({
   const sensors = Array.isArray(dashboard.sensors)
     ? dashboard.sensors.map((sensor) => ({
         sensor_id: safeText(sensor.sensor_id),
+        query:safeText(sensor.query),branch_id:safeText(sensor.branch_id),freshness:safeText(sensor.freshness),
         last_attempt: safeMeasurement(sensor.last_attempt),
         last_successful: safeMeasurement(sensor.last_successful),
       }))
@@ -376,6 +383,7 @@ export function createPlaceMonitorPacketSnapshot({
         source_version: safeText(dashboard.observer_status.source_version, ""),
         generated_at: safeText(dashboard.observer_status.generated_at, ""),
         phase: safeText(dashboard.observer_status.phase, ""),
+        runtime_status:normalizeRuntimeStatus(dashboard.observer_status.runtime_status),
         schedule_tasks: Array.isArray(dashboard.observer_status.schedule_tasks)
           ? dashboard.observer_status.schedule_tasks.map(safeScheduleTask).filter(Boolean)
           : [],
@@ -388,6 +396,8 @@ export function createPlaceMonitorPacketSnapshot({
     selected_sensor_filter: safeText(selectedSensorFilter, "전체 센서"),
     history_scope: safeText(historyScope, "이력 미조회"),
     sensors,
+    coverage:dashboard.coverage?Object.fromEntries(['registered_count','included_count','measured_count','today_count','older_count','unmeasured_count','unknown_time_count'].map(k=>[k,safeNumber(dashboard.coverage[k])])):null,
+    generated_at:safeText(dashboard.generated_at,""),
     history: safeHistory,
     held_measurements: heldMeasurements,
     last_sync_at: safeText(dashboard.last_sync_at, ""),
@@ -395,6 +405,7 @@ export function createPlaceMonitorPacketSnapshot({
       latest_rows_scanned: safeNumber(dashboard.limits?.latest_rows_scanned),
       latest_rows_cap: safeNumber(dashboard.limits?.latest_rows_cap),
       history_rows_cap: safeNumber(dashboard.limits?.history_rows_cap),
+      latest_scope:safeText(dashboard.limits?.latest_scope,""),
     },
     observer_status: observerStatus,
     warnings: {
@@ -482,9 +493,13 @@ Work에서 프로그램으로 수행할 작업을 구분해 주세요.
 - 포함된 센서: ${snapshot.sensors.length ? snapshot.sensors.map((sensor) => sensor.sensor_id).join(", ") : "미수신"}
 - 현재 선택된 센서 필터: ${snapshot.selected_sensor_filter || "전체 센서"}
 - 사용자가 실제 불러온 이력 범위: ${snapshot.history_scope || "이력 미조회"}
-- 최신 조회 내부 스캔: ${snapshot.limits.latest_rows_scanned ?? "미수신"}행 / 상한 ${snapshot.limits.latest_rows_cap ?? "미수신"}행
+- 최신 요약 기준: ${snapshot.limits.latest_scope==='LATEST_PER_SENSOR'?'센서별 최신 1건을 먼저 선택 · 원본 이력의 최근 50행과 분리':'기존 조회 범위'}
+- 최신 조회 내부 스캔: ${snapshot.limits.latest_rows_scanned ?? "미수신"}행 / 센서 상한 ${snapshot.limits.latest_rows_cap ?? "미수신"}개
+- 등록 전체/포함: ${snapshot.coverage?.registered_count ?? '미수신'} / ${snapshot.coverage?.included_count ?? snapshot.sensors.length}
+- 최신 자료 날짜 분포: 오늘 ${snapshot.coverage?.today_count ?? '미수신'} / 과거 ${snapshot.coverage?.older_count ?? '미수신'} / 미관측 ${snapshot.coverage?.unmeasured_count ?? '미수신'} / 시각 확인 ${snapshot.coverage?.unknown_time_count ?? '미수신'}
+- 최신 요약 생성 시각: ${formatKst(snapshot.generated_at)}
 - 이력 조회 상한: ${snapshot.limits.history_rows_cap ?? "미수신"}행
-- 생략·미수신 범위: ${omission}. 센서별 최신 요약은 전체 원본 행을 뜻하지 않음
+- 생략·미수신 범위: ${Number.isInteger(snapshot.coverage?.registered_count)&&snapshot.coverage.registered_count===snapshot.coverage.included_count?'등록 센서 목록 전체 포함':omission}. 센서별 최신 요약은 전체 원본 행을 뜻하지 않음
 - 중복 처리: 같은 measurement ID는 한 번만 집계
 
 ==============================
