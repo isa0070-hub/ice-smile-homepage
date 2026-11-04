@@ -278,6 +278,37 @@ export default async function BranchDetailPage({ params }) {
   )
   const latestGalleryCases = Object.fromEntries(galleryCaseEntries)
   const contactHref = `/contact?branch=${encodeURIComponent(seo.slug)}`
+  const quickMenuItems = [
+    {
+      key: "services",
+      href: "#branch-services",
+      eyebrow: "기기별 안내",
+      title: "수리 가능 품목",
+      description: `${serviceCards.length}개 품목 바로 보기`,
+    },
+    {
+      key: "cases",
+      href:
+        recentCases.length > 0 ? "#branch-recent-cases" : "/repair-cases",
+      eyebrow: "실제 작업",
+      title: "최근 수리사례",
+      description: "최근 등록 사례 확인하기",
+    },
+    {
+      key: "visit",
+      href: "#branch-visit",
+      eyebrow: "오시는 길",
+      title: "방문 안내",
+      description: "인근 지역·방문 경로 보기",
+    },
+    {
+      key: "contact",
+      href: contactHref,
+      eyebrow: "빠른 상담",
+      title: "온라인 문의",
+      description: "모델·증상 사진으로 문의",
+    },
+  ]
   const seolleungIpadContactHref =
     seo.slug === "seolleung"
       ? "/contact?branch=seolleung&device=ipad"
@@ -492,6 +523,55 @@ export default async function BranchDetailPage({ params }) {
           </div>
         </article>
 
+        <article
+          className={branchStyles.quickMenuSection}
+          style={styles.textCard}
+        >
+          <header className={branchStyles.quickMenuHeader}>
+            <div>
+              <p className={branchStyles.quickMenuEyebrow}>
+                필요한 정보로 바로 이동
+              </p>
+              <h2 className={branchStyles.quickMenuTitle}>
+                {seo.shortName} 빠른 메뉴
+              </h2>
+            </div>
+            <p className={branchStyles.quickMenuDescription}>
+              방문 전에 수리 품목과 실제 사례를 확인하고 바로 문의할 수
+              있습니다.
+            </p>
+          </header>
+
+          <nav
+            aria-label={`${seo.shortName} 페이지 바로가기`}
+            className={branchStyles.quickMenuGrid}
+          >
+            {quickMenuItems.map((item, index) => (
+              <Link
+                key={item.key}
+                href={item.href}
+                className={branchStyles.quickMenuItem}
+              >
+                <span className={branchStyles.quickMenuNumber}>
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <span className={branchStyles.quickMenuEyebrowText}>
+                  {item.eyebrow}
+                </span>
+                <strong className={branchStyles.quickMenuItemTitle}>
+                  {item.title}
+                </strong>
+                <span className={branchStyles.quickMenuItemDescription}>
+                  {item.description}
+                </span>
+                <span className={branchStyles.quickMenuArrow} aria-hidden="true">
+                  →
+                </span>
+              </Link>
+            ))}
+          </nav>
+        </article>
+
         {branchGallery.length > 0 && (
           <article style={styles.textCard}>
             <h2 style={styles.sectionTitle}>{seo.shortName} 매장·수리 현장</h2>
@@ -546,7 +626,11 @@ export default async function BranchDetailPage({ params }) {
           </article>
         )}
 
-        <article style={styles.textCard}>
+        <article
+          id="branch-services"
+          className={branchStyles.anchorSection}
+          style={styles.textCard}
+        >
           <header className={branchStyles.serviceHeader}>
             <div>
               <p className={branchStyles.serviceEyebrow}>
@@ -595,7 +679,11 @@ export default async function BranchDetailPage({ params }) {
           </p>
         </article>
 
-        <article style={styles.textCard}>
+        <article
+          id="branch-visit"
+          className={branchStyles.anchorSection}
+          style={styles.textCard}
+        >
           <h2 style={styles.sectionTitle}>인근 지역 방문 안내</h2>
 
           {seo.visitAreas ? (
@@ -652,7 +740,11 @@ export default async function BranchDetailPage({ params }) {
         </article>
 
         {recentCases.length > 0 && (
-          <article id="branch-recent-cases" style={styles.textCard}>
+          <article
+            id="branch-recent-cases"
+            className={branchStyles.anchorSection}
+            style={styles.textCard}
+          >
             <h2 style={styles.sectionTitle}>{seo.shortName} 최근 수리사례</h2>
             <p style={styles.paragraph}>
               실제 접수된 기기의 증상과 점검·수리 내용을 확인해 보세요.

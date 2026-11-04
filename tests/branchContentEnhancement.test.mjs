@@ -149,3 +149,28 @@ test("branch page renders semantic links and immediate case revalidation", () =>
     /revalidatePath\("\/branches\/\[slug\]", "page"\)/,
   )
 })
+
+test("branch quick menu links to real sections with a recent-case fallback", () => {
+  const pageSource = readFileSync(
+    new URL("../src/app/branches/[slug]/page.js", import.meta.url),
+    "utf8",
+  )
+  const cssSource = readFileSync(
+    new URL("../src/app/branches/[slug]/page.module.css", import.meta.url),
+    "utf8",
+  )
+
+  assert.match(pageSource, /href: "#branch-services"/)
+  assert.match(pageSource, /href: "#branch-visit"/)
+  assert.match(
+    pageSource,
+    /recentCases\.length > 0 \? "#branch-recent-cases" : "\/repair-cases"/,
+  )
+  assert.match(pageSource, /href: contactHref/)
+  assert.match(pageSource, /id="branch-services"/)
+  assert.match(pageSource, /id="branch-visit"/)
+  assert.match(pageSource, /id="branch-recent-cases"/)
+  assert.match(pageSource, /페이지 바로가기/)
+  assert.match(cssSource, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/)
+  assert.match(cssSource, /scroll-margin-top: 110px/)
+})
