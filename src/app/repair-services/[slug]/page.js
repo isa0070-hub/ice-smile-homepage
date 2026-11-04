@@ -12,6 +12,7 @@ import {
 } from "@/lib/publicRepairCases";
 import { getOrganizationJsonLd } from "@/lib/siteSeo";
 import { getLegacyRepairCaseTitle } from "@/lib/legacyRepairCasePresentation";
+import { branchOffersRepairService } from "@/lib/branchServiceCards";
 import {
   branchSeo,
   getBranchCanonicalUrl,
@@ -38,7 +39,7 @@ const contactDeviceSlugs = new Set([
   "lenovo",
 ]);
 
-async function getActiveServiceBranches() {
+async function getActiveServiceBranches(serviceSlug) {
   let branchRows = [];
   let branchQueryFailed = false;
 
@@ -73,7 +74,10 @@ async function getActiveServiceBranches() {
       // A transient query failure must not remove every verified location from
       // this service hub. Only a successfully read, explicit inactive flag
       // removes a branch link.
-      return branchQueryFailed || databaseBranch?.is_active !== false;
+      return (
+        branchOffersRepairService(seo.slug, serviceSlug) &&
+        (branchQueryFailed || databaseBranch?.is_active !== false)
+      );
     })
     .map((seo) => ({
       seo,
@@ -236,7 +240,7 @@ export default async function RepairServicePage({ params }) {
     }
   }
 
-  const activeBranches = await getActiveServiceBranches();
+  const activeBranches = await getActiveServiceBranches(service.slug);
 
   const canonicalUrl = `${baseUrl}/repair-services/${service.slug}`;
 

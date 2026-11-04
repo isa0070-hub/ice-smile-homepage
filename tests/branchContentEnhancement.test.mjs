@@ -3,6 +3,7 @@ import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import {
   getBranchServiceCards,
+  branchOffersRepairService,
   branchServiceCardKeys,
 } from "../src/lib/branchServiceCards.js"
 import {
@@ -45,6 +46,47 @@ test("branch service cards match each branch's confirmed service scope", () => {
     assert.ok(cards.every((card) => card.title.length > 0))
     assert.ok(cards.every((card) => card.parts.length >= 2))
   }
+})
+
+test("service hubs only link to branches that offer the service", () => {
+  assert.equal(branchOffersRepairService("gangbyeon", "macbook"), true)
+  assert.equal(branchOffersRepairService("seolleung", "macbook"), true)
+  assert.equal(branchOffersRepairService("sindorim", "macbook"), false)
+
+  assert.equal(branchOffersRepairService("gangbyeon", "lenovo"), false)
+  assert.equal(branchOffersRepairService("seolleung", "lenovo"), true)
+  assert.equal(branchOffersRepairService("sindorim", "lenovo"), false)
+
+  for (const slug of Object.keys(branchServiceCardKeys)) {
+    assert.equal(branchOffersRepairService(slug, "apple"), true)
+    assert.equal(branchOffersRepairService(slug, "notebook-tablet"), true)
+  }
+})
+
+test("homepage and footer expose balanced branch links without losing map links", () => {
+  const homeSource = readFileSync(
+    new URL("../src/app/page.js", import.meta.url),
+    "utf8",
+  )
+  const layoutSource = readFileSync(
+    new URL("../src/app/layout.js", import.meta.url),
+    "utf8",
+  )
+
+  for (const slug of ["gangbyeon", "seolleung", "sindorim"]) {
+    assert.match(homeSource, new RegExp(`href="/branches/${slug}"`))
+    assert.match(layoutSource, new RegExp(`href="/branches/${slug}"`))
+  }
+
+  assert.equal(
+    [...homeSource.matchAll(/https:\/\/map\.naver\.com\/p\/entry\/place\//g)]
+      .length,
+    3,
+  )
+  assert.equal([...homeSource.matchAll(/네이버지도 보기/g)].length, 3)
+  assert.match(layoutSource, /rel="alternate"/)
+  assert.match(layoutSource, /type="application\/rss\+xml"/)
+  assert.match(layoutSource, /href="\/rss\.xml"/)
 })
 
 test("latest gallery case is deterministic and limited to branch and device", () => {
