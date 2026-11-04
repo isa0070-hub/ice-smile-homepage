@@ -6,6 +6,7 @@ import {
   getBranchDisplayData,
   getBranchSeoForRecord,
 } from "@/lib/branchSeo";
+import { parseRepairCaseContentSections } from "@/lib/repairCaseAuthoring";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 const RESOURCE_CONFIG = Object.freeze({
@@ -211,14 +212,29 @@ function sanitizeBranch(payload) {
   };
 }
 
+function hasStoredContentSections(value) {
+  if (value === null || value === undefined || value === "") return false;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "object") return Object.keys(value).length > 0;
+
+  const normalized = String(value).trim().toLowerCase();
+  return !new Set(["", "[]", "{}", "null"]).has(normalized);
+}
+
 function sanitizeContentSections(value) {
   if (value === null || value === undefined) return null;
 
-  if (!Array.isArray(value) || value.length > 100) {
+  const sections = parseRepairCaseContentSections(value);
+
+  if (!Array.isArray(sections) || sections.length > 100) {
     throw new AdminContentError("본문 구성이 올바르지 않습니다.");
   }
 
-  return value.map((section, index) => ({
+  if (hasStoredContentSections(value) && sections.length === 0) {
+    throw new AdminContentError("기존 본문 구성을 해석하지 못했습니다.");
+  }
+
+  return sections.map((section, index) => ({
     ...(section?.type === "closing" ? { type: "closing" } : {}),
     title: text(section?.title, `본문 ${index + 1} 제목`, { max: 200 }),
     content: text(section?.content, `본문 ${index + 1} 내용`, { max: 50000 }),
@@ -240,7 +256,7 @@ function sanitizeContentSections(value) {
 }
 
 function sanitizeRepairCase(payload, { creating = false } = {}) {
-  const slug = text(payload?.slug, "SEO 주소", { required: true, max: 200 })
+  const slug = text(payload?.slug, "SEO 주소", { required: true, max: 160 })
     .toLowerCase()
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");
@@ -268,9 +284,15 @@ function sanitizeRepairCase(payload, { creating = false } = {}) {
     alt_text: text(payload?.alt_text, "대표 이미지 ALT", { max: 1000 }),
   };
 
-  if (creating) {
+  if (creating || Object.hasOwn(payload, "blog_url")) {
     data.blog_url = optionalUrl(payload?.blog_url, "블로그 주소");
+  }
+
+  if (creating || Object.hasOwn(payload, "blog_title")) {
     data.blog_title = text(payload?.blog_title, "블로그 제목", { max: 500 });
+  }
+
+  if (creating || Object.hasOwn(payload, "content_sections")) {
     data.content_sections = sanitizeContentSections(payload?.content_sections);
   }
 

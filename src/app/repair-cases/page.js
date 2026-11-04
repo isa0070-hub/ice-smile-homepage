@@ -360,7 +360,7 @@ export default async function RepairCasesPage({ searchParams }) {
   let query = supabase
     .from("repair_cases")
     .select(
-      "id, slug, image_url, alt_text, title, branch, category, device, model, symptom, seo_keyword, repair_content, created_at",
+      "id, slug, image_url, alt_text, title, branch, category, device, model, symptom, repair_content, created_at",
       { count: "exact" },
     )
     .not("slug", "is", null)
@@ -578,11 +578,7 @@ export default async function RepairCasesPage({ searchParams }) {
                 </p>
 
                 <p style={symptomTextStyle}>
-                  증상 : {item.symptom || "증상 확인중"}
-                </p>
-
-                <p style={keywordTextStyle}>
-                  대표 키워드 : {item.seo_keyword || "키워드 없음"}
+                  접수 증상 : {item.symptom || "증상 확인중"}
                 </p>
 
                 <p style={excerptTextStyle}>
@@ -910,10 +906,6 @@ const deviceTextStyle = {
 
 const symptomTextStyle = {
   color: "#334155",
-};
-
-const keywordTextStyle = {
-  color: "#475569",
 };
 
 const excerptTextStyle = {
