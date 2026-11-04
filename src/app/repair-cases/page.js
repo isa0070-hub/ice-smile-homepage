@@ -12,6 +12,7 @@ import {
   WEBSITE_ID,
 } from "@/lib/siteSeo";
 import { getLegacyRepairCasePresentation } from "@/lib/legacyRepairCasePresentation";
+import { isRepairCasePageOutOfRangeError } from "@/lib/repairCasePagination";
 
 const BASE_URL = "https://www.ismileagain.co.kr";
 const PAGE_SIZE = 18;
@@ -383,6 +384,12 @@ export default async function RepairCasesPage({ searchParams }) {
     firstRow + PAGE_SIZE - 1,
   );
 
+  // PostgREST returns PGRST103 when a requested archive offset is beyond the
+  // available rows. That is a missing pagination URL, not a server failure.
+  if (isRepairCasePageOutOfRangeError(error, currentPage)) {
+    notFound();
+  }
+
   if (error) {
     console.error("repair_cases archive error:", error);
     throw new Error("수리사례 목록을 불러오지 못했습니다.");
@@ -394,7 +401,7 @@ export default async function RepairCasesPage({ searchParams }) {
   const totalCount = typeof count === "number" ? count : safeCases.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
-  if (!error && currentPage > totalPages) {
+  if (currentPage > totalPages) {
     notFound();
   }
 

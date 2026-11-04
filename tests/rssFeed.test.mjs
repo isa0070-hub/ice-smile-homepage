@@ -10,6 +10,7 @@ import {
   joinRssItemsWithinBudget,
   makeRepairCaseRssDescription,
 } from "../src/lib/rssFeed.js";
+import { getLegacyRepairCasePresentation } from "../src/lib/legacyRepairCasePresentation.js";
 
 test("RSS repair-case description includes the complete repair body", () => {
   const body = "파손된 액정을 분리한 뒤 새 액정으로 교체하고 터치와 화면 출력을 점검했습니다.";
@@ -33,6 +34,32 @@ test("RSS repair-case description includes the complete repair body", () => {
   assert.match(description, /수리 완료 최종 기능 검사를 완료했습니다\./);
   assert.ok(description.endsWith("최종 기능 검사를 완료했습니다."));
   assert.equal(description.includes("…"), false);
+});
+
+test("RSS uses the same sanitized body as the public repair-case page", () => {
+  const item = {
+    slug: "마이크로소프트-서피스프로-7-액정-파손-교체-내부-정밀-청소부터-완벽-당일수리-택배가능",
+    title: "서피스프로7 액정 교체",
+    branch: "선릉점",
+    device: "서피스",
+    model: "서피스프로7",
+    symptom: "액정 파손",
+    repair_content:
+      "정품 디스플레이 모듈로 완벽 교체한 뒤 기능을 점검했습니다.",
+    content_sections: [
+      {
+        title: "정품 배터리 점검",
+        content: "완벽 기능 테스트를 진행했습니다.",
+      },
+    ],
+  };
+  const publicPresentation = getLegacyRepairCasePresentation(item);
+  const description = makeRepairCaseRssDescription(item);
+
+  assert.ok(description.includes(publicPresentation.repairContent));
+  assert.match(description, /교체용 디스플레이 모듈로 교체/);
+  assert.match(description, /교체용 배터리 점검 기능 테스트/);
+  assert.doesNotMatch(description, /정품 디스플레이 모듈|정품 배터리|완벽/);
 });
 
 test("RSS section parser supports legacy wrapped and encoded content", () => {

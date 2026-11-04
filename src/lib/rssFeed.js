@@ -1,3 +1,5 @@
+import { getLegacyRepairCasePresentation } from "./legacyRepairCasePresentation.js";
+
 // Keep enough headroom below Naver Search Advisor's 10 MB RSS limit for
 // response headers and any small channel-level additions made in the future.
 export const RSS_MAX_BYTES = 9_500_000;
@@ -59,14 +61,18 @@ export function getRepairCaseContentSectionTexts(value) {
 }
 
 export function makeRepairCaseRssDescription(item) {
+  // Keep the feed body identical to the public repair-case presentation. The
+  // detail page applies this cleanup to legacy marketing claims, known typos
+  // and structured sections before visitors or crawlers see them.
+  const presentation = getLegacyRepairCasePresentation(item || {});
   const identity = [item?.branch, item?.device, item?.model]
     .map(cleanRssText)
     .filter(Boolean)
     .filter((value, index, values) => values.indexOf(value) === index);
   const symptom = cleanRssText(item?.symptom);
-  const repairContent = cleanRssText(item?.repair_content);
+  const repairContent = cleanRssText(presentation.repairContent);
   const sectionTexts = getRepairCaseContentSectionTexts(
-    item?.content_sections,
+    presentation.contentSections,
   );
   const fallbackTitle = cleanRssText(item?.title);
 
