@@ -174,3 +174,16 @@ test("branch quick menu links to real sections with a recent-case fallback", () 
   assert.match(cssSource, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/)
   assert.match(cssSource, /scroll-margin-top: 110px/)
 })
+
+test("branch sitemap modification date matches the branch content release", () => {
+  const sitemapSource = readFileSync(
+    new URL("../src/app/sitemap.js", import.meta.url),
+    "utf8",
+  )
+
+  assert.match(
+    sitemapSource,
+    /BRANCH_CONTENT_LAST_MODIFIED = new Date\("2026-11-04T00:00:00\+09:00"\)/,
+  )
+  assert.match(sitemapSource, /lastModified: BRANCH_CONTENT_LAST_MODIFIED/)
+})
