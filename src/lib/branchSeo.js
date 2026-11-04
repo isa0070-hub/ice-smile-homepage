@@ -47,21 +47,6 @@ export const branchSeo = deepFreeze({
       weekdays: "월요일~토요일 10:30~19:00",
       closed: "매주 일요일·공휴일 및 매월 둘째·넷째 화요일 휴무",
     },
-    openingHoursSpecification: [
-      {
-        "@type": "OpeningHoursSpecification",
-        dayOfWeek: [
-          "Monday",
-          "Tuesday",
-          "Wednesday",
-          "Thursday",
-          "Friday",
-          "Saturday",
-        ],
-        opens: "10:30",
-        closes: "19:00",
-      },
-    ],
     h1: "강변아이폰수리·강변아이패드수리",
     title:
       "강변아이폰수리·강변아이패드수리 | 아이스마일어게인 강변역점",

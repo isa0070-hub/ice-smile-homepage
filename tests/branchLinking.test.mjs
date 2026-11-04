@@ -1,7 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { branchSeo, branchSlugs, getBranchCanonicalUrl } from "../src/lib/branchSeo.js";
+import {
+  branchSeo,
+  branchSlugs,
+  getBranchCanonicalUrl,
+  getBranchLocalBusinessJsonLd,
+} from "../src/lib/branchSeo.js";
 
 test("Gangbyeon core search identity is preserved", () => {
   const branch = branchSeo.gangbyeon;
@@ -20,6 +25,23 @@ test("Nearby area directions point to the real Gangbyeon branch", () => {
     assert.match(area.description, /20호/);
   }
   assert.deepEqual(branchSlugs, ["gangbyeon", "seolleung", "sindorim"]);
+});
+
+test("Gangbyeon keeps visible hours without publishing inaccurate recurring hours", () => {
+  assert.equal(
+    branchSeo.gangbyeon.businessHours.weekdays,
+    "월요일~토요일 10:30~19:00",
+  );
+  assert.match(branchSeo.gangbyeon.businessHours.closed, /둘째·넷째 화요일 휴무/);
+
+  const gangbyeonJsonLd = getBranchLocalBusinessJsonLd(branchSeo.gangbyeon);
+  assert.equal("openingHoursSpecification" in gangbyeonJsonLd, false);
+
+  for (const slug of ["seolleung", "sindorim"]) {
+    const branchJsonLd = getBranchLocalBusinessJsonLd(branchSeo[slug]);
+    assert.ok(Array.isArray(branchJsonLd.openingHoursSpecification));
+    assert.ok(branchJsonLd.openingHoursSpecification.length > 0);
+  }
 });
 
 test("Seolleung description and parking use confirmed operating conditions", () => {

@@ -67,6 +67,13 @@ function cleanRepairCaseText(value) {
   return cleanText(sanitizeRepairCaseSearchText(String(value || "")));
 }
 
+const FACTUAL_SECTION_TITLES = Object.freeze({
+  intake: "접수증상과기기상태",
+  inspection: "점검결과",
+  repair: "진행한수리작업",
+  verification: "수리후기능확인",
+});
+
 function normalizeContentSections(value) {
   let sections = value;
 
@@ -114,6 +121,9 @@ function normalizeContentSections(value) {
           cleanText(section?.title).includes("마무리"));
       const imageStart = Number(section?.image_start);
       const imageEnd = Number(section?.image_end);
+      const hasNoImages = [section?.image_start, section?.image_end].some(
+        (value) => value === 0 || String(value ?? "").trim() === "0",
+      );
       const currentProcessIndex = processIndex;
 
       if (!isClosing) {
@@ -126,11 +136,15 @@ function normalizeContentSections(value) {
         content: String(section?.content || "").trim(),
         image_start: isClosing
           ? null
+          : hasNoImages
+            ? 0
           : Number.isFinite(imageStart) && imageStart > 0
             ? Math.floor(imageStart)
             : currentProcessIndex * 3 + 1,
         image_end: isClosing
           ? null
+          : hasNoImages
+            ? 0
           : Number.isFinite(imageEnd) && imageEnd > 0
             ? Math.floor(imageEnd)
             : currentProcessIndex * 3 + 3,
@@ -140,6 +154,13 @@ function normalizeContentSections(value) {
 }
 
 function getSectionImages(section, detailImages = [], sectionIndex = 0) {
+  if (
+    Number(section?.image_start) === 0 ||
+    Number(section?.image_end) === 0
+  ) {
+    return [];
+  }
+
   const fallbackStart = sectionIndex * 3;
   const requestedStart = Number(section?.image_start) - 1;
   const requestedEnd = Number(section?.image_end);
@@ -238,6 +259,108 @@ function normalizeComparable(value = "") {
   return cleanText(value)
     .toLowerCase()
     .replace(/[^a-z0-9가-힣]/g, "");
+}
+
+function getFactualSectionRole(title) {
+  const normalizedTitle = normalizeComparable(title);
+
+  return (
+    Object.entries(FACTUAL_SECTION_TITLES).find(([, expectedTitle]) =>
+      normalizedTitle.includes(expectedTitle),
+    )?.[0] || ""
+  );
+}
+
+function getFactualCaseSections(item) {
+  const presentation = getLegacyRepairCasePresentation(item || {});
+  const sections = normalizeContentSections(presentation.contentSections);
+  const byRole = {};
+
+  sections.forEach((section) => {
+    const role = getFactualSectionRole(section.title);
+
+    if (role && !byRole[role]) {
+      byRole[role] = section;
+    }
+  });
+
+  return {
+    byRole,
+    isFactualFormat: Object.keys(FACTUAL_SECTION_TITLES).every(
+      (role) => byRole[role]?.content,
+    ),
+    presentation,
+  };
+}
+
+function splitCaseSentences(value) {
+  const text = cleanRepairCaseText(value);
+
+  if (!text) return [];
+
+  return text
+    .split(/(?<=[.!?])\s+/u)
+    .map(cleanText)
+    .filter(Boolean);
+}
+
+function limitCaseSummary(value, maxLength = 155) {
+  const text = cleanText(value);
+  const characters = Array.from(text);
+
+  if (characters.length <= maxLength) return text;
+
+  const limited = characters.slice(0, maxLength).join("");
+  const sentenceBoundary = Math.max(
+    limited.lastIndexOf("."),
+    limited.lastIndexOf("!"),
+    limited.lastIndexOf("?"),
+  );
+
+  if (sentenceBoundary >= Math.floor(maxLength * 0.55)) {
+    return limited.slice(0, sentenceBoundary + 1).trim();
+  }
+
+  const wordBoundary = limited.lastIndexOf(" ");
+  const summary =
+    wordBoundary >= Math.floor(maxLength * 0.65)
+      ? limited.slice(0, wordBoundary)
+      : limited;
+
+  return summary.replace(/[\s,.:;·/_-]+$/gu, "").trim();
+}
+
+function makeFactualCaseDescription(item) {
+  const { byRole, isFactualFormat, presentation } =
+    getFactualCaseSections(item);
+
+  if (!isFactualFormat) return "";
+
+  const introSentences = splitCaseSentences(presentation.repairContent);
+  const sectionSentences = [
+    byRole.intake,
+    byRole.repair,
+    byRole.verification,
+    byRole.inspection,
+  ].flatMap((section) => splitCaseSentences(section?.content).slice(0, 1));
+  const sentences = (introSentences.length > 0
+    ? introSentences
+    : sectionSentences
+  )
+    .filter((sentence, index, values) => values.indexOf(sentence) === index)
+    .slice(0, 2);
+
+  return limitCaseSummary(sentences.join(" "));
+}
+
+function makeFactualRepairAction(item) {
+  const { byRole } = getFactualCaseSections(item);
+
+  const [repairSentence = ""] = splitCaseSentences(byRole.repair?.content);
+
+  return limitCaseSummary(repairSentence, 120)
+    .replace(/[.!?]+$/gu, "")
+    .trim();
 }
 
 function dedupeAdjacentTerms(value = "") {
@@ -367,6 +490,12 @@ function findRepairAction(item) {
 }
 
 function makeMetaKeyword(item) {
+  const factualRepairAction = makeFactualRepairAction(item);
+
+  if (factualRepairAction) {
+    return factualRepairAction;
+  }
+
   const branchLabel = getBranchSearchLabel(item?.branch);
   const device = cleanText(item?.device);
   const model = cleanText(item?.model);
@@ -435,6 +564,12 @@ function makeMetaKeyword(item) {
 function makeDescription(item) {
   if (!item) {
     return "아이스마일어게인 수리사례 상세페이지입니다. 아이폰, 아이패드, 맥북, 서피스, 레노버 수리 사례를 확인해보세요.";
+  }
+
+  const factualDescription = makeFactualCaseDescription(item);
+
+  if (factualDescription) {
+    return factualDescription;
   }
 
   return makeRepairCaseMetaDescription({
