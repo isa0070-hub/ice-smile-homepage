@@ -29,6 +29,7 @@ export function revalidateAdminResource(resource) {
       revalidatePath("/repair-cases");
       revalidatePath("/repair-cases/[slug]", "page");
       revalidatePath("/repair-services/[slug]", "page");
+      revalidatePath("/branches/[slug]", "page");
       revalidatePath("/sitemap.xml");
       revalidatePath("/rss.xml");
       break;
