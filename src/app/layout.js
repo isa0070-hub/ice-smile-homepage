@@ -28,6 +28,14 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="ko">
+      <head>
+        <link
+          rel="alternate"
+          type="application/rss+xml"
+          title="아이스마일어게인 수리사례 RSS"
+          href="/rss.xml"
+        />
+      </head>
       <body>
         <SiteHeader />
         <PopupNotice />
@@ -69,7 +77,10 @@ export default function RootLayout({ children }) {
               9층 57-1번 기둥 / 02-2111-8899
             </p>
 
-            <nav aria-label="주요 수리 서비스" style={footerServiceNavStyle}>
+            <nav
+              aria-label="주요 수리 서비스와 지점"
+              style={footerServiceNavStyle}
+            >
               <Link href="/repair-services/iphone" style={footerLinkStyle}>
                 아이폰 수리
               </Link>
@@ -94,8 +105,14 @@ export default function RootLayout({ children }) {
               >
                 ASUS·HP·LG 노트북 수리
               </Link>
+              <Link href="/branches/gangbyeon" style={footerLinkStyle}>
+                강변역점 안내
+              </Link>
               <Link href="/branches/seolleung" style={footerLinkStyle}>
-                강남 아이폰 수리 선릉점
+                선릉점 안내
+              </Link>
+              <Link href="/branches/sindorim" style={footerLinkStyle}>
+                신도림점 안내
               </Link>
               <Link href="/contact" style={footerLinkStyle}>
                 온라인 수리 문의

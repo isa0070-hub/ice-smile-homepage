@@ -109,9 +109,28 @@ const branchServiceCardKeys = Object.freeze({
   ]),
 })
 
+const appleServiceCardKeys = Object.freeze([
+  "iphone",
+  "ipad",
+  "macbook",
+  "appleWatch",
+])
+
 export function getBranchServiceCards(branchSlug) {
   return (branchServiceCardKeys[branchSlug] || []).map(
     (key) => serviceCardCatalog[key],
+  )
+}
+
+export function branchOffersRepairService(branchSlug, serviceSlug) {
+  const cards = getBranchServiceCards(branchSlug)
+
+  if (serviceSlug === "apple") {
+    return cards.some((card) => appleServiceCardKeys.includes(card.key))
+  }
+
+  return cards.some(
+    (card) => card.href === `/repair-services/${serviceSlug}`,
   )
 }
 

@@ -477,17 +477,13 @@ export default async function Home() {
 
         <div style={gridStyle}>
           <div style={cardStyle}>
-            <a
-              href="https://map.naver.com/p/entry/place/31476004"
-              target="_blank"
-              rel="noreferrer"
-            >
+            <Link href="/branches/gangbyeon">
               <OptimizedImage
                 src="/images/gangbyeon-branch.jpg"
                 alt="아이스마일어게인 강변역점 강변테크노마트 지점 이미지"
                 height={180}
               />
-            </a>
+            </Link>
 
             <h3>
               <Link href="/branches/gangbyeon" style={branchTitleLinkStyle}>
@@ -502,20 +498,26 @@ export default async function Home() {
                 📞 02-3424-5295
               </a>
             </p>
+            <p>
+              <a
+                href="https://map.naver.com/p/entry/place/31476004"
+                target="_blank"
+                rel="noreferrer"
+                style={branchMapLinkStyle}
+              >
+                네이버지도 보기
+              </a>
+            </p>
           </div>
 
           <div style={cardStyle}>
-            <a
-              href="https://map.naver.com/p/entry/place/20557661"
-              target="_blank"
-              rel="noreferrer"
-            >
+            <Link href="/branches/seolleung">
               <OptimizedImage
                 src="/images/seolleung-branch.jpg"
                 alt="아이스마일어게인 선릉점 선릉역 1번 출구 지점 이미지"
                 height={180}
               />
-            </a>
+            </Link>
 
             <h3>
               <Link href="/branches/seolleung" style={branchTitleLinkStyle}>
@@ -531,20 +533,26 @@ export default async function Home() {
                 📞 02-554-5295
               </a>
             </p>
+            <p>
+              <a
+                href="https://map.naver.com/p/entry/place/20557661"
+                target="_blank"
+                rel="noreferrer"
+                style={branchMapLinkStyle}
+              >
+                네이버지도 보기
+              </a>
+            </p>
           </div>
 
           <div style={cardStyle}>
-            <a
-              href="https://map.naver.com/p/entry/place/13486497"
-              target="_blank"
-              rel="noreferrer"
-            >
+            <Link href="/branches/sindorim">
               <OptimizedImage
                 src="/images/sindorim-branch.jpg"
                 alt="아이스마일어게인 신도림점 신도림테크노마트 지점 이미지"
                 height={180}
               />
-            </a>
+            </Link>
 
             <h3>
               <Link href="/branches/sindorim" style={branchTitleLinkStyle}>
@@ -557,6 +565,16 @@ export default async function Home() {
             <p>
               <a href="tel:02-2111-8899" style={phoneStyle}>
                 📞 02-2111-8899
+              </a>
+            </p>
+            <p>
+              <a
+                href="https://map.naver.com/p/entry/place/13486497"
+                target="_blank"
+                rel="noreferrer"
+                style={branchMapLinkStyle}
+              >
+                네이버지도 보기
               </a>
             </p>
           </div>
@@ -668,6 +686,13 @@ const phoneStyle = {
 const branchTitleLinkStyle = {
   color: "inherit",
   textDecoration: "none",
+};
+
+const branchMapLinkStyle = {
+  color: "#1e3a8a",
+  fontWeight: "800",
+  textDecoration: "underline",
+  textUnderlineOffset: "3px",
 };
 
 const kakaoButtonStyle = {
