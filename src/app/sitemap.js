@@ -14,6 +14,11 @@ const baseUrl = "https://www.ismileagain.co.kr";
 // SEO presentation and internal-link structure were materially updated in this
 // release. Keep this date fixed; a rolling build date would overstate freshness.
 const SEO_RELEASE_LAST_MODIFIED = new Date("2026-09-09T00:00:00+09:00");
+// Branch detail pages received new service cards, repair photos and quick
+// navigation in the November branch-content release. Keep this separate from
+// the older site-wide SEO release date so unrelated URLs do not claim a newer
+// modification time.
+const BRANCH_CONTENT_LAST_MODIFIED = new Date("2026-11-04T00:00:00+09:00");
 
 function toValidDate(value) {
   if (!value) {
@@ -207,7 +212,7 @@ export default async function sitemap() {
 
   const branchPages = activeBranchSlugs.map((slug) => ({
     url: `${baseUrl}/branches/${slug}`,
-    lastModified: SEO_RELEASE_LAST_MODIFIED,
+    lastModified: BRANCH_CONTENT_LAST_MODIFIED,
     changeFrequency: "monthly",
     priority: 0.85,
   }));
