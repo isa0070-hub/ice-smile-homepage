@@ -23,10 +23,14 @@ test("Nearby area directions point to the real Gangbyeon branch", () => {
 });
 
 test("Seolleung description and parking use confirmed operating conditions", () => {
-  assert.match(branchSeo.seolleung.description, /10:30~19:30/);
+  assert.match(branchSeo.seolleung.description, /10:30~19:00/);
   assert.match(branchSeo.seolleung.description, /매장 등록 시 1시간/);
   assert.match(branchSeo.seolleung.description, /2\.3m/);
   assert.match(branchSeo.seolleung.businessHours.closed, /대체공휴일/);
+  assert.equal(
+    branchSeo.seolleung.openingHoursSpecification[0].closes,
+    "19:00",
+  );
 });
 
 test("Branch pages connect both owned blogs with descriptive labels", () => {

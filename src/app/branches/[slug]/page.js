@@ -2,6 +2,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import Image from "@/components/SiteImage"
 import { supabase } from "@/lib/supabase"
+import branchStyles from "./page.module.css"
 import {
   getBranchCanonicalUrl,
   getBranchDisplayData,
@@ -15,22 +16,15 @@ import {
   getPublicRepairCasePath,
   isPublicRepairCaseSlug,
 } from "@/lib/publicRepairCases"
+import {
+  getGalleryCaseHref,
+  getGalleryCaseSearchFilter,
+  selectLatestGalleryCase,
+} from "@/lib/branchGalleryCases"
+import { getBranchServiceCards } from "@/lib/branchServiceCards"
 import { getLegacyRepairCaseTitle } from "@/lib/legacyRepairCasePresentation"
 
 export const revalidate = 3600
-
-const serviceHubLinks = [
-  { href: "/repair-services/iphone", label: "아이폰 수리 안내" },
-  { href: "/repair-services/ipad", label: "아이패드 수리 안내" },
-  { href: "/repair-services/macbook", label: "맥북 수리 안내" },
-  { href: "/repair-services/surface", label: "서피스 수리 안내" },
-  { href: "/repair-services/lenovo", label: "레노버 수리 안내" },
-  { href: "/repair-services/apple", label: "애플 제품 수리 안내" },
-  {
-    href: "/repair-services/notebook-tablet",
-    label: "ASUS·HP·LG 노트북 수리 안내",
-  },
-]
 
 const branchGalleries = {
   seolleung: [
@@ -38,21 +32,26 @@ const branchGalleries = {
       src: "/images/branches/seolleung/seolleung-entrance.jpg",
       alt: "서울 강남구 테헤란로 406 샹제리제센터 A동 406호 아이스마일어게인 선릉점 출입구",
       caption: "샹제리제센터 A동 406호 선릉점 출입구",
+      linkLabel: "선릉점 최근 수리사례 보기",
       width: 1200,
       height: 900,
     },
     {
       src: "/images/branches/seolleung/seolleung-iphone-screen-repair.jpg",
-      alt: "아이스마일어게인 선릉점 아이폰 액정 분해 점검 작업대",
-      caption: "아이폰 액정 분해·점검 작업",
-      width: 1200,
-      height: 900,
+      alt: "아이스마일어게인 선릉점 아이폰 파손 액정 교체 전후 비교",
+      caption: "아이폰 파손 액정 교체 작업",
+      caseGroup: "iphone",
+      linkLabel: "최신 아이폰 수리사례 보기",
+      width: 1280,
+      height: 960,
     },
     {
       src: "/images/branches/seolleung/seolleung-device-repair-workbench.jpg",
-      alt: "아이스마일어게인 선릉점 태블릿과 스마트기기 분해 점검 작업대",
-      caption: "태블릿·스마트기기 분해 점검 작업",
-      width: 720,
+      alt: "아이스마일어게인 선릉점 마이크로소프트 서피스 메인보드 분해 점검",
+      caption: "서피스 메인보드 분해·점검 작업",
+      caseGroup: "surface",
+      linkLabel: "최신 서피스 수리사례 보기",
+      width: 1280,
       height: 960,
     },
   ],
@@ -90,14 +89,99 @@ async function getRecentBranchCases(seo) {
     .not("slug", "is", null)
     .neq("slug", "")
     .order("created_at", { ascending: false })
-    .limit(3)
+    .order("id", { ascending: false })
+    .limit(12)
 
   if (error) {
     console.error("branch recent repair cases error:", error)
     return []
   }
 
-  return (data || []).filter((item) => isPublicRepairCaseSlug(item?.slug))
+  return (data || [])
+    .filter((item) => isPublicRepairCaseSlug(item?.slug))
+    .slice(0, 3)
+}
+
+async function getLatestBranchGalleryCase(seo, group) {
+  const searchFilter = getGalleryCaseSearchFilter(group)
+
+  if (!searchFilter) return null
+
+  const { data, error } = await supabase
+    .from("repair_cases")
+    .select("id,branch,slug,title,device,model,symptom,created_at")
+    .in("branch", seo.dbNames)
+    .not("slug", "is", null)
+    .neq("slug", "")
+    .or(searchFilter)
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(40)
+
+  if (error) {
+    console.error(`branch ${group} gallery case error:`, error)
+    return null
+  }
+
+  return selectLatestGalleryCase(data, {
+    branchNames: seo.dbNames,
+    group,
+  })
+}
+
+function ServiceCardIcon({ type }) {
+  if (type === "phone") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="7" y="2" width="10" height="20" rx="2.5" />
+        <path d="M10 18.5h4" />
+      </svg>
+    )
+  }
+
+  if (type === "tablet") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="4" y="2" width="16" height="20" rx="2.5" />
+        <path d="M11.5 18.5h1" />
+      </svg>
+    )
+  }
+
+  if (type === "watch") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M9 2h6l1 4H8l1-4Z" />
+        <rect x="6.5" y="6" width="11" height="12" rx="3" />
+        <path d="m8 18 1 4h6l1-4" />
+      </svg>
+    )
+  }
+
+  if (type === "surface") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="3" y="3" width="18" height="14" rx="2" />
+        <path d="M9 21h6M12 17v4" />
+      </svg>
+    )
+  }
+
+  if (type === "tools") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M14.5 6.5a4 4 0 0 0-5-5L12 4l-2 2-2.5-2.5a4 4 0 0 0 5 5L20 16l-4 4-7.5-7.5" />
+        <path d="m5 14-3 3 5 5 3-3" />
+      </svg>
+    )
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="4" y="4" width="16" height="11" rx="2" />
+      <path d="M2 19h20M9 15v4M15 15v4" />
+    </svg>
+  )
 }
 
 export async function generateMetadata({ params }) {
@@ -182,6 +266,17 @@ export default async function BranchDetailPage({ params }) {
   const branchFaqs = getBranchFaqs(seo)
   const recentCases = await getRecentBranchCases(seo)
   const branchGallery = branchGalleries[seo.slug] || []
+  const serviceCards = getBranchServiceCards(seo.slug)
+  const galleryCaseGroups = Array.from(
+    new Set(branchGallery.map((photo) => photo.caseGroup).filter(Boolean)),
+  )
+  const galleryCaseEntries = await Promise.all(
+    galleryCaseGroups.map(async (group) => [
+      group,
+      await getLatestBranchGalleryCase(seo, group),
+    ]),
+  )
+  const latestGalleryCases = Object.fromEntries(galleryCaseEntries)
   const contactHref = `/contact?branch=${encodeURIComponent(seo.slug)}`
   const seolleungIpadContactHref =
     seo.slug === "seolleung"
@@ -406,45 +501,90 @@ export default async function BranchDetailPage({ params }) {
             </p>
 
             <div className="branch-gallery" style={styles.galleryGrid}>
-              {branchGallery.map((photo) => (
-                <figure key={photo.src} style={styles.galleryItem}>
-                  <Image
-                    src={photo.src}
-                    alt={photo.alt}
-                    width={photo.width}
-                    height={photo.height}
-                    sizes="(max-width: 760px) 100vw, 33vw"
-                    style={styles.galleryImage}
-                  />
-                  <figcaption style={styles.galleryCaption}>
-                    {photo.caption}
-                  </figcaption>
-                </figure>
-              ))}
+              {branchGallery.map((photo) => {
+                const href = photo.caseGroup
+                  ? getGalleryCaseHref(
+                      latestGalleryCases[photo.caseGroup],
+                      photo.caseGroup,
+                    )
+                  : recentCases.length > 0
+                    ? "#branch-recent-cases"
+                    : "/repair-cases"
+
+                return (
+                  <Link
+                    key={photo.src}
+                    href={href}
+                    className={branchStyles.galleryLink}
+                    aria-label={`${photo.caption} - ${photo.linkLabel}`}
+                  >
+                    <figure style={styles.galleryItem}>
+                      <Image
+                        src={photo.src}
+                        alt={photo.alt}
+                        width={photo.width}
+                        height={photo.height}
+                        sizes="(max-width: 760px) 100vw, 33vw"
+                        style={styles.galleryImage}
+                      />
+                      <figcaption
+                        className={branchStyles.galleryCaption}
+                        style={styles.galleryCaption}
+                      >
+                        <span className={branchStyles.galleryCaptionText}>
+                          {photo.caption}
+                        </span>
+                        <span className={branchStyles.galleryCta}>
+                          {photo.linkLabel} →
+                        </span>
+                      </figcaption>
+                    </figure>
+                  </Link>
+                )
+              })}
             </div>
           </article>
         )}
 
         <article style={styles.textCard}>
-          <h2 style={styles.sectionTitle}>{seo.shortName} 수리 안내</h2>
+          <header className={branchStyles.serviceHeader}>
+            <div>
+              <p className={branchStyles.serviceEyebrow}>
+                {seo.serviceAreaLabel} · {seo.shortName}
+              </p>
+              <h2 className={branchStyles.serviceTitle}>
+                {seo.shortName} 수리 가능 품목
+              </h2>
+            </div>
+            <span className={branchStyles.serviceLocation}>
+              {branch.address2}
+            </span>
+          </header>
 
-          <p style={styles.paragraph}>{seo.intro}</p>
-
-          <ul style={styles.serviceList}>
-            {seo.services.map((service) => (
-              <li key={service} style={styles.serviceItem}>
-                {service}
-              </li>
-            ))}
-          </ul>
+          <p className={branchStyles.serviceIntro}>{seo.intro}</p>
 
           <nav
             aria-label={`${seo.shortName} 기기별 수리 안내`}
-            style={styles.serviceHubLinks}
+            className={branchStyles.serviceGrid}
+            data-count={serviceCards.length}
           >
-            {serviceHubLinks.map((item) => (
-              <Link key={item.href} href={item.href} style={styles.serviceHubLink}>
-                {item.label}
+            {serviceCards.map((item) => (
+              <Link
+                key={item.key}
+                href={item.href}
+                className={branchStyles.serviceCard}
+                aria-label={`${seo.shortName} ${item.title} 안내 보기`}
+              >
+                <span className={branchStyles.serviceIcon}>
+                  <ServiceCardIcon type={item.icon} />
+                </span>
+                <h3 className={branchStyles.serviceCardTitle}>{item.title}</h3>
+                <p className={branchStyles.serviceParts}>
+                  {item.parts.join(" · ")}
+                </p>
+                <span className={branchStyles.serviceLink}>
+                  수리 안내 보기 →
+                </span>
               </Link>
             ))}
           </nav>
@@ -512,7 +652,7 @@ export default async function BranchDetailPage({ params }) {
         </article>
 
         {recentCases.length > 0 && (
-          <article style={styles.textCard}>
+          <article id="branch-recent-cases" style={styles.textCard}>
             <h2 style={styles.sectionTitle}>{seo.shortName} 최근 수리사례</h2>
             <p style={styles.paragraph}>
               실제 접수된 기기의 증상과 점검·수리 내용을 확인해 보세요.

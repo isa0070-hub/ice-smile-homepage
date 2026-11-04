@@ -1,0 +1,224 @@
+.galleryLink {
+  display: block;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+
+.galleryLink figure {
+  height: 100%;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.galleryLink:hover figure,
+.galleryLink:focus-visible figure {
+  transform: translateY(-3px);
+  border-color: #93b9f7 !important;
+  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.12);
+}
+
+.galleryCaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.galleryCaptionText {
+  min-width: 0;
+}
+
+.galleryCta {
+  flex: 0 0 auto;
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.serviceHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 14px;
+}
+
+.serviceEyebrow {
+  margin: 0 0 7px;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.serviceTitle {
+  margin: 0;
+  color: #172033;
+  font-size: clamp(26px, 3vw, 34px);
+  font-weight: 900;
+  line-height: 1.25;
+  letter-spacing: -0.035em;
+}
+
+.serviceLocation {
+  flex: 0 0 auto;
+  padding: 9px 13px;
+  color: #2455a7;
+  background: #eff6ff;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.serviceIntro {
+  max-width: 900px;
+  margin: 0 0 25px;
+  color: #526176;
+  font-size: 16px;
+  line-height: 1.85;
+}
+
+.serviceGrid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.serviceCard {
+  position: relative;
+  grid-column: span 2;
+  min-height: 206px;
+  padding: 20px;
+  overflow: hidden;
+  color: #263449;
+  background: linear-gradient(145deg, #fbfdff 0%, #f6f9fd 100%);
+  border: 1px solid #dfe8f4;
+  border-radius: 18px;
+  text-decoration: none;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.serviceGrid[data-count="7"] .serviceCard:nth-child(n + 4),
+.serviceGrid[data-count="5"] .serviceCard:nth-child(n + 4),
+.serviceGrid[data-count="4"] .serviceCard {
+  grid-column: span 3;
+}
+
+.serviceCard:hover,
+.serviceCard:focus-visible {
+  transform: translateY(-3px);
+  border-color: #93b9f7;
+  background: #ffffff;
+  box-shadow: 0 13px 28px rgba(37, 99, 235, 0.12);
+}
+
+.serviceIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 15px;
+  color: #2463db;
+  background: #eaf3ff;
+  border-radius: 13px;
+}
+
+.serviceIcon svg {
+  width: 23px;
+  height: 23px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.serviceCardTitle {
+  margin: 0 0 8px;
+  color: #182235;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.35;
+  letter-spacing: -0.025em;
+}
+
+.serviceParts {
+  margin: 0 0 38px;
+  color: #607087;
+  font-size: 14px;
+  line-height: 1.7;
+  word-break: keep-all;
+}
+
+.serviceLink {
+  position: absolute;
+  left: 20px;
+  bottom: 18px;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+@media (max-width: 840px) {
+  .serviceGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .serviceCard,
+  .serviceGrid[data-count="7"] .serviceCard:nth-child(n + 4),
+  .serviceGrid[data-count="5"] .serviceCard:nth-child(n + 4),
+  .serviceGrid[data-count="4"] .serviceCard {
+    grid-column: span 1;
+    min-height: 194px;
+  }
+}
+
+@media (max-width: 560px) {
+  .galleryCaption {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .serviceHeader {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .serviceLocation {
+    align-self: flex-start;
+  }
+
+  .serviceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .serviceCard,
+  .serviceGrid[data-count="7"] .serviceCard:nth-child(n + 4),
+  .serviceGrid[data-count="5"] .serviceCard:nth-child(n + 4),
+  .serviceGrid[data-count="4"] .serviceCard {
+    grid-column: 1;
+    min-height: 184px;
+  }
+
+  .serviceIntro {
+    font-size: 15px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .galleryLink figure,
+  .serviceCard {
+    transition: none;
+  }
+}
