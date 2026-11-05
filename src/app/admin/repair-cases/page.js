@@ -43,6 +43,7 @@ function createInitialDraft() {
     symptom: "",
     diagnosis: "",
     repairAction: "",
+    repairLabel: "",
     verification: "",
     notes: "",
     image_url: "",
@@ -255,6 +256,7 @@ export default function AdminRepairCasesPage() {
   const [draft, setDraft] = useState(createInitialDraft);
   const [titleEdited, setTitleEdited] = useState(false);
   const [slugEdited, setSlugEdited] = useState(false);
+  const [repairLabelEdited, setRepairLabelEdited] = useState(false);
   const [mainAltEdited, setMainAltEdited] = useState(false);
   const [detailImages, setDetailImages] = useState([]);
   const [message, setMessage] = useState("");
@@ -263,15 +265,41 @@ export default function AdminRepairCasesPage() {
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [registeredCaseUrl, setRegisteredCaseUrl] = useState("");
 
-  const generatedTitle = useMemo(() => buildRepairCaseTitle(draft), [draft]);
-  const effectiveTitle = titleEdited ? draft.title : generatedTitle;
-  const summary = useMemo(() => buildRepairCaseSummary(draft), [draft]);
-  const searchSummary = useMemo(
-    () => buildRepairCaseSearchSummary(draft),
+  const generatedRepairLabel = useMemo(
+    () =>
+      buildRepairCaseKeyword({
+        ...draft,
+        repairLabel: "",
+        seo_keyword: "",
+      }),
     [draft],
   );
+  const effectiveRepairLabel = repairLabelEdited
+    ? normalizeAuthoringText(draft.repairLabel)
+    : generatedRepairLabel;
+  const authoringDraft = useMemo(
+    () => ({
+      ...draft,
+      repairLabel: effectiveRepairLabel,
+      seo_keyword: effectiveRepairLabel,
+    }),
+    [draft, effectiveRepairLabel],
+  );
+  const generatedTitle = useMemo(
+    () => buildRepairCaseTitle(authoringDraft),
+    [authoringDraft],
+  );
+  const effectiveTitle = titleEdited ? draft.title : generatedTitle;
+  const summary = useMemo(
+    () => buildRepairCaseSummary(authoringDraft),
+    [authoringDraft],
+  );
+  const searchSummary = useMemo(
+    () => buildRepairCaseSearchSummary(authoringDraft),
+    [authoringDraft],
+  );
   const introContent = searchSummary || summary;
-  const keyword = useMemo(() => buildRepairCaseKeyword(draft), [draft]);
+  const keyword = effectiveRepairLabel;
   const deviceModelLabel = useMemo(() => getDeviceModelLabel(draft), [draft]);
 
   const generatedSlug = useMemo(() => {
@@ -290,21 +318,15 @@ export default function AdminRepairCasesPage() {
 
   const effectiveDraft = useMemo(
     () => ({
-      ...draft,
+      ...authoringDraft,
       title: effectiveTitle,
       slug: effectiveSlug,
       repair_content: introContent,
       seo_keyword: keyword,
       searchSummary,
     }),
-    [draft, effectiveTitle, effectiveSlug, introContent, keyword, searchSummary],
+    [authoringDraft, effectiveTitle, effectiveSlug, introContent, keyword, searchSummary],
   );
-
-  const generatedMainAlt = useMemo(
-    () => buildRepairCaseMainAlt(effectiveDraft),
-    [effectiveDraft],
-  );
-  const effectiveMainAlt = mainAltEdited ? draft.alt_text : generatedMainAlt;
 
   const sortedImages = useMemo(
     () => sortRepairCaseImages(detailImages),
@@ -327,6 +349,22 @@ export default function AdminRepairCasesPage() {
     [effectiveDraft, sortedImages],
   );
 
+  const selectedMainImage = useMemo(
+    () =>
+      preparedImages.find(
+        (image) => image.image_url && image.image_url === draft.image_url,
+      ) || null,
+    [draft.image_url, preparedImages],
+  );
+  const generatedMainAlt = useMemo(
+    () =>
+      selectedMainImage?.alt_text ||
+      selectedMainImage?.description ||
+      buildRepairCaseMainAlt(effectiveDraft),
+    [effectiveDraft, selectedMainImage],
+  );
+  const effectiveMainAlt = mainAltEdited ? draft.alt_text : generatedMainAlt;
+
   const contentSections = useMemo(
     () => buildRepairCaseContentSections(effectiveDraft, preparedImages),
     [effectiveDraft, preparedImages],
@@ -347,6 +385,7 @@ export default function AdminRepairCasesPage() {
   const workFactsReady = [
     draft.diagnosis,
     draft.repairAction,
+    effectiveRepairLabel,
     draft.verification,
   ].every(isFilled);
   const imageFactsReady = preparedImages.every(
@@ -378,6 +417,19 @@ export default function AdminRepairCasesPage() {
       ...previous,
       title: event.target.value,
     }));
+  }
+
+  function handleRepairLabelChange(event) {
+    setRepairLabelEdited(true);
+    setDraft((previous) => ({
+      ...previous,
+      repairLabel: event.target.value,
+    }));
+  }
+
+  function resetGeneratedRepairLabel() {
+    setRepairLabelEdited(false);
+    setDraft((previous) => ({ ...previous, repairLabel: "" }));
   }
 
   function resetGeneratedTitle() {
@@ -546,9 +598,11 @@ export default function AdminRepairCasesPage() {
   }
 
   function selectMainImage(image) {
+    setMainAltEdited(false);
     setDraft((previous) => ({
       ...previous,
       image_url: image.image_url,
+      alt_text: "",
     }));
   }
 
@@ -592,6 +646,7 @@ export default function AdminRepairCasesPage() {
     setDraft(createInitialDraft());
     setTitleEdited(false);
     setSlugEdited(false);
+    setRepairLabelEdited(false);
     setMainAltEdited(false);
     setDetailImages([]);
     setSubmitAttempted(false);
@@ -787,6 +842,35 @@ export default function AdminRepairCasesPage() {
               multiline
             />
 
+            <label style={fieldLabelStyle}>
+              <span style={fieldLabelTextStyle}>
+                짧은 수리 작업명 <RequiredMark />
+                <span style={optionalTextStyle}>
+                  {repairLabelEdited ? "직접 수정" : "자동 제안"}
+                </span>
+              </span>
+              <input
+                value={effectiveRepairLabel || ""}
+                onChange={handleRepairLabelChange}
+                placeholder="예: 정품 액정 교체"
+                style={inputStyle}
+                required
+              />
+              <span style={helperTextStyle}>
+                제목·검색 설명·FAQ에 사용하는 짧은 명칭입니다. 긴 수리 설명은
+                바로 위 본문에 그대로 유지됩니다.
+              </span>
+              {repairLabelEdited && (
+                <button
+                  type="button"
+                  onClick={resetGeneratedRepairLabel}
+                  style={textButtonStyle}
+                >
+                  자동 제안으로 되돌리기
+                </button>
+              )}
+            </label>
+
             <FactField
               label="작업 후 확인한 결과"
               name="verification"
@@ -835,14 +919,15 @@ export default function AdminRepairCasesPage() {
 
           <p style={sectionIntroStyle}>
             사진을 한 번에 올린 뒤 각 사진의 단계와 실제로 보이는 내용만
-            입력하세요. 순번만으로 장면을 추정하지 않습니다.
+            입력하세요. 대표사진은 홈페이지 목록과 검색 공유 이미지에 사용되며,
+            본문에서는 선택한 수리 단계 위치가 그대로 유지됩니다.
           </p>
 
           <label style={uploadBoxStyle}>
             <strong>상세사진 여러 장 선택</strong>
             <span>
-              첫 번째 사진은 대표사진으로 자동 선택되며 나중에 바꿀 수
-              있습니다.
+              첫 번째 사진이 자동 선택되며, 업로드 후 원하는 사진을
+              대표사진으로 바꿀 수 있습니다.
             </span>
             <input
               type="file"

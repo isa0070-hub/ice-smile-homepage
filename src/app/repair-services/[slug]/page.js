@@ -469,7 +469,10 @@ export default async function RepairServicePage({ params }) {
           {showRecentCases && cases.length > 0 ? (
             <div style={styles.caseGrid}>
               {cases.map((item) => {
-                const reviewedTitle = getLegacyRepairCaseTitle(item.slug);
+                const reviewedTitle = getLegacyRepairCaseTitle(
+                  item.slug,
+                  item.title,
+                );
                 const displayTitle = reviewedTitle || item.title;
 
                 return (

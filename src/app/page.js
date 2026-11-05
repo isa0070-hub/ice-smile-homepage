@@ -412,7 +412,10 @@ export default async function Home() {
           <div style={gridStyle}>
             {latestCases.length > 0 ? (
               latestCases.map((item) => {
-                const reviewedTitle = getLegacyRepairCaseTitle(item.slug);
+                const reviewedTitle = getLegacyRepairCaseTitle(
+                  item.slug,
+                  item.title,
+                );
                 const displayTitle = reviewedTitle || item.title;
 
                 return (

@@ -2,11 +2,24 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  getLegacyRepairCaseTitle,
   makeRepairCaseMetaDescription,
   makeRepairCaseMetaTitle,
   sanitizeLegacyRepairCaseText,
   sanitizeRepairCaseSearchText,
 } from "../src/lib/legacyRepairCasePresentation.js";
+
+test("the reviewed current case title is corrected only while its malformed title is stored", () => {
+  const slug = "iphone-15-pro-screen-touch-issue-replacement";
+  const malformed =
+    "선릉점 아이폰15프로 터치 불량 정품액정 교체를 원하셨고 정품과 수리사례";
+  const corrected =
+    "선릉점 아이폰15프로 화면 떨림·터치 불량 정품 액정 교체 수리사례";
+  const manuallyEdited = "선릉점 아이폰15프로 액정 교체 고객 확인 사례";
+
+  assert.equal(getLegacyRepairCaseTitle(slug, malformed), corrected);
+  assert.equal(getLegacyRepairCaseTitle(slug, manuallyEdited), "");
+});
 
 test("known repair-case typos are corrected without inventing details", () => {
   const source =

@@ -11,6 +11,13 @@ const LEGACY_REPAIR_CASE_TITLES = Object.freeze({
     "신도림점 서피스프로9 액정 파손 교체 수리 사례",
   "선릉점-아이폰15프로-액정파손-수리왕이-부활-완료":
     "선릉점 아이폰 15프로 액정 파손·녹색줄 교체 수리 사례",
+  "iphone-15-pro-screen-touch-issue-replacement":
+    "선릉점 아이폰15프로 화면 떨림·터치 불량 정품 액정 교체 수리사례",
+});
+
+const CONDITIONAL_REVIEWED_TITLE_SOURCES = Object.freeze({
+  "iphone-15-pro-screen-touch-issue-replacement":
+    "선릉점 아이폰15프로 터치 불량 정품액정 교체를 원하셨고 정품과 수리사례",
 });
 
 const LOCATION_NAMES = [
@@ -272,8 +279,20 @@ function sanitizeSectionNode(slug, value) {
   );
 }
 
-export function getLegacyRepairCaseTitle(slug) {
-  return LEGACY_REPAIR_CASE_TITLES[String(slug || "")] || "";
+export function getLegacyRepairCaseTitle(slug, storedTitle = "") {
+  const normalizedSlug = String(slug || "");
+  const reviewedTitle = LEGACY_REPAIR_CASE_TITLES[normalizedSlug] || "";
+  const conditionalSource = CONDITIONAL_REVIEWED_TITLE_SOURCES[normalizedSlug];
+
+  if (
+    conditionalSource &&
+    String(storedTitle || "").trim() &&
+    cleanPresentationText(storedTitle) !== cleanPresentationText(conditionalSource)
+  ) {
+    return "";
+  }
+
+  return reviewedTitle;
 }
 
 export function sanitizeRepairCaseSearchText(value) {
@@ -368,7 +387,7 @@ export function sanitizeLegacyRepairCaseSections(slug, value) {
 
 export function getLegacyRepairCasePresentation(item) {
   return {
-    displayTitle: getLegacyRepairCaseTitle(item.slug),
+    displayTitle: getLegacyRepairCaseTitle(item.slug, item.title),
     repairContent: sanitizeLegacyRepairCaseText(item.slug, item.repair_content),
     contentSections: sanitizeLegacyRepairCaseSections(
       item.slug,
