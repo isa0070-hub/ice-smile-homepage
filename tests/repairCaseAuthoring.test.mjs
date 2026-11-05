@@ -160,6 +160,27 @@ test("long customer-facing repair prose becomes a complete short action, title, 
   assert.doesNotMatch(description, /원하셨고|차이와|상태로[.]?$/u);
 });
 
+test("legacy long SEO text falls back to the performed repair and uses the correct particle", () => {
+  const legacyCase = {
+    branch: "선릉점",
+    device: "아이폰",
+    model: "아이폰15프로",
+    symptom:
+      "처음 떨어뜨렸을 때는 찍힘만 있었고 이후 화면 하단이 떨리며 터치가 되지 않음",
+    repairLabel:
+      "정품액정 교체를 원하셨고 정품과 가품 부품의 차이와 구별방법을 설명함",
+    repairAction:
+      "정품액정 교체를 원하셨고 부품 차이를 설명한 뒤 정품액정 교체를 실시함",
+    verification: "화면 떨림이 완전히 사라짐",
+  };
+
+  assert.equal(buildRepairCaseActionLabel(legacyCase), "정품 액정 교체");
+  assert.equal(
+    buildRepairCaseSearchSummary(legacyCase),
+    "선릉점 아이폰15프로 화면 떨림·터치 불량 수리사례입니다. 정품 액정 교체 작업을 진행한 뒤 화면 떨림 해소를 확인했습니다.",
+  );
+});
+
 test("negative verification never becomes a normal-operation claim", () => {
   const negativeResults = [
     "교체 후에도 터치가 정상 작동하지 않음",

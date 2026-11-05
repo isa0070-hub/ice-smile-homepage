@@ -424,8 +424,16 @@ export function buildRepairCaseActionLabel(draft = {}) {
   const preferred =
     normalizeAuthoringText(draft.repairLabel) ||
     normalizeAuthoringText(draft.seo_keyword);
-  const source = preferred || draft.repairAction;
-  const action = removeIncludedParts(source, excluded);
+  const preferredAction = removeIncludedParts(preferred, excluded);
+  const preferredLabel = preferredAction
+    ? makeActionLabel(preferredAction, 36)
+    : "";
+
+  if (preferredLabel) {
+    return preferredLabel;
+  }
+
+  const action = removeIncludedParts(draft.repairAction, excluded);
 
   return action ? makeActionLabel(action, 36) : "";
 }
@@ -515,16 +523,27 @@ export function buildRepairCaseSearchSummary(draft = {}) {
     .filter((label, index, labels) => labels.indexOf(label) === index)
     .slice(0, 2);
   const verification = verificationLabels.join("·");
+  const verificationWithParticle = (() => {
+    const lastCharacter = Array.from(verification).at(-1) || "";
+    const codePoint = lastCharacter.codePointAt(0) || 0;
+    const isHangulSyllable = codePoint >= 0xac00 && codePoint <= 0xd7a3;
+    const hasFinalConsonant =
+      isHangulSyllable && (codePoint - 0xac00) % 28 !== 0;
+
+    return verification
+      ? `${verification}${hasFinalConsonant ? "을" : "를"}`
+      : "";
+  })();
   const intro = `${branch ? `${branch} ` : ""}${deviceModel}${
     symptom ? ` ${symptom}` : ""
   } 수리사례입니다.`;
   const detail =
     action && verification
-      ? `${action} 작업을 진행한 뒤 ${verification}을 확인했습니다.`
+      ? `${action} 작업을 진행한 뒤 ${verificationWithParticle} 확인했습니다.`
       : action
         ? `${action} 작업을 진행했습니다.`
         : verification
-          ? `작업 후 ${verification}을 확인했습니다.`
+          ? `작업 후 ${verificationWithParticle} 확인했습니다.`
           : "";
 
   return normalizeAuthoringText([intro, detail].filter(Boolean).join(" "));
