@@ -66,7 +66,8 @@ export async function GET() {
     .map((item) => {
       const url = makeCaseUrl(item);
       const pubDate = toRssDate(item.created_at);
-      const displayTitle = getLegacyRepairCaseTitle(item.slug) || item.title;
+      const displayTitle =
+        getLegacyRepairCaseTitle(item.slug, item.title) || item.title;
 
       return `
         <item>

@@ -60,6 +60,22 @@ test("public detail suppresses a duplicated top image but preserves structured b
     detailPageSource,
     /const mainImageStyle = \{[\s\S]*?maxHeight: "500px"/u,
   );
+  assert.match(detailPageSource, /repair-case-summary-grid/u);
+  assert.match(detailPageSource, /확인 내용은 본문 참고/u);
+  assert.match(
+    detailPageSource,
+    /@media \(max-width: 420px\)[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/u,
+  );
+});
+
+test("stored author title stays authoritative before factual fallback generation", () => {
+  const storedTitleReturn = detailPageSource.indexOf(
+    "if (title) {\n    return title;\n  }",
+  );
+  const factualFallback = detailPageSource.indexOf("if (isFactualFormat)");
+
+  assert.ok(storedTitleReturn >= 0);
+  assert.ok(factualFallback > storedTitleReturn);
 });
 
 test("create and edit screens both let the author select a representative without moving body photos", () => {

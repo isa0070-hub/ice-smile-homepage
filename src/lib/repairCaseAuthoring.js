@@ -31,6 +31,66 @@ function trimPunctuation(value = "") {
     .trim();
 }
 
+function splitFactClauses(value = "") {
+  return trimPunctuation(value)
+    .replace(/([,.!?。;|｜/]+)\s*/gu, "$1\u0000")
+    .replace(/\s+(?:그리고|그러나|하지만|및|결과)\s+/gu, "\u0000")
+    .replace(/(\S*(?:대신|말고|아니라))\s+/gu, "$1\u0000")
+    .replace(
+      /(\S*(?:확인되어|하셔서|되어서|하여서|제외하고|하셨고|했으며|였으며|했고|였고|하고|되고|이고|았고|었고|않고|없고|하여|되어|해서|하며|되며|이며|으나|이나|지만|면서|없이|으며|며))\s+/gu,
+      "$1\u0000",
+    )
+    .replace(/\s+(?:후|뒤)\s+/gu, "\u0000")
+    .split("\u0000")
+    .map((clause) => trimPunctuation(clause))
+    .filter(Boolean);
+}
+
+function findNearestActionComponent(source = "") {
+  const actionMatches = Array.from(
+    source.matchAll(/재장착|재납땜|교체|수리|세척|복구|조정|장착|분해|점검/gu),
+  );
+  const actionIndex = actionMatches.at(-1)?.index;
+
+  if (actionIndex === undefined) return "";
+
+  const components = [
+    ["connector", /(?:커넥터|컨넥터)/gu],
+    ["charge-port", /(?:충전단자|충전포트)/gu],
+    ["rear-glass", /(?:후면유리|뒷유리|백글라스)/gu],
+    ["screen-module", /액정모듈/gu],
+    ["genuine-screen", /정품액정/gu],
+    ["battery", /배터리/gu],
+    ["camera-lens", /(?:카메라렌즈|카메라유리)/gu],
+    ["camera", /카메라/gu],
+    ["keyboard", /키보드/gu],
+    ["mainboard", /(?:메인보드|보드)/gu],
+    ["liquid", /(?:침수|액체유입)/gu],
+    ["power", /(?:전원불량|전원안됨)/gu],
+    ["fan", /팬/gu],
+    ["ssd", /ssd/gu],
+    ["screen", /(?:액정|디스플레이|화면)/gu],
+  ];
+  let nearest = null;
+
+  components.forEach(([key, pattern], priority) => {
+    Array.from(source.matchAll(pattern)).forEach((match) => {
+      const end = (match.index || 0) + match[0].length;
+
+      if (
+        end <= actionIndex &&
+        (!nearest ||
+          end > nearest.end ||
+          (end === nearest.end && priority < nearest.priority))
+      ) {
+        nearest = { key, end, priority };
+      }
+    });
+  });
+
+  return nearest?.key || "";
+}
+
 function makeFactLabel(value = "", maxLength = 18) {
   const firstClause = trimPunctuation(value)
     .split(/(?:,|;| 그리고 |(?:되|하)고\s|(?:했|였)으며\s)/u)[0]
@@ -51,42 +111,124 @@ function makeFactLabel(value = "", maxLength = 18) {
 
 function makeActionLabel(value = "", maxLength = 18) {
   const text = trimPunctuation(value);
-  const compact = comparable(text);
+  const clauses = splitFactClauses(text);
+  const clauseSources = clauses.map(comparable);
   const knownActions = [
-    [/정품액정.*교체/u, "정품 액정 교체"],
-    [/후면유리.*교체/u, "후면 유리 교체"],
-    [/액정모듈.*교체/u, "액정 모듈 교체"],
-    [/(?:액정|디스플레이|화면).*교체/u, "액정 교체"],
-    [/배터리.*교체/u, "배터리 교체"],
-    [/(?:충전단자|충전포트).*교체/u, "충전 단자 교체"],
-    [/(?:카메라렌즈|카메라유리).*교체/u, "카메라 렌즈 교체"],
-    [/카메라.*교체/u, "카메라 교체"],
-    [/키보드.*교체/u, "키보드 교체"],
-    [/(?:메인보드|보드).*(?:수리|복구|재납땜)/u, "메인보드 수리"],
-    [/(?:침수|액체유입).*(?:세척|수리|복구)/u, "침수 세척·수리"],
-    [/(?:전원불량|전원안됨).*(?:수리|복구)/u, "전원 불량 수리"],
-    [/(?:커넥터|컨넥터).*(?:교체|수리|재납땜)/u, "커넥터 수리"],
-    [/팬.*(?:교체|수리)/u, "냉각팬 수리"],
-    [/ssd.*(?:교체|장착)/u, "SSD 교체"],
+    [/(?:커넥터|컨넥터).*재장착/u, "커넥터 재장착", null, "connector"],
+    [
+      /(?:커넥터|컨넥터).*(?:교체|수리|재납땜)/u,
+      "커넥터 수리",
+      null,
+      "connector",
+    ],
+    [
+      /정품액정.*교체/u,
+      "정품 액정 교체",
+      /정품액정.*교체(?:는|은|를|을)?(?:하지않|안했|않았|없이|제외|미실시|보류)/u,
+      "genuine-screen",
+    ],
+    [
+      /후면유리.*교체/u,
+      "후면 유리 교체",
+      /후면유리.*교체(?:는|은|를|을)?(?:하지않|안했|않았|없이|제외|미실시|보류)/u,
+      "rear-glass",
+    ],
+    [
+      /액정모듈.*교체/u,
+      "액정 모듈 교체",
+      /액정모듈.*교체(?:는|은|를|을)?(?:하지않|안했|않았|없이|제외|미실시|보류)/u,
+      "screen-module",
+    ],
+    [/(?:교체용|새|정품)액정.*장착/u, "액정 교체", null, "screen"],
+    [
+      /(?:액정|디스플레이|화면).*교체/u,
+      "액정 교체",
+      /(?:액정|디스플레이|화면).*교체(?:는|은|를|을)?(?:하지않|안했|않았|없이|제외|미실시|보류)/u,
+      "screen",
+    ],
+    [
+      /배터리.*교체/u,
+      "배터리 교체",
+      /배터리.*교체(?:는|은|를|을)?(?:하지않|안했|않았|없이|제외|미실시|보류)/u,
+      "battery",
+    ],
+    [
+      /(?:충전단자|충전포트).*교체/u,
+      "충전 단자 교체",
+      /(?:충전단자|충전포트).*교체(?:는|은|를|을)?(?:하지않|안했|않았|없이|제외|미실시|보류)/u,
+      "charge-port",
+    ],
+    [/(?:카메라렌즈|카메라유리).*교체/u, "카메라 렌즈 교체", null, "camera-lens"],
+    [/카메라.*교체/u, "카메라 교체", null, "camera"],
+    [/키보드.*교체/u, "키보드 교체", null, "keyboard"],
+    [
+      /(?:메인보드|보드).*(?:수리|복구|재납땜)/u,
+      "메인보드 수리",
+      null,
+      "mainboard",
+    ],
+    [
+      /(?:침수|액체유입).*(?:세척|수리|복구)/u,
+      "침수 세척·수리",
+      null,
+      "liquid",
+    ],
+    [
+      /(?:전원불량|전원안됨).*(?:수리|복구)/u,
+      "전원 불량 수리",
+      null,
+      "power",
+    ],
+    [/팬.*(?:교체|수리)/u, "냉각팬 수리", null, "fan"],
+    [/ssd.*(?:교체|장착)/u, "SSD 교체", null, "ssd"],
   ];
-  const knownAction = knownActions.find(([pattern]) => pattern.test(compact));
+  const isNegatedAction = (source) =>
+    /(?:교체|수리|세척|복구|조정|재납땜|장착|분해|점검)(?:는|은|를|을|이|가)?(?:하지않|안했|않았|안하고|안함|없이|제외|미실시|보류|아니라|말고|대신)/u.test(
+      source,
+    );
+  const isNonExecutedAction = (source) =>
+    /(?:교체|수리|세척|복구|장착)(?:는|은|를|을|이|가)?(?:검토|원하|원했|희망|요청|고려|문의|여부.*점검)/u.test(
+      source,
+    ) &&
+    !/(?:실시|진행|완료|교체(?:함|했|하였|했습)|수리(?:함|했|하였|했습)|장착(?:함|했|하였|했습))/u.test(
+      source,
+    );
+  const knownAction = knownActions.find(
+    ([pattern, , negativePattern, component]) =>
+      clauseSources.some(
+        (source) =>
+          pattern.test(source) &&
+          (!component || findNearestActionComponent(source) === component) &&
+          !isNegatedAction(source) &&
+          !isNonExecutedAction(source) &&
+          !negativePattern?.test(source),
+      ),
+  );
 
   if (knownAction) {
     return knownAction[1];
   }
 
-  const clauses = text
-    .split(
-      /(?:,|;| 그리고 |(?:되|하)(?:고|였고)\s|(?:했|였|하셨)(?:고|으며)\s|(?:한|하신)\s+후\s)/u,
-    )
-    .map((clause) => clause.trim())
-    .filter(Boolean);
   const selected =
     [...clauses]
       .reverse()
-      .find((clause) => /(교체|수리|세척|복구|조정|재납땜|장착|분해|점검)/u.test(clause)) ||
+      .find(
+        (clause) =>
+          /(교체|수리|세척|복구|조정|재납땜|장착|분해|점검)/u.test(
+            clause,
+          ) &&
+          !isNegatedAction(comparable(clause)) &&
+          !isNonExecutedAction(comparable(clause)),
+      ) ||
     clauses[0] ||
     text;
+
+  if (
+    isNegatedAction(comparable(selected)) ||
+    isNonExecutedAction(comparable(selected))
+  ) {
+    return "";
+  }
 
   return makeFactLabel(
     selected.replace(/^(?:파손된|손상된|불량한)\s+/u, ""),
@@ -96,21 +238,68 @@ function makeActionLabel(value = "", maxLength = 18) {
 
 function makeSymptomLabel(value = "", maxLength = 18) {
   const text = trimPunctuation(value);
-  const source = comparable(text);
+  const clauseSources = splitFactClauses(text).map(comparable);
   const rules = [
-    [/충전/u, /(안|되지|불가|불량|인식못)/u, "충전 불량"],
-    [/전원/u, /(안|들어오지|불가|불량|꺼짐)/u, "전원 불량"],
-    [/(화면|액정|유리)/u, /(파손|깨짐|금감)/u, "액정 파손"],
-    [/배터리/u, /(성능|소모|빨리|급격|부풀)/u, "배터리 성능 저하"],
-    [/(화면|액정)/u, /(녹색줄|세로줄|가로줄|줄생김)/u, "화면 줄 발생"],
-    [/(화면|액정)/u, /(떨림|떨리|깜빡)/u, "화면 떨림"],
-    [/터치/u, /(안|않|되지|불가|불량|오작동)/u, "터치 불량"],
-    [/(침수|물|액체)/u, /(유입|들어|침수)/u, "액체 유입"],
+    [
+      /충전/u,
+      /(?:안(?:됨|되)|되지(?:않|못)|불가|불량|인식못)/u,
+      "충전 불량",
+      /(?:충전정상|문제없|이상없|불량(?:이|은|는)?아니)/u,
+    ],
+    [
+      /전원/u,
+      /(?:안(?:켜|들어|됨)|들어오지(?:않|못)|불가|불량|꺼짐)/u,
+      "전원 불량",
+      /(?:전원정상|문제없|이상없|불량(?:이|은|는)?아니)/u,
+    ],
+    [/(?:카메라렌즈|카메라유리)/u, /(파손|깨짐|금감)/u, "카메라 렌즈 파손"],
+    [/(?:후면유리|뒷유리|백글라스)/u, /(파손|깨짐|금감)/u, "후면 유리 파손"],
+    [
+      /(?:화면|액정|전면유리)/u,
+      /(파손|깨짐|금감)/u,
+      "액정 파손",
+      /(?:파손되지않|파손(?:이|은|는)?없|파손아니|깨지지않|깨짐(?:이|은|는)?없|금(?:이)?없|금가지않)/u,
+    ],
+    [
+      /배터리/u,
+      /(성능|소모|빨리|급격|부풀)/u,
+      "배터리 성능 저하",
+      /(?:성능(?:은|이|도)?정상|성능저하(?:가|는)?없|부풀지않|부풀(?:음|현상)(?:이)?없|배터리정상)/u,
+    ],
+    [
+      /(화면|액정)/u,
+      /(녹색줄|세로줄|가로줄|줄생김)/u,
+      "화면 줄 발생",
+      /(?:(?:녹색줄|세로줄|가로줄|줄생김)(?:이|은|는)?(?:없|아니)|줄(?:이)?생기지않)/u,
+    ],
+    [
+      /(화면|액정)/u,
+      /(떨림|떨리|깜빡)/u,
+      "화면 떨림",
+      /(?:떨림(?:이|은|는)?(?:없|아니)|떨리지않|깜빡이지않|깜빡임(?:이)?없)/u,
+    ],
+    [
+      /터치/u,
+      /(?:안(?:됨|되)|되지(?:않|못)|작동하지않|반응하지않|불가|불량|오작동)/u,
+      "터치 불량",
+      /(?:터치정상|문제없|이상없|불량(?:이|은|는)?아니)/u,
+    ],
+    [
+      /(침수|물|액체)/u,
+      /(유입|들어|침수)/u,
+      "액체 유입",
+      /(?:(?:유입|침수)(?:이|은|는)?(?:없|아니)|유입되지않)/u,
+    ],
   ];
   const matchedLabels = rules
     .filter(
-      ([subjectPattern, statePattern]) =>
-        subjectPattern.test(source) && statePattern.test(source),
+      ([subjectPattern, statePattern, , negativePattern]) =>
+        clauseSources.some(
+          (source) =>
+            subjectPattern.test(source) &&
+            statePattern.test(source) &&
+            !negativePattern?.test(source),
+        ),
     )
     .map(([, , label]) => label)
     .filter((label, index, labels) => labels.indexOf(label) === index)
@@ -150,7 +339,7 @@ function removeIncludedParts(value, parts = []) {
       result = result.replaceAll(part, " ");
     });
 
-  return normalizeAuthoringText(result.replace(/[|｜·ㆍ,/]+/gu, " "));
+  return normalizeAuthoringText(result);
 }
 
 export function getDeviceModelLabel(draft = {}) {
@@ -281,16 +470,47 @@ export function buildRepairCaseSearchSummary(draft = {}) {
   const action = buildRepairCaseActionLabel(draft);
   const verificationText = trimPunctuation(draft.verification);
   const verificationComparable = comparable(verificationText);
+  const hasNegativeVerification =
+    /(하지않|하지못|되지않|되지못|사라지지|해소되지|안함|안됨|아님|정상적이지|정상이지않|미작동|불가|실패|오류|이상있|문제있)/u.test(
+      verificationComparable,
+    );
+  const hasInconclusiveVerification =
+    /(여부|점검필요|확인필요|추가점검|확인중|미확인|테스트진행|점검함)/u.test(
+      verificationComparable,
+    );
   const verificationLabels = [
     [/(?:화면|액정).*떨림.*(?:사라|해소|정상)/u, "화면 떨림 해소"],
-    [/터치.*(?:정상|작동)/u, "터치 정상 작동"],
-    [/(?:화면|액정).*(?:출력|표시).*(?:정상|작동)/u, "화면 출력 정상"],
-    [/(?:페이스아이디|faceid).*(?:정상|작동)/u, "페이스 ID 정상 작동"],
-    [/충전.*(?:정상|작동)/u, "충전 정상 작동"],
-    [/전원.*(?:정상|작동)/u, "전원 정상 작동"],
-    [/카메라.*(?:정상|작동)/u, "카메라 정상 작동"],
+    [
+      /터치.*(?:정상|작동함|반응함|문제없|이상없)/u,
+      "터치 정상 작동",
+    ],
+    [
+      /(?:화면|액정).*(?:출력|표시).*(?:정상|작동함|문제없|이상없)/u,
+      "화면 출력 정상",
+    ],
+    [
+      /(?:페이스아이디|faceid).*(?:정상|작동함|인식됨|문제없|이상없)/u,
+      "페이스 ID 정상 작동",
+    ],
+    [
+      /충전.*(?:정상|작동함|충전됨|문제없|이상없)/u,
+      "충전 정상 작동",
+    ],
+    [
+      /전원.*(?:정상|작동함|켜짐|부팅됨|문제없|이상없)/u,
+      "전원 정상 작동",
+    ],
+    [
+      /카메라.*(?:정상|작동함|촬영됨|문제없|이상없)/u,
+      "카메라 정상 작동",
+    ],
   ]
-    .filter(([pattern]) => pattern.test(verificationComparable))
+    .filter(
+      ([pattern]) =>
+        !hasNegativeVerification &&
+        !hasInconclusiveVerification &&
+        pattern.test(verificationComparable),
+    )
     .map(([, label]) => label)
     .filter((label, index, labels) => labels.indexOf(label) === index)
     .slice(0, 2);

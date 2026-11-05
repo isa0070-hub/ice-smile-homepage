@@ -421,23 +421,10 @@ function dedupeAdjacentTerms(value = "") {
 }
 
 function makeDisplayTitle(item) {
-  const legacyTitle = getLegacyRepairCaseTitle(item?.slug);
+  const legacyTitle = getLegacyRepairCaseTitle(item?.slug, item?.title);
 
   if (legacyTitle) {
     return cleanRepairCaseText(legacyTitle);
-  }
-
-  const { byRole, isFactualFormat } = getFactualCaseSections(item || {});
-
-  if (isFactualFormat) {
-    return buildRepairCaseTitle({
-      branch: item?.branch,
-      device: item?.device,
-      model: item?.model,
-      symptom: byRole.intake?.content || item?.symptom,
-      repairAction: byRole.repair?.content,
-      repairLabel: item?.seo_keyword,
-    });
   }
 
   let title = cleanRepairCaseText(item?.title).replace(
@@ -465,6 +452,19 @@ function makeDisplayTitle(item) {
 
   if (title) {
     return title;
+  }
+
+  const { byRole, isFactualFormat } = getFactualCaseSections(item || {});
+
+  if (isFactualFormat) {
+    return buildRepairCaseTitle({
+      branch: item?.branch,
+      device: item?.device,
+      model: item?.model,
+      symptom: byRole.intake?.content || item?.symptom,
+      repairAction: byRole.repair?.content,
+      repairLabel: item?.seo_keyword,
+    });
   }
 
   return cleanText(
@@ -984,7 +984,7 @@ export async function generateMetadata({ params }) {
   const displayTitle = item
     ? makeDisplayTitle(item)
     : "아이스마일어게인 수리사례";
-  const reviewedLegacyTitle = getLegacyRepairCaseTitle(item?.slug);
+  const reviewedLegacyTitle = getLegacyRepairCaseTitle(item?.slug, item?.title);
   const socialImageAlt = reviewedLegacyTitle
     ? `${displayTitle} 대표 이미지`
     : makeSafeAltText(item?.alt_text, displayTitle);
@@ -1059,7 +1059,7 @@ export default async function RepairCaseDetailPage({ params }) {
   });
   const faqItems = makeFaqItems(item, phoneNumber, talkUrl);
   const displayTitle = makeDisplayTitle(item);
-  const reviewedLegacyTitle = getLegacyRepairCaseTitle(item.slug);
+  const reviewedLegacyTitle = getLegacyRepairCaseTitle(item.slug, item.title);
   const deviceModel = makeDeviceModelText(item);
   const displayKeyword = makeMetaKeyword(item);
   const serviceHub = getServiceHubForCase(item);
@@ -1143,6 +1143,16 @@ export default async function RepairCaseDetailPage({ params }) {
             height: 220px !important;
           }
         }
+
+        @media (max-width: 420px) {
+          .repair-case-summary {
+            padding: 20px !important;
+          }
+
+          .repair-case-summary-grid {
+            grid-template-columns: minmax(0, 1fr) !important;
+          }
+        }
       `}</style>
       {jsonLd && (
         <script
@@ -1186,7 +1196,11 @@ export default async function RepairCaseDetailPage({ params }) {
             : "1fr",
         }}
       >
-        <section style={infoBoxStyle} aria-label="수리사례 핵심 요약">
+        <section
+          className="repair-case-summary"
+          style={infoBoxStyle}
+          aria-label="수리사례 핵심 요약"
+        >
           <p style={summaryLabelTopStyle}>수리사례 핵심 요약</p>
 
           <h2 style={summaryTitleStyle}>
@@ -1198,7 +1212,7 @@ export default async function RepairCaseDetailPage({ params }) {
             정리했습니다.
           </p>
 
-          <div style={summaryGridStyle}>
+          <div className="repair-case-summary-grid" style={summaryGridStyle}>
             <div style={summaryItemStyle}>
               <span style={summaryLabelStyle}>기기·모델</span>
               <strong style={summaryValueStyle}>{deviceModel}</strong>
@@ -1221,7 +1235,7 @@ export default async function RepairCaseDetailPage({ params }) {
             <div style={summaryItemStyle}>
               <span style={summaryLabelStyle}>수리 후 확인</span>
               <strong style={summaryValueStyle}>
-                {summaryVerification || "완료 후 주요 기능 확인"}
+                {summaryVerification || "확인 내용은 본문 참고"}
               </strong>
             </div>
           </div>

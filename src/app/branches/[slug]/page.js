@@ -754,7 +754,7 @@ export default async function BranchDetailPage({ params }) {
               {recentCases.map((item) => {
                 const casePath = getPublicRepairCasePath(item.slug)
                 const displayTitle =
-                  getLegacyRepairCaseTitle(item.slug) || item.title
+                  getLegacyRepairCaseTitle(item.slug, item.title) || item.title
 
                 return (
                   <Link key={item.id} href={casePath} style={styles.caseItem}>
