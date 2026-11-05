@@ -26,6 +26,15 @@ import {
   getPublicRepairCaseImages,
   getPublicRelatedRepairCaseRows,
 } from "@/lib/publicRepairCaseData";
+import {
+  buildRepairCaseActionLabel,
+  buildRepairCaseSearchSummary,
+  buildRepairCaseTitle,
+} from "@/lib/repairCaseAuthoring";
+import {
+  findRepresentativeDetailImage,
+  getUniqueRepairCaseImageUrls,
+} from "@/lib/repairCasePresentation";
 
 const BASE_URL = "https://www.ismileagain.co.kr";
 export const revalidate = 3600;
@@ -189,6 +198,9 @@ function getStructuredImageGridStyle(imageCount = 0) {
   return {
     ...structuredImageGridStyle,
     gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
+    ...(imageCount === 1
+      ? { maxWidth: "860px", marginLeft: "auto", marginRight: "auto" }
+      : {}),
   };
 }
 
@@ -331,26 +343,20 @@ function limitCaseSummary(value, maxLength = 155) {
 }
 
 function makeFactualCaseDescription(item) {
-  const { byRole, isFactualFormat, presentation } =
-    getFactualCaseSections(item);
+  const { byRole, isFactualFormat } = getFactualCaseSections(item);
 
   if (!isFactualFormat) return "";
 
-  const introSentences = splitCaseSentences(presentation.repairContent);
-  const sectionSentences = [
-    byRole.intake,
-    byRole.repair,
-    byRole.verification,
-    byRole.inspection,
-  ].flatMap((section) => splitCaseSentences(section?.content).slice(0, 1));
-  const sentences = (introSentences.length > 0
-    ? introSentences
-    : sectionSentences
-  )
-    .filter((sentence, index, values) => values.indexOf(sentence) === index)
-    .slice(0, 2);
-
-  return limitCaseSummary(sentences.join(" "));
+  return buildRepairCaseSearchSummary({
+    branch: item?.branch,
+    device: item?.device,
+    model: item?.model,
+    symptom: byRole.intake?.content || item?.symptom,
+    diagnosis: byRole.inspection?.content,
+    repairAction: byRole.repair?.content,
+    repairLabel: item?.seo_keyword,
+    verification: byRole.verification?.content,
+  });
 }
 
 function makeFactualRepairAction(item) {
@@ -419,6 +425,19 @@ function makeDisplayTitle(item) {
 
   if (legacyTitle) {
     return cleanRepairCaseText(legacyTitle);
+  }
+
+  const { byRole, isFactualFormat } = getFactualCaseSections(item || {});
+
+  if (isFactualFormat) {
+    return buildRepairCaseTitle({
+      branch: item?.branch,
+      device: item?.device,
+      model: item?.model,
+      symptom: byRole.intake?.content || item?.symptom,
+      repairAction: byRole.repair?.content,
+      repairLabel: item?.seo_keyword,
+    });
   }
 
   let title = cleanRepairCaseText(item?.title).replace(
@@ -490,10 +509,28 @@ function findRepairAction(item) {
 }
 
 function makeMetaKeyword(item) {
+  const preferredAction = buildRepairCaseActionLabel({
+    branch: item?.branch,
+    device: item?.device,
+    model: item?.model,
+    repairLabel: item?.seo_keyword,
+  });
+
+  if (preferredAction) {
+    return preferredAction;
+  }
+
   const factualRepairAction = makeFactualRepairAction(item);
 
   if (factualRepairAction) {
-    return factualRepairAction;
+    return (
+      buildRepairCaseActionLabel({
+        branch: item?.branch,
+        device: item?.device,
+        model: item?.model,
+        repairAction: factualRepairAction,
+      }) || factualRepairAction
+    );
   }
 
   const branchLabel = getBranchSearchLabel(item?.branch);
@@ -637,12 +674,11 @@ function makeJsonLd({ item, detailImages = [], phoneNumber, talkUrl = "" }) {
     ? { "@id": getBranchLocalBusinessId(branchInfo.seo) }
     : { "@id": ORGANIZATION_ID };
 
-  const imageUrls = [
+  const imageUrls = getUniqueRepairCaseImageUrls(
     item.image_url,
-    ...(detailImages || []).map((image) => image.image_url),
-  ]
-    .filter(Boolean)
-    .map(toAbsoluteUrl);
+    detailImages || [],
+    BASE_URL,
+  );
   const faqItems = makeFaqItems(item, phoneNumber, talkUrl);
 
   return {
@@ -1039,6 +1075,29 @@ export default async function RepairCaseDetailPage({ params }) {
   );
   const hasStructuredContent =
     processSections.length > 0 || Boolean(closingSection?.content);
+  const factualCase = getFactualCaseSections(item);
+  const summarySymptom = cleanRepairCaseText(
+    factualCase.byRole.intake?.content || item.symptom,
+  );
+  const summaryVerification = cleanRepairCaseText(
+    factualCase.byRole.verification?.content,
+  );
+  const representativeDetailImage = findRepresentativeDetailImage(
+    item.image_url,
+    detailImages || [],
+    BASE_URL,
+  );
+  const showStandaloneRepresentative = Boolean(
+    item.image_url && !representativeDetailImage,
+  );
+  const representativeAlt = reviewedLegacyTitle
+    ? `${displayTitle} 대표 이미지`
+    : makeSafeAltText(
+        representativeDetailImage?.alt_text ||
+          representativeDetailImage?.description ||
+          item.alt_text,
+        displayTitle,
+      );
 
   return (
     <main style={{ maxWidth: "1280px", margin: "80px auto", padding: "24px" }}>
@@ -1053,13 +1112,27 @@ export default async function RepairCaseDetailPage({ params }) {
           }
         }
 
+        @media (max-width: 860px) {
+          .repair-case-overview {
+            grid-template-columns: 1fr !important;
+          }
+
+          .repair-case-representative-image {
+            height: min(72vw, 440px) !important;
+          }
+        }
+
         @media (max-width: 720px) {
           .repair-structured-image-grid {
             grid-template-columns: 1fr !important;
           }
 
           .repair-structured-image {
-            height: 320px !important;
+            height: 290px !important;
+          }
+
+          .repair-process-card {
+            padding: 20px !important;
           }
 
           .repair-related-grid {
@@ -1100,139 +1173,118 @@ export default async function RepairCaseDetailPage({ params }) {
         {displayTitle}
       </h1>
 
-      <p style={{ fontSize: "18px", color: "#475569", marginBottom: "12px" }}>
-        증상·수리 내용 : {displayKeyword}
+      <p style={{ fontSize: "18px", color: "#475569", marginBottom: "24px" }}>
+        실제 접수·점검·수리·완료 확인 기록
       </p>
 
-      {item.image_url && (
-        <Image
-          src={item.image_url}
-          alt={
-            reviewedLegacyTitle
-              ? `${displayTitle} 대표 이미지`
-              : makeSafeAltText(item.alt_text, displayTitle)
-          }
-          width={1200}
-          height={900}
-          sizes="(max-width: 1280px) calc(100vw - 48px), 1232px"
-          fetchPriority="high"
-          decoding="async"
-          style={mainImageStyle}
-        />
-      )}
+      <div
+        className="repair-case-overview"
+        style={{
+          ...overviewStyle,
+          gridTemplateColumns: showStandaloneRepresentative
+            ? "minmax(0, 1.25fr) minmax(300px, 0.75fr)"
+            : "1fr",
+        }}
+      >
+        <section style={infoBoxStyle} aria-label="수리사례 핵심 요약">
+          <p style={summaryLabelTopStyle}>수리사례 핵심 요약</p>
 
-      <section style={infoBoxStyle} aria-label="수리사례 핵심 요약">
-        <p style={summaryLabelTopStyle}>수리사례 핵심 요약</p>
+          <h2 style={summaryTitleStyle}>
+            {item.branch} {deviceModel} 수리 정보
+          </h2>
 
-        <h2 style={summaryTitleStyle}>
-          {item.branch} {deviceModel} 수리 정보
-        </h2>
+          <p style={summaryIntroStyle}>
+            이번 기기에서 확인한 증상과 실제 작업, 수리 후 확인 결과를
+            정리했습니다.
+          </p>
 
-        <p style={summaryIntroStyle}>
-          {displayTitle} 사례의 기기, 증상, 수리 지점과 상담 연락처를 방문 전에
-          빠르게 확인할 수 있도록 정리했습니다.
-        </p>
+          <div style={summaryGridStyle}>
+            <div style={summaryItemStyle}>
+              <span style={summaryLabelStyle}>기기·모델</span>
+              <strong style={summaryValueStyle}>{deviceModel}</strong>
+            </div>
 
-        <div style={summaryGridStyle}>
-          <div style={summaryItemStyle}>
-            <span style={summaryLabelStyle}>수리 지점</span>
+            <div style={summaryItemStyle}>
+              <span style={summaryLabelStyle}>접수 증상</span>
+              <strong style={summaryValueStyle}>
+                {summarySymptom || "증상 점검 필요"}
+              </strong>
+            </div>
+
+            <div style={summaryItemStyle}>
+              <span style={summaryLabelStyle}>진행한 수리</span>
+              <strong style={summaryValueStyle}>
+                {displayKeyword || "기기 수리"}
+              </strong>
+            </div>
+
+            <div style={summaryItemStyle}>
+              <span style={summaryLabelStyle}>수리 후 확인</span>
+              <strong style={summaryValueStyle}>
+                {summaryVerification || "완료 후 주요 기능 확인"}
+              </strong>
+            </div>
+          </div>
+
+          <div style={summaryBranchRowStyle}>
             <a
               href={branchInfo?.pageUrl || "/branches"}
               aria-label={`${item.branch || "수리"} 지점 안내 페이지로 이동`}
-              style={{
-                ...summaryValueStyle,
-                color: "#0b57d0",
-                textDecoration: "underline",
-                textUnderlineOffset: "3px",
-              }}
+              style={summaryBranchLinkStyle}
             >
               {item.branch || "지점안내"}
             </a>
+            <span>{branchInfo?.address || "지점안내 페이지에서 확인"}</span>
+            {phoneNumber && <span>{phoneNumber}</span>}
           </div>
 
-          <div style={summaryItemStyle}>
-            <span style={summaryLabelStyle}>지점 주소</span>
-            <strong style={summaryValueStyle}>
-              {branchInfo?.address || "지점안내 페이지에서 확인"}
-            </strong>
-          </div>
-
-          <div style={summaryItemStyle}>
-            <span style={summaryLabelStyle}>기기</span>
-            <strong style={summaryValueStyle}>
-              {item.device || "수리 기기"}
-            </strong>
-          </div>
-
-          <div style={summaryItemStyle}>
-            <span style={summaryLabelStyle}>모델명</span>
-            <strong style={summaryValueStyle}>
-              {item.model || "모델 확인 필요"}
-            </strong>
-          </div>
-
-          <div style={summaryItemStyle}>
-            <span style={summaryLabelStyle}>고장 증상</span>
-            <strong style={summaryValueStyle}>
-              {cleanRepairCaseText(item.symptom) || "증상 점검 필요"}
-            </strong>
-          </div>
-
-          <div style={summaryItemStyle}>
-            <span style={summaryLabelStyle}>수리 내용</span>
-            <strong style={summaryValueStyle}>
-              {displayKeyword || "기기 수리"}
-            </strong>
-          </div>
-
-          <div style={summaryItemStyle}>
-            <span style={summaryLabelStyle}>상담 전화</span>
-            {phoneNumber ? (
-              <a href={`tel:${phoneNumber}`} style={phoneLinkStyle}>
-                {phoneNumber}
+          <div style={summaryActionBoxStyle}>
+            {talkUrl ? (
+              <a
+                href={talkUrl}
+                target="_blank"
+                rel="noreferrer"
+                style={summaryTalkButtonStyle}
+              >
+                {branchInfo?.seo?.shortName} 네이버톡톡
               </a>
             ) : (
-              <a href="/contact" style={phoneLinkStyle}>
-                온라인 문의
+              <a href={contactHref} style={summaryTalkButtonStyle}>
+                {branchInfo?.seo?.shortName || "지점"} 온라인 문의
+              </a>
+            )}
+
+            {phoneNumber ? (
+              <a href={`tel:${phoneNumber}`} style={summaryPhoneButtonStyle}>
+                전화 상담
+              </a>
+            ) : (
+              <a href="/contact" style={summaryPhoneButtonStyle}>
+                온라인 상담
               </a>
             )}
           </div>
+        </section>
 
-          <div style={summaryItemStyle}>
-            <span style={summaryLabelStyle}>상담 방법</span>
-            <strong style={summaryValueStyle}>
-              {talkUrl ? "전화 · 네이버톡톡 · 온라인 문의" : "전화 · 온라인 문의"}
-            </strong>
-          </div>
-        </div>
-
-        <div style={summaryActionBoxStyle}>
-          {talkUrl ? (
-            <a
-              href={talkUrl}
-              target="_blank"
-              rel="noreferrer"
-              style={summaryTalkButtonStyle}
-            >
-              {branchInfo?.seo?.shortName} 네이버톡톡
-            </a>
-          ) : (
-            <a href={contactHref} style={summaryTalkButtonStyle}>
-              {branchInfo?.seo?.shortName || "지점"} 온라인 문의
-            </a>
-          )}
-
-          {phoneNumber ? (
-            <a href={`tel:${phoneNumber}`} style={summaryPhoneButtonStyle}>
-              전화 상담
-            </a>
-          ) : (
-            <a href="/contact" style={summaryPhoneButtonStyle}>
-              온라인 상담
-            </a>
-          )}
-        </div>
-      </section>
+        {showStandaloneRepresentative && (
+          <figure style={representativeFigureStyle}>
+            <Image
+              className="repair-case-representative-image"
+              src={item.image_url}
+              alt={representativeAlt}
+              width={900}
+              height={900}
+              sizes="(max-width: 860px) calc(100vw - 48px), 38vw"
+              fetchPriority="high"
+              decoding="async"
+              style={mainImageStyle}
+            />
+            <figcaption style={representativeCaptionStyle}>
+              이 수리사례의 대표사진
+            </figcaption>
+          </figure>
+        )}
+      </div>
 
       {serviceHub && (
         <aside style={serviceHubCalloutStyle} aria-label="기기별 수리 안내">
@@ -1278,10 +1330,16 @@ export default async function RepairCaseDetailPage({ params }) {
             return (
               <section
                 key={`${section.image_start}-${section.image_end}-${sectionIndex}`}
+                className="repair-process-card"
                 style={structuredProcessSectionStyle}
               >
                 {section.title && (
-                  <h2 style={structuredProcessTitleStyle}>{section.title}</h2>
+                  <header style={structuredProcessHeaderStyle}>
+                    <span aria-hidden="true" style={structuredProcessNumberStyle}>
+                      {String(sectionIndex + 1).padStart(2, "0")}
+                    </span>
+                    <h2 style={structuredProcessTitleStyle}>{section.title}</h2>
+                  </header>
                 )}
 
                 {section.content && (
@@ -1628,12 +1686,17 @@ const breadcrumbCurrentStyle = {
 
 const mainImageStyle = {
   width: "100%",
-  height: "auto",
-  maxHeight: "none",
+  height: "500px",
+  maxHeight: "500px",
   objectFit: "contain",
-  borderRadius: "18px",
-  marginBottom: "34px",
   display: "block",
+};
+
+const overviewStyle = {
+  display: "grid",
+  gap: "24px",
+  alignItems: "stretch",
+  marginBottom: "34px",
 };
 
 const infoBoxStyle = {
@@ -1642,8 +1705,26 @@ const infoBoxStyle = {
   borderRadius: "24px",
   padding: "30px",
   lineHeight: 1.8,
-  marginBottom: "34px",
+  margin: 0,
   boxShadow: "0 10px 28px rgba(15, 23, 42, 0.08)",
+};
+
+const representativeFigureStyle = {
+  margin: 0,
+  overflow: "hidden",
+  border: "1px solid #dbeafe",
+  borderRadius: "24px",
+  background: "#f1f5f9",
+  boxShadow: "0 10px 28px rgba(15, 23, 42, 0.08)",
+};
+
+const representativeCaptionStyle = {
+  padding: "13px 16px",
+  background: "#ffffff",
+  color: "#64748b",
+  fontSize: "14px",
+  fontWeight: 800,
+  textAlign: "center",
 };
 
 const summaryLabelTopStyle = {
@@ -1673,7 +1754,7 @@ const summaryIntroStyle = {
 
 const summaryGridStyle = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
   gap: "14px",
 };
 
@@ -1706,6 +1787,26 @@ const summaryActionBoxStyle = {
   marginTop: "22px",
 };
 
+const summaryBranchRowStyle = {
+  display: "flex",
+  alignItems: "center",
+  gap: "8px 14px",
+  flexWrap: "wrap",
+  marginTop: "18px",
+  paddingTop: "16px",
+  borderTop: "1px solid #dbeafe",
+  color: "#475569",
+  fontSize: "14px",
+  lineHeight: 1.6,
+};
+
+const summaryBranchLinkStyle = {
+  color: "#0b57d0",
+  fontWeight: 900,
+  textDecoration: "underline",
+  textUnderlineOffset: "3px",
+};
+
 const summaryTalkButtonStyle = {
   display: "inline-block",
   padding: "13px 18px",
@@ -1724,12 +1825,6 @@ const summaryPhoneButtonStyle = {
   borderRadius: "999px",
   textDecoration: "none",
   fontWeight: "900",
-};
-
-const phoneLinkStyle = {
-  color: "#1e3a8a",
-  fontWeight: "900",
-  textDecoration: "none",
 };
 
 const serviceHubCalloutStyle = {
@@ -1765,17 +1860,42 @@ const contentStyle = {
 };
 
 const structuredProcessWrapStyle = {
-  marginTop: "52px",
+  marginTop: "34px",
 };
 
 const structuredProcessSectionStyle = {
-  marginBottom: "58px",
-  paddingBottom: "6px",
+  marginBottom: "24px",
+  padding: "30px",
+  borderRadius: "22px",
+  border: "1px solid #e2e8f0",
+  background: "linear-gradient(180deg, #ffffff 0%, #f8fbff 100%)",
+  boxShadow: "0 8px 24px rgba(15, 23, 42, 0.06)",
+};
+
+const structuredProcessHeaderStyle = {
+  display: "flex",
+  alignItems: "center",
+  gap: "13px",
+  marginBottom: "14px",
+};
+
+const structuredProcessNumberStyle = {
+  width: "42px",
+  height: "42px",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexShrink: 0,
+  borderRadius: "14px",
+  background: "#1d4ed8",
+  color: "#ffffff",
+  fontSize: "15px",
+  fontWeight: 900,
 };
 
 const structuredProcessTitleStyle = {
-  margin: "0 0 14px",
-  fontSize: "30px",
+  margin: 0,
+  fontSize: "27px",
   lineHeight: 1.45,
   color: "#0f172a",
 };
@@ -1808,7 +1928,7 @@ const structuredFigureStyle = {
 
 const structuredImageStyle = {
   width: "100%",
-  height: "380px",
+  height: "340px",
   objectFit: "contain",
   display: "block",
   background: "#f1f5f9",

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { adminFetch } from "@/lib/adminClient";
 import {
+  buildRepairCaseActionLabel,
   buildRepairCaseMainAlt,
   parseRepairCaseContentSections,
 } from "@/lib/repairCaseAuthoring";
@@ -103,7 +104,15 @@ export default function EditRepairCasePage() {
   }
 
   function makeSeoKeyword(nextForm) {
-    return normalizeComparableText(nextForm.symptom);
+    return (
+      buildRepairCaseActionLabel({
+        branch: nextForm.branch,
+        device: nextForm.device,
+        model: nextForm.model,
+        repairLabel: nextForm.seo_keyword,
+        repairAction: nextForm.repair_content,
+      }) || normalizeComparableText(nextForm.symptom)
+    );
   }
 
   function makeAltText(nextForm) {
@@ -365,6 +374,21 @@ export default function EditRepairCasePage() {
     );
   }
 
+  function selectRepresentativeImage(image) {
+    setForm((previousForm) => ({
+      ...previousForm,
+      image_url: image.image_url,
+      alt_text:
+        normalizeComparableText(image.alt_text) ||
+        normalizeComparableText(image.description) ||
+        previousForm.alt_text ||
+        previousForm.title,
+    }));
+    setMessage(
+      "대표사진을 선택했습니다. 본문 사진 위치는 그대로 유지됩니다. 기본 정보 저장을 눌러 확정해주세요.",
+    );
+  }
+
   async function handleSaveDetailImage(image) {
     try {
       await adminFetch(`/api/admin/content/repair-case-images/${image.id}`, {
@@ -557,6 +581,19 @@ export default function EditRepairCasePage() {
         <label style={labelStyle}>증상</label>
         <input name="symptom" value={form.symptom || ""} onChange={handleChange} style={inputStyle} />
 
+        <label style={labelStyle}>짧은 수리 작업명</label>
+        <input
+          name="seo_keyword"
+          value={form.seo_keyword || ""}
+          onChange={handleChange}
+          placeholder="예: 정품 액정 교체"
+          style={inputStyle}
+        />
+        <p style={fieldHelpStyle}>
+          제목·검색 설명·FAQ에 사용하는 짧은 명칭입니다. 긴 작업 설명은 본문에
+          그대로 유지됩니다.
+        </p>
+
         <label style={labelStyle}>대표 이미지 변경</label>
         <input type="file" accept="image/*" onChange={handleMainImageUpload} style={inputStyle} />
 
@@ -570,22 +607,9 @@ export default function EditRepairCasePage() {
         <input name="image_url" value={form.image_url || ""} onChange={handleChange} style={inputStyle} />
 
         <details style={advancedDetailsStyle}>
-          <summary style={advancedSummaryStyle}>고급 설정 · SEO 문구와 대표 ALT</summary>
+          <summary style={advancedSummaryStyle}>고급 설정 · 대표 이미지 ALT</summary>
 
           <div style={advancedDetailsBodyStyle}>
-            <label style={labelStyle}>내부 SEO 키워드</label>
-            <input
-              name="seo_keyword"
-              value={form.seo_keyword || ""}
-              onChange={handleChange}
-              style={inputStyle}
-            />
-
-            <p style={fieldHelpStyle}>
-              검색 노출을 보장하는 입력란이 아닙니다. 실제 사례와 맞는 짧은 표현만
-              사용해주세요.
-            </p>
-
             <label style={labelStyle}>대표 이미지 ALT 문구</label>
             <input
               name="alt_text"
@@ -757,6 +781,23 @@ export default function EditRepairCasePage() {
                 {image.image_url && (
                   <img src={image.image_url} alt={image.alt_text || ""} style={detailImageStyle} />
                 )}
+
+                <div style={representativeSelectRowStyle}>
+                  {form.image_url === image.image_url ? (
+                    <span style={representativeBadgeStyle}>현재 대표사진</span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => selectRepresentativeImage(image)}
+                      style={secondaryButtonStyle}
+                    >
+                      대표사진으로 선택
+                    </button>
+                  )}
+                  <span style={fieldHelpStyle}>
+                    홈페이지 목록·검색 공유에 사용되며 본문 위치는 바뀌지 않습니다.
+                  </span>
+                </div>
 
                 <label style={labelStyle}>사진 순서 (0부터 시작)</label>
                 <input
@@ -1036,6 +1077,24 @@ const detailImageStyle = {
   objectFit: "cover",
   borderRadius: "14px",
   marginBottom: "16px",
+};
+
+const representativeSelectRowStyle = {
+  display: "flex",
+  alignItems: "center",
+  gap: "10px 14px",
+  flexWrap: "wrap",
+  marginBottom: "16px",
+};
+
+const representativeBadgeStyle = {
+  display: "inline-block",
+  padding: "8px 12px",
+  borderRadius: "999px",
+  background: "#dcfce7",
+  color: "#166534",
+  fontSize: "13px",
+  fontWeight: "900",
 };
 
 const smallSaveButtonStyle = {

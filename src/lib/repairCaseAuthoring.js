@@ -51,8 +51,34 @@ function makeFactLabel(value = "", maxLength = 18) {
 
 function makeActionLabel(value = "", maxLength = 18) {
   const text = trimPunctuation(value);
+  const compact = comparable(text);
+  const knownActions = [
+    [/정품액정.*교체/u, "정품 액정 교체"],
+    [/후면유리.*교체/u, "후면 유리 교체"],
+    [/액정모듈.*교체/u, "액정 모듈 교체"],
+    [/(?:액정|디스플레이|화면).*교체/u, "액정 교체"],
+    [/배터리.*교체/u, "배터리 교체"],
+    [/(?:충전단자|충전포트).*교체/u, "충전 단자 교체"],
+    [/(?:카메라렌즈|카메라유리).*교체/u, "카메라 렌즈 교체"],
+    [/카메라.*교체/u, "카메라 교체"],
+    [/키보드.*교체/u, "키보드 교체"],
+    [/(?:메인보드|보드).*(?:수리|복구|재납땜)/u, "메인보드 수리"],
+    [/(?:침수|액체유입).*(?:세척|수리|복구)/u, "침수 세척·수리"],
+    [/(?:전원불량|전원안됨).*(?:수리|복구)/u, "전원 불량 수리"],
+    [/(?:커넥터|컨넥터).*(?:교체|수리|재납땜)/u, "커넥터 수리"],
+    [/팬.*(?:교체|수리)/u, "냉각팬 수리"],
+    [/ssd.*(?:교체|장착)/u, "SSD 교체"],
+  ];
+  const knownAction = knownActions.find(([pattern]) => pattern.test(compact));
+
+  if (knownAction) {
+    return knownAction[1];
+  }
+
   const clauses = text
-    .split(/(?:,|;| 그리고 |(?:되|하)고\s|(?:했|였)으며\s)/u)
+    .split(
+      /(?:,|;| 그리고 |(?:되|하)(?:고|였고)\s|(?:했|였|하셨)(?:고|으며)\s|(?:한|하신)\s+후\s)/u,
+    )
     .map((clause) => clause.trim())
     .filter(Boolean);
   const selected =
@@ -74,18 +100,25 @@ function makeSymptomLabel(value = "", maxLength = 18) {
   const rules = [
     [/충전/u, /(안|되지|불가|불량|인식못)/u, "충전 불량"],
     [/전원/u, /(안|들어오지|불가|불량|꺼짐)/u, "전원 불량"],
-    [/(액정|유리)/u, /(파손|깨짐|금감)/u, "액정 파손"],
+    [/(화면|액정|유리)/u, /(파손|깨짐|금감)/u, "액정 파손"],
     [/배터리/u, /(성능|소모|빨리|급격|부풀)/u, "배터리 성능 저하"],
     [/(화면|액정)/u, /(녹색줄|세로줄|가로줄|줄생김)/u, "화면 줄 발생"],
-    [/터치/u, /(안|불가|불량|오작동)/u, "터치 불량"],
+    [/(화면|액정)/u, /(떨림|떨리|깜빡)/u, "화면 떨림"],
+    [/터치/u, /(안|않|되지|불가|불량|오작동)/u, "터치 불량"],
     [/(침수|물|액체)/u, /(유입|들어|침수)/u, "액체 유입"],
   ];
-  const matched = rules.find(
-    ([subjectPattern, statePattern]) =>
-      subjectPattern.test(source) && statePattern.test(source),
-  );
+  const matchedLabels = rules
+    .filter(
+      ([subjectPattern, statePattern]) =>
+        subjectPattern.test(source) && statePattern.test(source),
+    )
+    .map(([, , label]) => label)
+    .filter((label, index, labels) => labels.indexOf(label) === index)
+    .slice(0, 2);
 
-  return matched ? matched[2] : makeFactLabel(text, maxLength);
+  return matchedLabels.length > 0
+    ? matchedLabels.join("·")
+    : makeFactLabel(text, maxLength);
 }
 
 function limitAtBoundary(value, maxLength) {
@@ -134,6 +167,10 @@ export function getDeviceModelLabel(draft = {}) {
 function makeTitleParts(draft, factLength) {
   const branch = normalizeAuthoringText(draft.branch);
   const deviceModel = getDeviceModelLabel(draft);
+  const repairLabel =
+    normalizeAuthoringText(draft.repairLabel) ||
+    normalizeAuthoringText(draft.seo_keyword) ||
+    draft.repairAction;
   const symptom = limitAtBoundary(
     makeSymptomLabel(
       removeIncludedParts(draft.symptom, [branch, deviceModel, draft.device, draft.model]),
@@ -143,7 +180,7 @@ function makeTitleParts(draft, factLength) {
   );
   const action = limitAtBoundary(
     makeActionLabel(
-      removeIncludedParts(draft.repairAction, [branch, deviceModel, draft.device, draft.model]),
+      removeIncludedParts(repairLabel, [branch, deviceModel, draft.device, draft.model]),
       factLength,
     ),
     factLength,
@@ -188,17 +225,28 @@ export function buildRepairCaseTitle(draft = {}) {
   ]).join(" ");
 }
 
-export function buildRepairCaseKeyword(draft = {}) {
+export function buildRepairCaseActionLabel(draft = {}) {
   const excluded = [
     draft.branch,
     getDeviceModelLabel(draft),
     draft.device,
     draft.model,
   ];
-  const action = removeIncludedParts(draft.repairAction, excluded);
+  const preferred =
+    normalizeAuthoringText(draft.repairLabel) ||
+    normalizeAuthoringText(draft.seo_keyword);
+  const source = preferred || draft.repairAction;
+  const action = removeIncludedParts(source, excluded);
+
+  return action ? makeActionLabel(action, 36) : "";
+}
+
+export function buildRepairCaseKeyword(draft = {}) {
+  const action = buildRepairCaseActionLabel(draft);
+  const excluded = [draft.branch, getDeviceModelLabel(draft), draft.device, draft.model];
   const symptom = removeIncludedParts(draft.symptom, excluded);
 
-  return action ? makeActionLabel(action, 36) : makeSymptomLabel(symptom || "수리", 36);
+  return action || makeSymptomLabel(symptom || "수리", 36);
 }
 
 export function buildRepairCaseSummary(draft = {}) {
@@ -225,20 +273,41 @@ export function buildRepairCaseSummary(draft = {}) {
 export function buildRepairCaseSearchSummary(draft = {}) {
   const branch = normalizeAuthoringText(draft.branch);
   const deviceModel = getDeviceModelLabel(draft) || "기기";
-  const symptom = limitAtBoundary(draft.symptom, 32);
-  const action = limitAtBoundary(draft.repairAction, 32);
-  const verification = limitAtBoundary(draft.verification, 32);
-  const facts = [
-    symptom ? `증상: ${symptom}` : "",
-    action ? `작업: ${action}` : "",
-    verification ? `완료 확인: ${verification}` : "",
-  ].filter(Boolean);
-
-  return normalizeAuthoringText(
-    `${branch ? `${branch} ` : ""}${deviceModel} 수리사례입니다.${
-      facts.length ? ` ${facts.join("; ")}.` : ""
-    }`,
+  const excluded = [branch, deviceModel, draft.device, draft.model];
+  const symptom = makeSymptomLabel(
+    removeIncludedParts(draft.symptom, excluded),
+    28,
   );
+  const action = buildRepairCaseActionLabel(draft);
+  const verificationText = trimPunctuation(draft.verification);
+  const verificationComparable = comparable(verificationText);
+  const verificationLabels = [
+    [/(?:화면|액정).*떨림.*(?:사라|해소|정상)/u, "화면 떨림 해소"],
+    [/터치.*(?:정상|작동)/u, "터치 정상 작동"],
+    [/(?:화면|액정).*(?:출력|표시).*(?:정상|작동)/u, "화면 출력 정상"],
+    [/(?:페이스아이디|faceid).*(?:정상|작동)/u, "페이스 ID 정상 작동"],
+    [/충전.*(?:정상|작동)/u, "충전 정상 작동"],
+    [/전원.*(?:정상|작동)/u, "전원 정상 작동"],
+    [/카메라.*(?:정상|작동)/u, "카메라 정상 작동"],
+  ]
+    .filter(([pattern]) => pattern.test(verificationComparable))
+    .map(([, label]) => label)
+    .filter((label, index, labels) => labels.indexOf(label) === index)
+    .slice(0, 2);
+  const verification = verificationLabels.join("·");
+  const intro = `${branch ? `${branch} ` : ""}${deviceModel}${
+    symptom ? ` ${symptom}` : ""
+  } 수리사례입니다.`;
+  const detail =
+    action && verification
+      ? `${action} 작업을 진행한 뒤 ${verification}을 확인했습니다.`
+      : action
+        ? `${action} 작업을 진행했습니다.`
+        : verification
+          ? `작업 후 ${verification}을 확인했습니다.`
+          : "";
+
+  return normalizeAuthoringText([intro, detail].filter(Boolean).join(" "));
 }
 
 function limitAlt(value) {

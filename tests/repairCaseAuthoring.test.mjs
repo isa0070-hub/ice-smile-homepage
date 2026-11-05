@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   AUTHORING_STAGES,
+  buildRepairCaseActionLabel,
   buildRepairCaseContentSections,
   buildRepairCaseImageAlt,
   buildRepairCaseKeyword,
@@ -110,8 +111,11 @@ test("summary and search summary remain readable factual prose rather than a key
   assert.match(summary, /진행 작업: 파손 액정을 분리하고 교체용 액정을 장착함/u);
   assert.match(summary, /완료 확인: 화면 출력과 터치, Face ID, 충전 기능을 확인함/u);
   assert.ok(searchSentences.length >= 1 && searchSentences.length <= 2);
-  assert.match(searchSummary, /^선릉점 아이폰15프로 수리사례입니다\./u);
-  assert.match(searchSummary, /증상: .+; 작업: .+; 완료 확인: /u);
+  assert.match(
+    searchSummary,
+    /^선릉점 아이폰15프로 액정 파손·화면 줄 발생 수리사례입니다\./u,
+  );
+  assert.match(searchSummary, /액정 교체 작업을 진행했습니다\.$/u);
   assert.doesNotMatch(searchSummary, /선릉점\s+선릉점|아이폰\s+아이폰15프로/u);
 });
 
@@ -124,6 +128,36 @@ test("keyword is one concise repair-action phrase without branch or model enumer
   assert.equal(keyword, "액정 모듈 교체");
   assert.doesNotMatch(keyword, /선릉|아이폰15프로/u);
   assert.ok(Array.from(keyword).length <= 36);
+});
+
+test("long customer-facing repair prose becomes a complete short action, title, and description", () => {
+  const actualCase = {
+    branch: "선릉점",
+    device: "아이폰",
+    model: "아이폰15프로",
+    symptom:
+      "처음 떨어뜨렸을 때는 찍힘만 있었고 이후 화면 하단이 떨리며 터치가 되지 않음",
+    repairAction:
+      "정품액정 교체를 원하셨고 정품과 가품 부품의 차이와 구별방법 등을 설명한 후 정품액정 교체를 실시 하였습니다",
+    verification:
+      "화면 떨림은 완전히 사라졌고 터치와 주요 기능이 정상 작동함",
+  };
+  const action = buildRepairCaseActionLabel(actualCase);
+  const title = buildRepairCaseTitle(actualCase);
+  const description = buildRepairCaseSearchSummary(actualCase);
+
+  assert.equal(action, "정품 액정 교체");
+  assert.equal(
+    title,
+    "선릉점 아이폰15프로 화면 떨림·터치 불량 정품 액정 교체 수리사례",
+  );
+  assert.equal(
+    description,
+    "선릉점 아이폰15프로 화면 떨림·터치 불량 수리사례입니다. 정품 액정 교체 작업을 진행한 뒤 화면 떨림 해소·터치 정상 작동을 확인했습니다.",
+  );
+  assert.ok(Array.from(title).length <= 48);
+  assert.equal(description.split(".").filter(Boolean).length, 2);
+  assert.doesNotMatch(description, /원하셨고|차이와|상태로[.]?$/u);
 });
 
 test("main and detail ALT text stay concise and detail ALT is based on the actual description", () => {
