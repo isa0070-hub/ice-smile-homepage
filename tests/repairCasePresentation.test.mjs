@@ -50,9 +50,12 @@ test("a separately uploaded legacy representative remains eligible for compact d
   );
 });
 
-test("public detail suppresses a duplicated top image but preserves structured body photos", () => {
+test("public detail always shows the selected representative beside the summary", () => {
   assert.match(detailPageSource, /showStandaloneRepresentative/u);
-  assert.match(detailPageSource, /!representativeDetailImage/u);
+  assert.match(
+    detailPageSource,
+    /const showStandaloneRepresentative = Boolean\(item\.image_url\)/u,
+  );
   assert.match(detailPageSource, /getSectionImages\(/u);
   assert.match(detailPageSource, /repair-process-card/u);
   assert.match(detailPageSource, /getUniqueRepairCaseImageUrls/u);
@@ -65,6 +68,25 @@ test("public detail suppresses a duplicated top image but preserves structured b
   assert.match(
     detailPageSource,
     /@media \(max-width: 420px\)[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/u,
+  );
+});
+
+test("structured repair photos keep equal three-column cards and center incomplete rows", () => {
+  assert.match(
+    detailPageSource,
+    /const structuredImageGridStyle = \{[\s\S]*?display: "flex"[\s\S]*?flexWrap: "wrap"[\s\S]*?justifyContent: "center"/u,
+  );
+  assert.match(
+    detailPageSource,
+    /flex: "0 1 calc\(\(100% - 44px\) \/ 3\)"/u,
+  );
+  assert.match(
+    detailPageSource,
+    /@media \(max-width: 1100px\)[\s\S]*?flex-basis: calc\(\(100% - 22px\) \/ 2\)/u,
+  );
+  assert.match(
+    detailPageSource,
+    /@media \(max-width: 720px\)[\s\S]*?flex-basis: 100%/u,
   );
 });
 
