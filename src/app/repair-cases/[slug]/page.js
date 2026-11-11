@@ -187,21 +187,8 @@ function getSectionImages(section, detailImages = [], sectionIndex = 0) {
   }));
 }
 
-function getStructuredImageGridStyle(imageCount = 0) {
-  let columnCount = Math.max(1, Math.min(imageCount, 3));
-
-  // 이전 4장 묶음 글도 마지막 한 장이 홀로 밀리지 않도록 2열로 균형 배치
-  if (imageCount === 4) {
-    columnCount = 2;
-  }
-
-  return {
-    ...structuredImageGridStyle,
-    gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
-    ...(imageCount === 1
-      ? { maxWidth: "860px", marginLeft: "auto", marginRight: "auto" }
-      : {}),
-  };
+function getStructuredImageGridStyle() {
+  return structuredImageGridStyle;
 }
 
 function escapeRegExp(value) {
@@ -1087,9 +1074,7 @@ export default async function RepairCaseDetailPage({ params }) {
     detailImages || [],
     BASE_URL,
   );
-  const showStandaloneRepresentative = Boolean(
-    item.image_url && !representativeDetailImage,
-  );
+  const showStandaloneRepresentative = Boolean(item.image_url);
   const representativeAlt = reviewedLegacyTitle
     ? `${displayTitle} 대표 이미지`
     : makeSafeAltText(
@@ -1103,8 +1088,8 @@ export default async function RepairCaseDetailPage({ params }) {
     <main style={{ maxWidth: "1280px", margin: "80px auto", padding: "24px" }}>
       <style>{`
         @media (max-width: 1100px) {
-          .repair-structured-image-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          .repair-structured-image-grid > figure {
+            flex-basis: calc((100% - 22px) / 2) !important;
           }
 
           .repair-related-grid {
@@ -1123,8 +1108,8 @@ export default async function RepairCaseDetailPage({ params }) {
         }
 
         @media (max-width: 720px) {
-          .repair-structured-image-grid {
-            grid-template-columns: 1fr !important;
+          .repair-structured-image-grid > figure {
+            flex-basis: 100% !important;
           }
 
           .repair-structured-image {
@@ -1363,7 +1348,7 @@ export default async function RepairCaseDetailPage({ params }) {
                 {sectionImages.length > 0 && (
                   <div
                     className="repair-structured-image-grid"
-                    style={getStructuredImageGridStyle(sectionImages.length)}
+                    style={getStructuredImageGridStyle()}
                   >
                     {sectionImages.map(({ image, absoluteIndex }) => (
                       <figure
@@ -1923,14 +1908,17 @@ const structuredProcessTextStyle = {
 };
 
 const structuredImageGridStyle = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  display: "flex",
+  flexWrap: "wrap",
+  justifyContent: "center",
   gap: "22px",
   alignItems: "stretch",
 };
 
 const structuredFigureStyle = {
   margin: 0,
+  flex: "0 1 calc((100% - 44px) / 3)",
+  minWidth: 0,
   display: "flex",
   flexDirection: "column",
   overflow: "hidden",
