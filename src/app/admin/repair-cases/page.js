@@ -15,6 +15,8 @@ import {
   buildRepairCaseImageAlt,
   sortRepairCaseImages,
   buildRepairCaseContentSections,
+  composeRepairCaseContentSections,
+  analyzeRepairCaseContentQuality,
   validateRepairCaseDraft,
 } from "@/lib/repairCaseAuthoring";
 
@@ -30,6 +32,29 @@ const FALLBACK_STAGE_LABELS = {
   diagnosis: "점검",
   repair: "수리 작업",
   verification: "완료 확인",
+};
+
+const STAGE_DETAIL_GUIDES = {
+  intake: {
+    question: "언제·어떤 상황에서 증상이 발생했고 입고 당시 상태는 어땠나요?",
+    placeholder:
+      "예: 전날까지 정상 사용했지만 다음 날부터 터치가 되지 않았습니다. 화면 출력과 버튼 반응은 정상이고 외관 파손은 없는 상태로 입고됐습니다.",
+  },
+  diagnosis: {
+    question: "무엇을 어떤 순서로 점검했고, 어떤 근거로 원인을 판단했나요?",
+    placeholder:
+      "예: 초기화 전에 마우스와 디버깅 연결로 소프트웨어 상태를 확인했습니다. 운영체제와 드라이버가 정상이라 내부 커넥터 점검이 필요하다고 판단했습니다.",
+  },
+  repair: {
+    question: "실제 작업 순서와 작업 중 특히 주의하거나 확인한 부분은 무엇인가요?",
+    placeholder:
+      "예: 전원을 차단하고 액정을 분리한 뒤 보드와 액정 쪽 커넥터를 순서대로 확인했습니다. 이상 신호가 확인된 액정 커넥터를 수리하고 연결 부위를 보강했습니다.",
+  },
+  verification: {
+    question: "수리 후 어떤 기능을 확인했고 수리 전과 비교해 무엇이 달라졌나요?",
+    placeholder:
+      "예: 조립 전후로 화면 출력과 전 영역 터치, 충전, 무선 연결을 반복 확인했습니다. 터치가 정상 작동했고 추가 이상 신호가 없는 것을 확인했습니다.",
+  },
 };
 
 function createInitialDraft() {
@@ -131,6 +156,21 @@ function createClientImageId(index = 0) {
 
   return (
     "repair-image-" +
+    Date.now() +
+    "-" +
+    index +
+    "-" +
+    Math.random().toString(36).slice(2)
+  );
+}
+
+function createClientSectionId(index = 0) {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return (
+    "repair-section-" +
     Date.now() +
     "-" +
     index +
@@ -259,6 +299,9 @@ export default function AdminRepairCasesPage() {
   const [repairLabelEdited, setRepairLabelEdited] = useState(false);
   const [mainAltEdited, setMainAltEdited] = useState(false);
   const [detailImages, setDetailImages] = useState([]);
+  const [stageDetails, setStageDetails] = useState({});
+  const [extraSections, setExtraSections] = useState([]);
+  const [closingSection, setClosingSection] = useState(null);
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -365,10 +408,49 @@ export default function AdminRepairCasesPage() {
   );
   const effectiveMainAlt = mainAltEdited ? draft.alt_text : generatedMainAlt;
 
-  const contentSections = useMemo(
+  const generatedContentSections = useMemo(
     () => buildRepairCaseContentSections(effectiveDraft, preparedImages),
     [effectiveDraft, preparedImages],
   );
+  const contentSections = useMemo(
+    () =>
+      composeRepairCaseContentSections(generatedContentSections, {
+        stageDetails,
+        extraSections,
+        closingSection,
+      }),
+    [generatedContentSections, stageDetails, extraSections, closingSection],
+  );
+  const processContentSections = useMemo(
+    () => contentSections.filter((section) => section?.type !== "closing"),
+    [contentSections],
+  );
+  const contentQuality = useMemo(
+    () => analyzeRepairCaseContentQuality(contentSections),
+    [contentSections],
+  );
+  const supplementarySectionErrors = useMemo(() => {
+    const errors = [];
+
+    extraSections.forEach((section, index) => {
+      if (!isFilled(section.title) || !isFilled(section.content)) {
+        errors.push(
+          `추가 과정 ${index + 1}의 소제목과 상세 설명을 모두 입력하거나 해당 구간을 삭제해주세요.`,
+        );
+      }
+    });
+
+    if (
+      closingSection &&
+      (!isFilled(closingSection.title) || !isFilled(closingSection.content))
+    ) {
+      errors.push(
+        "마무리 글의 소제목과 상세 설명을 모두 입력하거나 마무리 구간을 삭제해주세요.",
+      );
+    }
+
+    return errors;
+  }, [extraSections, closingSection]);
 
   const validation = useMemo(
     () => validateRepairCaseDraft(effectiveDraft, preparedImages),
@@ -400,7 +482,8 @@ export default function AdminRepairCasesPage() {
     coreFactsReady &&
     workFactsReady &&
     imageFactsReady &&
-    generatedSearchReady;
+    generatedSearchReady &&
+    supplementarySectionErrors.length === 0;
 
   function handleFactChange(event) {
     const { name, value } = event.target;
@@ -408,6 +491,62 @@ export default function AdminRepairCasesPage() {
     setDraft((previous) => ({
       ...previous,
       [name]: value,
+    }));
+  }
+
+  function handleStageDetailChange(stageKey, value) {
+    setStageDetails((previous) => ({
+      ...previous,
+      [stageKey]: value,
+    }));
+  }
+
+  function resetStageDetail(stageKey) {
+    setStageDetails((previous) => {
+      const next = { ...previous };
+      delete next[stageKey];
+      return next;
+    });
+  }
+
+  function addExtraSection() {
+    setExtraSections((previous) => [
+      ...previous,
+      {
+        client_id: createClientSectionId(previous.length),
+        title: "",
+        content: "",
+      },
+    ]);
+  }
+
+  function updateExtraSection(clientId, field, value) {
+    setExtraSections((previous) =>
+      previous.map((section) =>
+        section.client_id === clientId
+          ? { ...section, [field]: value }
+          : section,
+      ),
+    );
+  }
+
+  function removeExtraSection(clientId) {
+    setExtraSections((previous) =>
+      previous.filter((section) => section.client_id !== clientId),
+    );
+  }
+
+  function addClosingSection() {
+    setClosingSection({
+      title: "수리 후 확인 및 사용 안내",
+      content: "",
+    });
+  }
+
+  function updateClosingSection(field, value) {
+    setClosingSection((previous) => ({
+      ...(previous || {}),
+      [field]: value,
     }));
   }
 
@@ -531,15 +670,12 @@ export default function AdminRepairCasesPage() {
         });
       }
 
-      const nextImages = [...detailImages, ...uploadedImages];
-      setDetailImages(nextImages);
-
-      if (!draft.image_url && nextImages[0]?.image_url) {
-        setDraft((previous) => ({
-          ...previous,
-          image_url: nextImages[0].image_url,
-        }));
-      }
+      setDetailImages((previous) => [...previous, ...uploadedImages]);
+      setDraft((previous) =>
+        previous.image_url || !uploadedImages[0]?.image_url
+          ? previous
+          : { ...previous, image_url: uploadedImages[0].image_url },
+      );
 
       setMessage(
         files.length +
@@ -649,6 +785,9 @@ export default function AdminRepairCasesPage() {
     setRepairLabelEdited(false);
     setMainAltEdited(false);
     setDetailImages([]);
+    setStageDetails({});
+    setExtraSections([]);
+    setClosingSection(null);
     setSubmitAttempted(false);
   }
 
@@ -668,9 +807,11 @@ export default function AdminRepairCasesPage() {
       !coreFactsReady ||
       !workFactsReady ||
       !imageFactsReady ||
-      !generatedSearchReady
+      !generatedSearchReady ||
+      supplementarySectionErrors.length > 0
     ) {
-      const firstError = currentValidation?.errors?.[0];
+      const firstError =
+        currentValidation?.errors?.[0] || supplementarySectionErrors[0];
       setMessage(
         typeof firstError === "string"
           ? firstError
@@ -912,6 +1053,350 @@ export default function AdminRepairCasesPage() {
           <div style={stepHeaderStyle}>
             <span style={stepNumberStyle}>2</span>
             <div>
+              <p style={eyebrowStyle}>사례마다 다른 실제 경험 보강</p>
+              <h2 style={sectionTitleStyle}>검색용 상세 본문</h2>
+            </div>
+          </div>
+
+          <p style={sectionIntroStyle}>
+            위에서 입력한 핵심 사실은 제목과 검색 설명에 그대로 사용됩니다.
+            아래에는 이번 기기에서 직접 확인한 판단 근거와 작업 과정을 문장으로
+            보충해주세요. 입력하지 않은 사실을 추측하거나 같은 키워드를 반복하지
+            마세요.
+          </p>
+
+          <div
+            style={{
+              ...contentQualityBoxStyle,
+              borderColor: contentQuality.meetsInternalGuidance
+                ? "#86efac"
+                : "#fdba74",
+              background: contentQuality.meetsInternalGuidance
+                ? "#f0fdf4"
+                : "#fff7ed",
+            }}
+          >
+            <div style={contentQualityHeaderStyle}>
+              <strong>
+                사례 고유 본문 {contentQuality.characterCount.toLocaleString()}자
+              </strong>
+              <span
+                style={{
+                  ...contentQualityBadgeStyle,
+                  background: contentQuality.meetsInternalGuidance
+                    ? "#dcfce7"
+                    : "#ffedd5",
+                  color: contentQuality.meetsInternalGuidance
+                    ? "#166534"
+                    : "#9a3412",
+                }}
+              >
+                {contentQuality.meetsInternalGuidance
+                  ? "상세 본문 준비"
+                  : "보완 권장"}
+              </span>
+            </div>
+
+            {contentQuality.meetsInternalGuidance ? (
+              <p style={contentQualityTextStyle}>
+                네 단계에 실제 사례 설명이 고르게 포함되어 있습니다. 반복 문장이나
+                과장 표현이 없는지 마지막으로 확인해주세요.
+              </p>
+            ) : (
+              <p style={contentQualityTextStyle}>
+                네이버가 정한 최소 글자 수는 없습니다. 이 수치는 등록을 막는 기준이
+                아니라 작성 도움용 내부 점검입니다. 증상 발생 상황, 점검 판단 근거,
+                실제 작업 순서, 수리 후 테스트를 각 단계에 2~4문장씩 보완하면 다양한
+                검색 질문에 대응하기 좋습니다.
+              </p>
+            )}
+
+            {contentQuality.shortStageIndexes.length > 0 && (
+              <p style={contentQualityHintStyle}>
+                설명 보강 권장: {contentQuality.shortStageIndexes
+                  .map((index) => AUTHORING_STAGES[index]?.title)
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            )}
+
+            {contentQuality.repeatedParagraphs.length > 0 && (
+              <p style={contentQualityWarningStyle}>
+                같은 긴 문장이 여러 구간에서 반복됩니다. 각 단계에서 실제로 다른
+                내용을 적어주세요.
+              </p>
+            )}
+          </div>
+
+          <div style={contentSectionListStyle}>
+            {AUTHORING_STAGES.map((stage, index) => {
+              const generatedSection = generatedContentSections[index] || {};
+              const detailValue = stageDetails[stage.key] || "";
+              const guide = STAGE_DETAIL_GUIDES[stage.key] || {};
+              const hasImages = Number(generatedSection.image_start) > 0;
+              const imageRange = hasImages
+                ? generatedSection.image_start === generatedSection.image_end
+                  ? `사진 ${generatedSection.image_start} 자동 연결`
+                  : `사진 ${generatedSection.image_start}~${generatedSection.image_end} 자동 연결`
+                : "연결 사진 없음";
+
+              return (
+                <article key={stage.key} style={contentSectionCardStyle}>
+                  <div style={contentSectionHeaderStyle}>
+                    <div>
+                      <span style={contentSectionNumberStyle}>
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <h3 style={contentSectionTitleStyle}>{stage.title}</h3>
+                    </div>
+                    <span style={imageRangeBadgeStyle}>{imageRange}</span>
+                  </div>
+
+                  <div style={baseFactPreviewStyle}>
+                    <span>위에서 입력한 핵심 사실</span>
+                    <p>
+                      {generatedSection.content ||
+                        "1단계의 핵심 사실을 먼저 입력해주세요."}
+                    </p>
+                  </div>
+
+                  <label style={fieldLabelStyle}>
+                    <span style={fieldLabelTextStyle}>
+                      단계별 상세 설명
+                      <span style={optionalTextStyle}>선택·권장</span>
+                    </span>
+                    <span style={detailQuestionStyle}>{guide.question}</span>
+                    <textarea
+                      value={detailValue}
+                      onChange={(event) =>
+                        handleStageDetailChange(stage.key, event.target.value)
+                      }
+                      placeholder={guide.placeholder}
+                      style={richTextAreaStyle}
+                    />
+                  </label>
+
+                  <div style={sectionCardFooterStyle}>
+                    <span>
+                      공백 제외 {detailValue.replace(/\s+/gu, "").length}자
+                    </span>
+                    {detailValue && (
+                      <button
+                        type="button"
+                        onClick={() => resetStageDetail(stage.key)}
+                        style={textButtonStyle}
+                      >
+                        상세 설명 비우기
+                      </button>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+
+            {extraSections.map((section, index) => {
+              const sectionIncomplete =
+                submitAttempted &&
+                (!isFilled(section.title) || !isFilled(section.content));
+              const sectionErrorId = `extra-section-${section.client_id}-error`;
+
+              return (
+              <article key={section.client_id} style={contentSectionCardStyle}>
+                <div style={contentSectionHeaderStyle}>
+                  <div>
+                    <span style={contentSectionNumberStyle}>추가</span>
+                    <h3 style={contentSectionTitleStyle}>
+                      별도 수리 과정 {index + 1}
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeExtraSection(section.client_id)}
+                    aria-label={`별도 수리 과정 ${index + 1} 삭제`}
+                    style={removeSectionButtonStyle}
+                  >
+                    구간 삭제
+                  </button>
+                </div>
+
+                <p style={sectionCardHelpStyle}>
+                  기본 네 단계에 들어가지 않는 실제 점검·작업 내용만 작성해주세요.
+                  이 구간에는 사진이 중복되지 않도록 텍스트만 연결됩니다.
+                </p>
+
+                <label style={fieldLabelStyle}>
+                  <span style={fieldLabelTextStyle}>소제목</span>
+                  <input
+                    value={section.title}
+                    onChange={(event) =>
+                      updateExtraSection(
+                        section.client_id,
+                        "title",
+                        event.target.value,
+                      )
+                    }
+                    required
+                    aria-invalid={sectionIncomplete}
+                    aria-describedby={
+                      sectionIncomplete ? sectionErrorId : undefined
+                    }
+                    placeholder="예: 커넥터 이상 신호와 원인 판단"
+                    style={inputStyle}
+                  />
+                </label>
+
+                <label style={fieldLabelStyle}>
+                  <span style={fieldLabelTextStyle}>상세 설명</span>
+                  <textarea
+                    value={section.content}
+                    onChange={(event) =>
+                      updateExtraSection(
+                        section.client_id,
+                        "content",
+                        event.target.value,
+                      )
+                    }
+                    required
+                    aria-invalid={sectionIncomplete}
+                    aria-describedby={
+                      sectionIncomplete ? sectionErrorId : undefined
+                    }
+                    placeholder="이번 사례에서만 확인한 추가 내용과 판단 근거를 작성해주세요."
+                    style={richTextAreaStyle}
+                  />
+                </label>
+
+                {sectionIncomplete && (
+                  <p
+                    id={sectionErrorId}
+                    role="alert"
+                    style={contentQualityWarningStyle}
+                  >
+                    소제목과 상세 설명을 모두 입력하거나 이 구간을 삭제해주세요.
+                  </p>
+                )}
+              </article>
+              );
+            })}
+
+            {closingSection && (
+              <article style={closingEditorStyle}>
+                <div style={contentSectionHeaderStyle}>
+                  <div>
+                    <span style={closingBadgeStyle}>마무리</span>
+                    <h3 style={contentSectionTitleStyle}>수리 후 추가 안내</h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setClosingSection(null)}
+                    aria-label="마무리 구간 삭제"
+                    style={removeSectionButtonStyle}
+                  >
+                    구간 삭제
+                  </button>
+                </div>
+
+                <p style={sectionCardHelpStyle}>
+                  주소·전화번호를 반복하기보다 이번 기기의 사용 주의점, 백업 권장,
+                  재점검이 필요한 증상처럼 고객에게 실제로 도움이 되는 내용을
+                  작성해주세요.
+                </p>
+
+                <label style={fieldLabelStyle}>
+                  <span style={fieldLabelTextStyle}>소제목</span>
+                  <input
+                    value={closingSection.title || ""}
+                    onChange={(event) =>
+                      updateClosingSection("title", event.target.value)
+                    }
+                    required
+                    aria-invalid={
+                      submitAttempted &&
+                      (!isFilled(closingSection.title) ||
+                        !isFilled(closingSection.content))
+                    }
+                    aria-describedby={
+                      submitAttempted &&
+                      (!isFilled(closingSection.title) ||
+                        !isFilled(closingSection.content))
+                        ? "closing-section-error"
+                        : undefined
+                    }
+                    style={inputStyle}
+                  />
+                </label>
+
+                <label style={fieldLabelStyle}>
+                  <span style={fieldLabelTextStyle}>상세 설명</span>
+                  <textarea
+                    value={closingSection.content || ""}
+                    onChange={(event) =>
+                      updateClosingSection("content", event.target.value)
+                    }
+                    required
+                    aria-invalid={
+                      submitAttempted &&
+                      (!isFilled(closingSection.title) ||
+                        !isFilled(closingSection.content))
+                    }
+                    aria-describedby={
+                      submitAttempted &&
+                      (!isFilled(closingSection.title) ||
+                        !isFilled(closingSection.content))
+                        ? "closing-section-error"
+                        : undefined
+                    }
+                    placeholder="예: 동일 증상이 다시 나타날 때 확인할 사항과 수리 후 사용 주의점을 작성해주세요."
+                    style={richTextAreaStyle}
+                  />
+                </label>
+
+                {submitAttempted &&
+                  (!isFilled(closingSection.title) ||
+                    !isFilled(closingSection.content)) && (
+                    <p
+                      id="closing-section-error"
+                      role="alert"
+                      style={contentQualityWarningStyle}
+                    >
+                      소제목과 상세 설명을 모두 입력하거나 마무리 구간을
+                      삭제해주세요.
+                    </p>
+                  )}
+              </article>
+            )}
+          </div>
+
+          <div style={contentActionRowStyle}>
+            <button
+              type="button"
+              onClick={addExtraSection}
+              style={secondaryButtonStyle}
+            >
+              과정 구간 추가
+            </button>
+            {!closingSection && (
+              <button
+                type="button"
+                onClick={addClosingSection}
+                style={secondaryButtonStyle}
+              >
+                마무리 구간 추가
+              </button>
+            )}
+          </div>
+
+          <p style={nonBlockingGuideStyle}>
+            상세 본문이 짧아도 등록할 수 있습니다. 다만 같은 양식에서 문장 몇 개만
+            바꾼 글을 반복하기보다, 이번 기기에서 직접 확인한 고유 정보를 충분히
+            남기는 것이 네이버 검색 경쟁력에 유리합니다.
+          </p>
+        </section>
+
+        <section style={stepSectionStyle}>
+          <div style={stepHeaderStyle}>
+            <span style={stepNumberStyle}>3</span>
+            <div>
               <p style={eyebrowStyle}>사진을 보고 직접 확인</p>
               <h2 style={sectionTitleStyle}>수리 사진</h2>
             </div>
@@ -1120,9 +1605,11 @@ export default function AdminRepairCasesPage() {
           {preparedImages.length > 0 && (
             <div style={sectionPreviewStyle}>
               <p style={eyebrowStyle}>고객 화면 구성</p>
-              <strong>{contentSections.length}개 수리 단계로 자동 정리</strong>
+              <strong>
+                {processContentSections.length}개 수리 단계로 자동 정리
+              </strong>
               <p style={helperTextStyle}>
-                {contentSections
+                {processContentSections
                   .map((section) => section.title)
                   .filter(Boolean)
                   .join(" → ") || "사진 단계 선택 후 구성됩니다."}
@@ -1133,7 +1620,7 @@ export default function AdminRepairCasesPage() {
 
         <section style={stepSectionStyle}>
           <div style={stepHeaderStyle}>
-            <span style={stepNumberStyle}>3</span>
+            <span style={stepNumberStyle}>4</span>
             <div>
               <p style={eyebrowStyle}>등록 전 마지막 확인</p>
               <h2 style={sectionTitleStyle}>검색 노출 준비</h2>
@@ -1177,12 +1664,16 @@ export default function AdminRepairCasesPage() {
                 {canSubmit ? "등록 준비 완료" : "확인이 필요합니다"}
               </strong>
 
-              {validation?.errors?.length > 0 && (
+              {(validation?.errors?.length > 0 ||
+                supplementarySectionErrors.length > 0) && (
                 <ul style={validationListStyle}>
                   {validation.errors.map((error, index) => (
                     <li key={"error-" + index}>
                       {typeof error === "string" ? error : error?.message}
                     </li>
+                  ))}
+                  {supplementarySectionErrors.map((error, index) => (
+                    <li key={"section-error-" + index}>{error}</li>
                   ))}
                 </ul>
               )}
@@ -1197,12 +1688,13 @@ export default function AdminRepairCasesPage() {
                 </ul>
               )}
 
-              {!validation?.errors?.length && (
+              {!validation?.errors?.length &&
+                supplementarySectionErrors.length === 0 && (
                 <p style={validationSuccessTextStyle}>
                   숫자 점수가 아니라 실제 사실과 사진 설명의 누락 여부만
                   확인합니다.
                 </p>
-              )}
+                )}
             </div>
           </div>
 
@@ -1466,7 +1958,7 @@ const formStyle = {
 };
 
 const stepSectionStyle = {
-  padding: "28px",
+  padding: "clamp(18px, 4vw, 28px)",
   borderRadius: "24px",
   background: "#ffffff",
   border: "1px solid #dbe4f0",
@@ -1514,7 +2006,7 @@ const sectionIntroStyle = {
 
 const twoColumnGridStyle = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))",
   gap: "16px",
 };
 
@@ -1522,6 +2014,182 @@ const factStackStyle = {
   display: "grid",
   gap: "16px",
   marginTop: "18px",
+};
+
+const contentQualityBoxStyle = {
+  marginBottom: "20px",
+  padding: "18px",
+  border: "1px solid",
+  borderRadius: "16px",
+};
+
+const contentQualityHeaderStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "12px",
+  flexWrap: "wrap",
+};
+
+const contentQualityBadgeStyle = {
+  display: "inline-flex",
+  padding: "5px 10px",
+  borderRadius: "999px",
+  fontSize: "12px",
+  fontWeight: 900,
+};
+
+const contentQualityTextStyle = {
+  margin: "10px 0 0",
+  color: "#475569",
+  lineHeight: 1.7,
+};
+
+const contentQualityHintStyle = {
+  margin: "10px 0 0",
+  color: "#9a3412",
+  fontWeight: 800,
+  lineHeight: 1.6,
+};
+
+const contentQualityWarningStyle = {
+  margin: "10px 0 0",
+  color: "#b91c1c",
+  fontWeight: 800,
+  lineHeight: 1.6,
+};
+
+const contentSectionListStyle = {
+  display: "grid",
+  gap: "18px",
+};
+
+const contentSectionCardStyle = {
+  display: "grid",
+  gap: "16px",
+  padding: "20px",
+  border: "1px solid #dbeafe",
+  borderRadius: "18px",
+  background: "#f8fbff",
+};
+
+const closingEditorStyle = {
+  ...contentSectionCardStyle,
+  borderColor: "#c4b5fd",
+  background: "#faf5ff",
+};
+
+const contentSectionHeaderStyle = {
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: "14px",
+  flexWrap: "wrap",
+};
+
+const contentSectionNumberStyle = {
+  display: "inline-flex",
+  marginBottom: "6px",
+  padding: "4px 9px",
+  borderRadius: "999px",
+  background: "#dbeafe",
+  color: "#1d4ed8",
+  fontSize: "12px",
+  fontWeight: 900,
+};
+
+const closingBadgeStyle = {
+  ...contentSectionNumberStyle,
+  background: "#ede9fe",
+  color: "#6d28d9",
+};
+
+const contentSectionTitleStyle = {
+  margin: 0,
+  color: "#0f172a",
+  fontSize: "20px",
+  lineHeight: 1.4,
+};
+
+const imageRangeBadgeStyle = {
+  display: "inline-flex",
+  padding: "6px 10px",
+  borderRadius: "999px",
+  background: "#ffffff",
+  border: "1px solid #bfdbfe",
+  color: "#1e40af",
+  fontSize: "12px",
+  fontWeight: 800,
+};
+
+const baseFactPreviewStyle = {
+  padding: "14px 16px",
+  borderRadius: "14px",
+  background: "#ffffff",
+  border: "1px solid #e2e8f0",
+};
+
+const detailQuestionStyle = {
+  color: "#475569",
+  fontSize: "14px",
+  lineHeight: 1.6,
+};
+
+const richTextAreaStyle = {
+  width: "100%",
+  minHeight: "150px",
+  boxSizing: "border-box",
+  padding: "14px",
+  borderRadius: "12px",
+  border: "1px solid #cbd5e1",
+  background: "#ffffff",
+  color: "#0f172a",
+  fontSize: "16px",
+  lineHeight: 1.75,
+  resize: "vertical",
+  whiteSpace: "pre-wrap",
+};
+
+const sectionCardFooterStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "12px",
+  flexWrap: "wrap",
+  color: "#64748b",
+  fontSize: "13px",
+};
+
+const removeSectionButtonStyle = {
+  padding: "8px 11px",
+  borderRadius: "10px",
+  border: "1px solid #fecaca",
+  background: "#fff1f2",
+  color: "#be123c",
+  fontWeight: 850,
+  cursor: "pointer",
+};
+
+const sectionCardHelpStyle = {
+  margin: 0,
+  color: "#64748b",
+  lineHeight: 1.65,
+};
+
+const contentActionRowStyle = {
+  display: "flex",
+  gap: "10px",
+  flexWrap: "wrap",
+  marginTop: "18px",
+};
+
+const nonBlockingGuideStyle = {
+  margin: "16px 0 0",
+  padding: "14px 16px",
+  borderRadius: "14px",
+  background: "#f8fafc",
+  color: "#475569",
+  lineHeight: 1.7,
 };
 
 const fieldLabelStyle = {
@@ -1658,7 +2326,7 @@ const imageListStyle = {
 
 const imageCardStyle = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))",
   overflow: "hidden",
   borderRadius: "20px",
   border: "1px solid #dbeafe",
@@ -1812,7 +2480,7 @@ const helperTextStyle = {
 
 const reviewGridStyle = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))",
   gap: "18px",
   marginTop: "22px",
 };
@@ -1948,7 +2616,7 @@ const advancedIntroStyle = {
 
 const advancedGridStyle = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))",
   gap: "18px",
 };
 

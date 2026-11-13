@@ -270,7 +270,10 @@ function sanitizeSectionNode(slug, value) {
 
   return Object.fromEntries(
     Object.entries(value).map(([key, entry]) => {
-      if ((key === "title" || key === "content") && typeof entry === "string") {
+      if (
+        (key === "title" || key === "content" || key === "fact_summary") &&
+        typeof entry === "string"
+      ) {
         return [key, sanitizeLegacyRepairCaseText(slug, entry)];
       }
 

@@ -442,11 +442,18 @@ export default function EditRepairCasePage() {
     };
     const normalizedContentSections = contentSections.map((section) => {
       const isClosing = section?.type === "closing";
+      const content = String(section?.content || "").trim();
+      const factSummary = section?.fact_summary
+        ? content.split(/\n\s*\n/u)[0].trim()
+        : "";
 
       return {
         ...(isClosing ? { type: "closing" } : {}),
+        ...(!isClosing && factSummary
+          ? { fact_summary: factSummary }
+          : {}),
         title: String(section?.title || "").trim(),
-        content: String(section?.content || "").trim(),
+        content,
         image_start: isClosing
           ? null
           : toNullableInteger(section?.image_start),

@@ -30,6 +30,7 @@ import {
   buildRepairCaseActionLabel,
   buildRepairCaseSearchSummary,
   buildRepairCaseTitle,
+  getRepairCaseSectionFactSummary,
 } from "@/lib/repairCaseAuthoring";
 import {
   findRepresentativeDetailImage,
@@ -143,6 +144,9 @@ function normalizeContentSections(value) {
         type: isClosing ? "closing" : "process",
         title: cleanText(section?.title),
         content: String(section?.content || "").trim(),
+        fact_summary: isClosing
+          ? ""
+          : String(section?.fact_summary || "").trim(),
         image_start: isClosing
           ? null
           : hasNoImages
@@ -279,7 +283,10 @@ function getFactualCaseSections(item) {
     const role = getFactualSectionRole(section.title);
 
     if (role && !byRole[role]) {
-      byRole[role] = section;
+      byRole[role] = {
+        ...section,
+        content: getRepairCaseSectionFactSummary(section),
+      };
     }
   });
 

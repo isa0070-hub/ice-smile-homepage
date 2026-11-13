@@ -236,6 +236,15 @@ function sanitizeContentSections(value) {
 
   return sections.map((section, index) => ({
     ...(section?.type === "closing" ? { type: "closing" } : {}),
+    ...(section?.type !== "closing" && section?.fact_summary
+      ? {
+          fact_summary: text(
+            section.fact_summary,
+            `본문 ${index + 1} 검색 요약`,
+            { max: 50000 },
+          ),
+        }
+      : {}),
     title: text(section?.title, `본문 ${index + 1} 제목`, { max: 200 }),
     content: text(section?.content, `본문 ${index + 1} 내용`, { max: 50000 }),
     image_start:
