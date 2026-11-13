@@ -11,8 +11,12 @@ import {
   buildRepairCaseSearchSummary,
   buildRepairCaseSummary,
   buildRepairCaseTitle,
+  composeRepairCaseContentSections,
   extractRepairCaseFacts,
   getDeviceModelLabel,
+  analyzeRepairCaseContentQuality,
+  getRepairCaseSectionFactSummary,
+  normalizeAuthoringBodyText,
   normalizeAuthoringText,
   parseRepairCaseContentSections,
   sortRepairCaseImages,
@@ -54,6 +58,19 @@ test("normalization and device/model labeling remove whitespace and duplicate de
   assert.equal(
     getDeviceModelLabel({ device: "서피스", model: "프로9" }),
     "서피스 프로9",
+  );
+});
+
+test("long-form authoring normalization preserves paragraphs and intentional line breaks", () => {
+  assert.equal(
+    normalizeAuthoringBodyText(
+      "  첫 문단의 실제 점검 내용입니다.  \r\n\r\n\r\n  둘째 문단입니다.\r\n - 확인 항목  ",
+    ),
+    "첫 문단의 실제 점검 내용입니다.\n\n둘째 문단입니다.\n- 확인 항목",
+  );
+  assert.equal(
+    normalizeAuthoringText("첫 문단\n\n둘째 문단"),
+    "첫 문단 둘째 문단",
   );
 });
 
@@ -489,6 +506,140 @@ test("image sorting is stable within stages and content ranges are 1-based with 
   assert.equal(sections[2].content, completeDraft.repairAction);
   assert.match(sections[3].content, new RegExp(completeDraft.verification, "u"));
   assert.match(sections[3].content, /현장 특이사항: 수리 후 충격에 주의하도록 안내함/u);
+});
+
+test("rich authoring appends unique stage details without changing automatic photo ranges", () => {
+  const images = sortRepairCaseImages([
+    { id: "intake", stage: "intake", sort_order: 0 },
+    { id: "repair", stage: "repair", sort_order: 1 },
+  ]);
+  const automaticSections = buildRepairCaseContentSections(completeDraft, images);
+  const sections = composeRepairCaseContentSections(automaticSections, {
+    stageDetails: {
+      intake:
+        "고객님은 이동 중 기기를 떨어뜨린 뒤 화면 줄이 나타났다고 설명했습니다.\n\n입고 당시 전원과 버튼 반응은 확인됐습니다.",
+      diagnosis: completeDraft.diagnosis,
+    },
+    extraSections: [
+      {
+        client_id: "extra-1",
+        title: "프레임 상태 추가 확인",
+        content: "프레임의 눌림과 틀어짐 여부를 별도로 확인했습니다.",
+      },
+      { client_id: "empty", title: "", content: "" },
+    ],
+    closingSection: {
+      title: "수리 후 사용 안내",
+      content:
+        "같은 부위에 충격이 반복되지 않도록 케이스 사용을 안내했습니다.\n\n이상이 다시 나타나면 전원을 끄고 점검을 권장했습니다.",
+    },
+  });
+
+  assert.deepEqual(
+    sections.slice(0, 4).map(({ image_start, image_end }) => [
+      image_start,
+      image_end,
+    ]),
+    [
+      [1, 1],
+      [0, 0],
+      [2, 2],
+      [0, 0],
+    ],
+  );
+  assert.equal(
+    sections[0].content,
+    `${completeDraft.symptom}\n\n고객님은 이동 중 기기를 떨어뜨린 뒤 화면 줄이 나타났다고 설명했습니다.\n\n입고 당시 전원과 버튼 반응은 확인됐습니다.`,
+  );
+  assert.equal(sections[0].fact_summary, completeDraft.symptom);
+  assert.equal(
+    getRepairCaseSectionFactSummary(sections[0]),
+    completeDraft.symptom,
+  );
+  assert.equal(sections[1].content, completeDraft.diagnosis);
+  assert.equal(sections[1].fact_summary, completeDraft.diagnosis);
+  assert.deepEqual(sections[4], {
+    title: "프레임 상태 추가 확인",
+    content: "프레임의 눌림과 틀어짐 여부를 별도로 확인했습니다.",
+    image_start: 0,
+    image_end: 0,
+  });
+  assert.deepEqual(sections[5], {
+    type: "closing",
+    title: "수리 후 사용 안내",
+    content:
+      "같은 부위에 충격이 반복되지 않도록 케이스 사용을 안내했습니다.\n\n이상이 다시 나타나면 전원을 끄고 점검을 권장했습니다.",
+    image_start: null,
+    image_end: null,
+  });
+});
+
+test("content quality guidance warns without making a valid repair draft invalid", () => {
+  const shortSections = buildRepairCaseContentSections(completeDraft, []);
+  const shortQuality = analyzeRepairCaseContentQuality(shortSections);
+  const detailedSections = composeRepairCaseContentSections(shortSections, {
+    stageDetails: Object.fromEntries(
+      AUTHORING_STAGES.map(({ key, title }) => [
+        key,
+        `${title}에서 실제로 확인한 항목과 판단 근거를 자세히 기록했습니다. 같은 문장을 반복하지 않고 이번 기기의 상태와 작업 순서, 확인 결과를 구체적으로 설명합니다. 고객이 검색한 질문에 답할 수 있도록 수리 전후 차이도 함께 남겼습니다. 점검에 사용한 방법과 제외한 원인, 작업 중 주의한 부분을 실제 확인 사실에 맞춰 덧붙였습니다. 마지막으로 고객이 직접 확인할 수 있는 기능과 이후 사용 시 주의사항도 정리했습니다.`,
+      ]),
+    ),
+  });
+  const detailedQuality = analyzeRepairCaseContentQuality(detailedSections);
+
+  assert.equal(shortQuality.meetsInternalGuidance, false);
+  assert.ok(shortQuality.shortStageIndexes.length > 0);
+  assert.equal(detailedQuality.meetsInternalGuidance, true);
+  assert.ok(detailedQuality.characterCount >= 700);
+  assert.equal(validateRepairCaseDraft(completeDraft, []).isValid, true);
+});
+
+test("rich details never replace the short facts used by public search summaries", () => {
+  const automaticSections = buildRepairCaseContentSections(completeDraft, []);
+  const sections = composeRepairCaseContentSections(automaticSections, {
+    stageDetails: {
+      intake:
+        "배터리 소모는 정상이며 화면 유리가 파손되고 세로줄이 보였습니다.",
+      verification: "충전 테스트를 추가로 진행했습니다.",
+    },
+  });
+  const roundTripped = parseRepairCaseContentSections(
+    JSON.stringify(sections),
+  );
+
+  assert.equal(
+    getRepairCaseSectionFactSummary(roundTripped[0]),
+    completeDraft.symptom,
+  );
+  assert.equal(
+    getRepairCaseSectionFactSummary(roundTripped[3]),
+    `${completeDraft.verification}\n\n현장 특이사항: ${completeDraft.notes}`,
+  );
+  assert.match(roundTripped[0].content, /배터리 소모는 정상/u);
+  assert.match(roundTripped[3].content, /충전 테스트/u);
+
+  const makePublicDraft = (candidateSections) => ({
+    ...completeDraft,
+    symptom: getRepairCaseSectionFactSummary(candidateSections[0]),
+    diagnosis: getRepairCaseSectionFactSummary(candidateSections[1]),
+    repairAction: getRepairCaseSectionFactSummary(candidateSections[2]),
+    verification: getRepairCaseSectionFactSummary(candidateSections[3]),
+  });
+  const automaticPublicDraft = makePublicDraft(automaticSections);
+  const richPublicDraft = makePublicDraft(roundTripped);
+
+  assert.equal(
+    buildRepairCaseSearchSummary(richPublicDraft),
+    buildRepairCaseSearchSummary(automaticPublicDraft),
+  );
+  assert.equal(
+    buildRepairCaseTitle(richPublicDraft),
+    buildRepairCaseTitle(automaticPublicDraft),
+  );
+  assert.equal(
+    buildRepairCaseMainAlt(richPublicDraft),
+    buildRepairCaseMainAlt(automaticPublicDraft),
+  );
 });
 
 test("legacy and double-encoded content sections parse without changing their text or ranges", () => {

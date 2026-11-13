@@ -18,6 +18,17 @@ export function normalizeAuthoringText(value = "") {
     .trim();
 }
 
+export function normalizeAuthoringBodyText(value = "") {
+  return String(value)
+    .normalize("NFKC")
+    .replace(/\r\n?/gu, "\n")
+    .split("\n")
+    .map((line) => line.replace(/[^\S\n]+/gu, " ").trim())
+    .join("\n")
+    .replace(/\n{3,}/gu, "\n\n")
+    .trim();
+}
+
 function comparable(value = "") {
   return normalizeAuthoringText(value)
     .toLowerCase()
@@ -627,6 +638,125 @@ export function buildRepairCaseContentSections(draft = {}, sortedImages = []) {
   });
 }
 
+export function composeRepairCaseContentSections(
+  baseSections = [],
+  {
+    stageDetails = {},
+    extraSections = [],
+    closingSection = null,
+  } = {},
+) {
+  const normalizedBaseSections = (Array.isArray(baseSections)
+    ? baseSections
+    : []
+  ).map((section, index) => {
+    const stageKey = AUTHORING_STAGES[index]?.key || String(index);
+    const baseContent = normalizeAuthoringBodyText(section?.content);
+    const detailContent = normalizeAuthoringBodyText(stageDetails?.[stageKey]);
+    const isRepeatedDetail =
+      detailContent &&
+      normalizeAuthoringText(detailContent) ===
+        normalizeAuthoringText(baseContent);
+
+    return {
+      ...section,
+      title: normalizeAuthoringText(section?.title),
+      fact_summary: baseContent,
+      content: [baseContent, isRepeatedDetail ? "" : detailContent]
+        .filter(Boolean)
+        .join("\n\n"),
+    };
+  });
+
+  const normalizedExtraSections = (Array.isArray(extraSections)
+    ? extraSections
+    : []
+  )
+    .map((section) => ({
+      title: normalizeAuthoringText(section?.title),
+      content: normalizeAuthoringBodyText(section?.content),
+      image_start: 0,
+      image_end: 0,
+    }))
+    .filter((section) => section.title || section.content);
+
+  const closingTitle = normalizeAuthoringText(closingSection?.title);
+  const closingContent = normalizeAuthoringBodyText(closingSection?.content);
+  const normalizedClosingSection =
+    closingTitle || closingContent
+      ? {
+          type: "closing",
+          title: closingTitle,
+          content: closingContent,
+          image_start: null,
+          image_end: null,
+        }
+      : null;
+
+  return [
+    ...normalizedBaseSections,
+    ...normalizedExtraSections,
+    ...(normalizedClosingSection ? [normalizedClosingSection] : []),
+  ];
+}
+
+export function getRepairCaseSectionFactSummary(section = {}) {
+  const storedSummary = normalizeAuthoringBodyText(section?.fact_summary);
+
+  return storedSummary || String(section?.content || "").trim();
+}
+
+function countBodyCharacters(value = "") {
+  return Array.from(normalizeAuthoringBodyText(value).replace(/\s+/gu, ""))
+    .length;
+}
+
+export function analyzeRepairCaseContentQuality(
+  sections = [],
+  { minimumCharacters = 700, minimumStageCharacters = 80 } = {},
+) {
+  const parsedSections = parseRepairCaseContentSections(sections);
+  const processSections = parsedSections.filter(
+    (section) => section?.type !== "closing",
+  );
+  const contentSections = parsedSections.filter((section) => section?.content);
+  const baseStageCharacters = processSections
+    .slice(0, AUTHORING_STAGES.length)
+    .map((section) => countBodyCharacters(section?.content));
+  const shortStageIndexes = baseStageCharacters
+    .map((length, index) => ({ length, index }))
+    .filter(({ length }) => length < minimumStageCharacters)
+    .map(({ index }) => index);
+  const paragraphs = contentSections.flatMap((section) =>
+    normalizeAuthoringBodyText(section.content)
+      .split(/\n{2,}/u)
+      .map((paragraph) => normalizeAuthoringText(paragraph))
+      .filter((paragraph) => Array.from(paragraph).length >= 30),
+  );
+  const paragraphCounts = new Map();
+
+  paragraphs.forEach((paragraph) => {
+    paragraphCounts.set(paragraph, (paragraphCounts.get(paragraph) || 0) + 1);
+  });
+
+  const repeatedParagraphs = [...paragraphCounts.entries()]
+    .filter(([, count]) => count > 1)
+    .map(([paragraph]) => paragraph);
+  const characterCount = contentSections.reduce(
+    (total, section) => total + countBodyCharacters(section.content),
+    0,
+  );
+
+  return {
+    characterCount,
+    baseStageCharacters,
+    shortStageIndexes,
+    repeatedParagraphs,
+    meetsInternalGuidance:
+      characterCount >= minimumCharacters && shortStageIndexes.length === 0,
+  };
+}
+
 export function parseRepairCaseContentSections(value) {
   if (value == null || value === "") return [];
 
@@ -669,6 +799,13 @@ export function parseRepairCaseContentSections(value) {
 
       return {
         ...(isClosing ? { type: "closing" } : {}),
+        ...(!isClosing && section?.fact_summary
+          ? {
+              fact_summary: normalizeAuthoringBodyText(
+                section.fact_summary,
+              ),
+            }
+          : {}),
         title: normalizeAuthoringText(section?.title),
         content: String(section?.content || "").trim(),
         image_start: isClosing
