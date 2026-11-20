@@ -191,8 +191,15 @@ function getSectionImages(section, detailImages = [], sectionIndex = 0) {
   }));
 }
 
-function getStructuredImageGridStyle() {
-  return structuredImageGridStyle;
+function getStructuredImageGridStyle(imageCount = 0) {
+  // Preserve the photo order and captions while adapting the layout to each stage.
+  return {
+    ...structuredImageGridStyle,
+    gridTemplateColumns:
+      imageCount === 1 ? "minmax(0, 1fr)" : "repeat(2, minmax(0, 1fr))",
+    maxWidth: imageCount === 1 ? "900px" : "100%",
+    marginInline: imageCount === 1 ? "auto" : undefined,
+  };
 }
 
 function escapeRegExp(value) {
@@ -1095,10 +1102,6 @@ export default async function RepairCaseDetailPage({ params }) {
     <main style={{ maxWidth: "1280px", margin: "80px auto", padding: "24px" }}>
       <style>{`
         @media (max-width: 1100px) {
-          .repair-structured-image-grid > figure {
-            flex-basis: calc((100% - 22px) / 2) !important;
-          }
-
           .repair-related-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
           }
@@ -1115,12 +1118,18 @@ export default async function RepairCaseDetailPage({ params }) {
         }
 
         @media (max-width: 720px) {
+          .repair-structured-image-grid {
+            grid-template-columns: minmax(0, 1fr) !important;
+            gap: 16px !important;
+          }
+
           .repair-structured-image-grid > figure {
-            flex-basis: 100% !important;
+            grid-column: auto !important;
           }
 
           .repair-structured-image {
-            height: 290px !important;
+            height: auto !important;
+            max-height: 520px !important;
           }
 
           .repair-process-card {
@@ -1355,12 +1364,17 @@ export default async function RepairCaseDetailPage({ params }) {
                 {sectionImages.length > 0 && (
                   <div
                     className="repair-structured-image-grid"
-                    style={getStructuredImageGridStyle()}
+                    style={getStructuredImageGridStyle(sectionImages.length)}
                   >
                     {sectionImages.map(({ image, absoluteIndex }) => (
                       <figure
                         key={image.id || `${sectionIndex}-${absoluteIndex}`}
-                        style={structuredFigureStyle}
+                        style={{
+                          ...structuredFigureStyle,
+                          ...(sectionImages.length === 3 && sectionImages[0].absoluteIndex === absoluteIndex
+                            ? { gridColumn: "1 / -1" }
+                            : {}),
+                        }}
                       >
                         {image.image_url && (
                           <Image
@@ -1379,7 +1393,14 @@ export default async function RepairCaseDetailPage({ params }) {
                             sizes="(max-width: 720px) 100vw, (max-width: 1100px) 50vw, 33vw"
                             loading="lazy"
                             decoding="async"
-                            style={structuredImageStyle}
+                            style={{
+                              ...structuredImageStyle,
+                              ...((sectionImages.length === 1 ||
+                                (sectionImages.length === 3 &&
+                                  sectionImages[0].absoluteIndex === absoluteIndex))
+                                ? { height: "clamp(290px, 40vw, 520px)" }
+                                : {}),
+                            }}
                           />
                         )}
 
@@ -1870,12 +1891,10 @@ const structuredProcessWrapStyle = {
 };
 
 const structuredProcessSectionStyle = {
-  marginBottom: "24px",
-  padding: "30px",
-  borderRadius: "22px",
-  border: "1px solid #e2e8f0",
-  background: "linear-gradient(180deg, #ffffff 0%, #f8fbff 100%)",
-  boxShadow: "0 8px 24px rgba(15, 23, 42, 0.06)",
+  marginBottom: "20px",
+  padding: "30px 0 38px",
+  borderBottom: "1px solid #e2e8f0",
+  background: "#ffffff",
 };
 
 const structuredProcessHeaderStyle = {
@@ -1915,16 +1934,14 @@ const structuredProcessTextStyle = {
 };
 
 const structuredImageGridStyle = {
-  display: "flex",
-  flexWrap: "wrap",
-  justifyContent: "center",
-  gap: "22px",
-  alignItems: "stretch",
+  display: "grid",
+  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  gap: "20px",
+  alignItems: "start",
 };
 
 const structuredFigureStyle = {
   margin: 0,
-  flex: "0 1 calc((100% - 44px) / 3)",
   minWidth: 0,
   display: "flex",
   flexDirection: "column",
