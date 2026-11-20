@@ -57,6 +57,30 @@ const STAGE_DETAIL_GUIDES = {
   },
 };
 
+
+const STAGE_FACT_FIELDS = {
+  intake: {
+    name: "symptom",
+    label: "접수 당시 증상 · 핵심 문장",
+    placeholder: "예: 떨어뜨린 뒤 화면이 깨지고 터치가 되지 않음",
+  },
+  diagnosis: {
+    name: "diagnosis",
+    label: "점검에서 확인한 내용 · 핵심 문장",
+    placeholder: "예: 전면 유리와 OLED가 파손됐고 다른 주요 기능은 정상",
+  },
+  repair: {
+    name: "repairAction",
+    label: "실제로 진행한 수리 · 핵심 문장",
+    placeholder: "예: 파손된 액정을 분리하고 새 액정으로 교체",
+  },
+  verification: {
+    name: "verification",
+    label: "수리 후 확인 결과 · 핵심 문장",
+    placeholder: "예: 화면 출력과 전 영역 터치를 점검해 정상 작동을 확인",
+  },
+};
+
 function createInitialDraft() {
   return {
     title: "",
@@ -646,7 +670,12 @@ export default function AdminRepairCasesPage() {
     return prepareResult.publicUrl;
   }
 
-  async function handleDetailImagesUpload(event) {
+  async function handleDetailImagesUpload(event, stageKey) {
+    // Each stage owns its photos. A manual stage selection is not required.
+    if (!STAGE_OPTIONS.some((stage) => stage.value === stageKey)) {
+      setMessage("사진을 연결할 수리 단계를 확인해주세요.");
+      return;
+    }
     const files = Array.from(event.target.files || []);
     if (files.length === 0) return;
 
@@ -661,7 +690,7 @@ export default function AdminRepairCasesPage() {
 
         uploadedImages.push({
           client_id: createClientImageId(detailImages.length + index),
-          stage: "",
+          stage: stageKey,
           image_url: publicUrl,
           description: "",
           alt_text: "",
@@ -679,7 +708,7 @@ export default function AdminRepairCasesPage() {
 
       setMessage(
         files.length +
-          "장 업로드 완료 · 각 사진의 단계와 실제 보이는 내용을 입력해주세요.",
+          "장 업로드 완료 · 사진에서 실제로 보이는 내용을 적어주세요.",
       );
       event.target.value = "";
     } catch (error) {
@@ -882,170 +911,49 @@ export default function AdminRepairCasesPage() {
         <p style={pageEyebrowStyle}>실제 수리 사실 중심 작성</p>
         <h1 style={pageTitleStyle}>수리사례 등록</h1>
         <p style={pageDescriptionStyle}>
-          점검·수리·완료 사실을 한 번만 입력하면 제목, 검색 설명, 본문과
-          이미지 ALT가 자동으로 정리됩니다. 자동 문구는 입력한 사실만
-          사용합니다.
+          기기와 모델을 선택한 뒤 접수·점검·수리·완료 단계에서 글과 사진을
+          함께 작성하세요. 실제 수리 사실을 바탕으로 제목, 검색 설명,
+          사진 ALT를 자동 생성합니다.
         </p>
       </header>
 
       <form onSubmit={handleSubmit} noValidate style={formStyle}>
+
         <section style={stepSectionStyle}>
           <div style={stepHeaderStyle}>
             <span style={stepNumberStyle}>1</span>
             <div>
-              <p style={eyebrowStyle}>작성자가 입력하는 핵심 정보</p>
-              <h2 style={sectionTitleStyle}>실제 수리 사실</h2>
+              <p style={eyebrowStyle}>기본 정보는 한 번만</p>
+              <h2 style={sectionTitleStyle}>기기와 수리 지점</h2>
             </div>
           </div>
-
           <p style={sectionIntroStyle}>
-            추측이나 홍보 문구 대신 이번 기기에서 직접 확인한 내용만 짧게
-            적어주세요.
+            검색 제목과 수리사례 분류에 쓰일 정확한 정보를 입력해주세요.
+            제목과 SEO 주소는 실제 수리 사실을 바탕으로 자동 생성됩니다.
           </p>
-
           <div style={twoColumnGridStyle}>
             <label style={fieldLabelStyle}>
-              <span style={fieldLabelTextStyle}>
-                카테고리 <RequiredMark />
-              </span>
-              <select
-                name="category"
-                value={draft.category}
-                onChange={handleFactChange}
-                style={inputStyle}
-                required
-              >
+              <span style={fieldLabelTextStyle}>카테고리 <RequiredMark /></span>
+              <select name="category" value={draft.category}
+                onChange={handleFactChange} style={inputStyle} required>
                 <option>애플</option>
                 <option>마이크로소프트 서피스</option>
                 <option>노트북 및 태블릿</option>
               </select>
             </label>
-
             <label style={fieldLabelStyle}>
-              <span style={fieldLabelTextStyle}>
-                지점 <RequiredMark />
-              </span>
-              <select
-                name="branch"
-                value={draft.branch}
-                onChange={handleFactChange}
-                style={inputStyle}
-                required
-              >
+              <span style={fieldLabelTextStyle}>지점 <RequiredMark /></span>
+              <select name="branch" value={draft.branch}
+                onChange={handleFactChange} style={inputStyle} required>
                 <option>강변점</option>
                 <option>선릉점</option>
                 <option>신도림점</option>
               </select>
             </label>
-
-            <FactField
-              label="기기 종류"
-              name="device"
-              value={draft.device}
-              onChange={handleFactChange}
-              placeholder="예: 아이폰, 아이패드, 맥북, 서피스"
-            />
-
-            <FactField
-              label="정확한 모델명"
-              name="model"
-              value={draft.model}
-              onChange={handleFactChange}
-              placeholder="예: 아이폰 15 프로, 서피스 프로 7"
-            />
-          </div>
-
-          <div style={factStackStyle}>
-            <FactField
-              label="고객이 접수한 증상"
-              name="symptom"
-              value={draft.symptom}
-              onChange={handleFactChange}
-              placeholder="예: 떨어뜨린 뒤 화면이 깨지고 터치가 되지 않음"
-              multiline
-            />
-
-            <FactField
-              label="점검에서 실제로 확인한 것"
-              name="diagnosis"
-              value={draft.diagnosis}
-              onChange={handleFactChange}
-              placeholder="예: 전면 유리와 OLED가 파손됐고 다른 주요 기능은 정상"
-              multiline
-            />
-
-            <FactField
-              label="실제로 진행한 수리 작업"
-              name="repairAction"
-              value={draft.repairAction}
-              onChange={handleFactChange}
-              placeholder="예: 파손 액정을 분리하고 새 액정으로 교체"
-              multiline
-            />
-
-            <label style={fieldLabelStyle}>
-              <span style={fieldLabelTextStyle}>
-                짧은 수리 작업명 <RequiredMark />
-                <span style={optionalTextStyle}>
-                  {repairLabelEdited ? "직접 수정" : "자동 제안"}
-                </span>
-              </span>
-              <input
-                value={effectiveRepairLabel || ""}
-                onChange={handleRepairLabelChange}
-                placeholder="예: 정품 액정 교체"
-                style={inputStyle}
-                required
-              />
-              <span style={helperTextStyle}>
-                제목·검색 설명·FAQ에 사용하는 짧은 명칭입니다. 긴 수리 설명은
-                바로 위 본문에 그대로 유지됩니다.
-              </span>
-              {repairLabelEdited && (
-                <button
-                  type="button"
-                  onClick={resetGeneratedRepairLabel}
-                  style={textButtonStyle}
-                >
-                  자동 제안으로 되돌리기
-                </button>
-              )}
-            </label>
-
-            <FactField
-              label="작업 후 확인한 결과"
-              name="verification"
-              value={draft.verification}
-              onChange={handleFactChange}
-              placeholder="예: 화면 출력, 터치, 페이스 아이디를 반복 확인해 정상 작동"
-              multiline
-            />
-
-            <FactField
-              label="이 사례만의 추가 메모"
-              name="notes"
-              value={draft.notes}
-              onChange={handleFactChange}
-              placeholder="예: 침수 흔적 없음, 고객 요청으로 보호필름 함께 부착"
-              multiline
-              optional
-            />
-          </div>
-
-          <div style={generatedContentStyle}>
-            <div style={generatedHeaderStyle}>
-              <div>
-                <p style={eyebrowStyle}>자동 정리된 본문</p>
-                <strong style={generatedDeviceStyle}>
-                  {deviceModelLabel || "기기·모델 입력 전"}
-                </strong>
-              </div>
-              <span style={autoBadgeStyle}>자동</span>
-            </div>
-            <p style={generatedBodyStyle}>
-              {introContent ||
-                "위의 실제 수리 사실을 입력하면 고객과 검색봇이 읽기 쉬운 본문으로 정리됩니다."}
-            </p>
+            <FactField label="기기 종류" name="device" value={draft.device}
+              onChange={handleFactChange} placeholder="예: 아이폰, 아이패드, 맥북, 서피스" />
+            <FactField label="정확한 모델명" name="model" value={draft.model}
+              onChange={handleFactChange} placeholder="예: 아이폰 16 프로, 서피스 프로 9" />
           </div>
         </section>
 
@@ -1053,93 +961,24 @@ export default function AdminRepairCasesPage() {
           <div style={stepHeaderStyle}>
             <span style={stepNumberStyle}>2</span>
             <div>
-              <p style={eyebrowStyle}>사례마다 다른 실제 경험 보강</p>
-              <h2 style={sectionTitleStyle}>검색용 상세 본문</h2>
+              <p style={eyebrowStyle}>글과 사진을 같은 자리에서 작성</p>
+              <h2 style={sectionTitleStyle}>수리 과정 4단계</h2>
             </div>
           </div>
-
           <p style={sectionIntroStyle}>
-            위에서 입력한 핵심 사실은 제목과 검색 설명에 그대로 사용됩니다.
-            아래에는 이번 기기에서 직접 확인한 판단 근거와 작업 과정을 문장으로
-            보충해주세요. 입력하지 않은 사실을 추측하거나 같은 키워드를 반복하지
-            마세요.
+            각 단계에서 핵심 내용과 상세 설명을 적고, 바로 아래에 해당 단계의
+            사진을 올려주세요. 사진은 자동으로 같은 단계에 연결됩니다.
+            실제 확인하지 않은 내용이나 키워드를 반복해서 넣지 마세요.
           </p>
-
-          <div
-            style={{
-              ...contentQualityBoxStyle,
-              borderColor: contentQuality.meetsInternalGuidance
-                ? "#86efac"
-                : "#fdba74",
-              background: contentQuality.meetsInternalGuidance
-                ? "#f0fdf4"
-                : "#fff7ed",
-            }}
-          >
-            <div style={contentQualityHeaderStyle}>
-              <strong>
-                사례 고유 본문 {contentQuality.characterCount.toLocaleString()}자
-              </strong>
-              <span
-                style={{
-                  ...contentQualityBadgeStyle,
-                  background: contentQuality.meetsInternalGuidance
-                    ? "#dcfce7"
-                    : "#ffedd5",
-                  color: contentQuality.meetsInternalGuidance
-                    ? "#166534"
-                    : "#9a3412",
-                }}
-              >
-                {contentQuality.meetsInternalGuidance
-                  ? "상세 본문 준비"
-                  : "보완 권장"}
-              </span>
-            </div>
-
-            {contentQuality.meetsInternalGuidance ? (
-              <p style={contentQualityTextStyle}>
-                네 단계에 실제 사례 설명이 고르게 포함되어 있습니다. 반복 문장이나
-                과장 표현이 없는지 마지막으로 확인해주세요.
-              </p>
-            ) : (
-              <p style={contentQualityTextStyle}>
-                네이버가 정한 최소 글자 수는 없습니다. 이 수치는 등록을 막는 기준이
-                아니라 작성 도움용 내부 점검입니다. 증상 발생 상황, 점검 판단 근거,
-                실제 작업 순서, 수리 후 테스트를 각 단계에 2~4문장씩 보완하면 다양한
-                검색 질문에 대응하기 좋습니다.
-              </p>
-            )}
-
-            {contentQuality.shortStageIndexes.length > 0 && (
-              <p style={contentQualityHintStyle}>
-                설명 보강 권장: {contentQuality.shortStageIndexes
-                  .map((index) => AUTHORING_STAGES[index]?.title)
-                  .filter(Boolean)
-                  .join(" · ")}
-              </p>
-            )}
-
-            {contentQuality.repeatedParagraphs.length > 0 && (
-              <p style={contentQualityWarningStyle}>
-                같은 긴 문장이 여러 구간에서 반복됩니다. 각 단계에서 실제로 다른
-                내용을 적어주세요.
-              </p>
-            )}
-          </div>
 
           <div style={contentSectionListStyle}>
             {AUTHORING_STAGES.map((stage, index) => {
-              const generatedSection = generatedContentSections[index] || {};
+              const stageFact = STAGE_FACT_FIELDS[stage.key];
               const detailValue = stageDetails[stage.key] || "";
               const guide = STAGE_DETAIL_GUIDES[stage.key] || {};
-              const hasImages = Number(generatedSection.image_start) > 0;
-              const imageRange = hasImages
-                ? generatedSection.image_start === generatedSection.image_end
-                  ? `사진 ${generatedSection.image_start} 자동 연결`
-                  : `사진 ${generatedSection.image_start}~${generatedSection.image_end} 자동 연결`
-                : "연결 사진 없음";
-
+              const stageImages = preparedImages.filter(
+                (image) => image.stage === stage.key,
+              );
               return (
                 <article key={stage.key} style={contentSectionCardStyle}>
                   <div style={contentSectionHeaderStyle}>
@@ -1149,51 +988,189 @@ export default function AdminRepairCasesPage() {
                       </span>
                       <h3 style={contentSectionTitleStyle}>{stage.title}</h3>
                     </div>
-                    <span style={imageRangeBadgeStyle}>{imageRange}</span>
+                    <span style={imageRangeBadgeStyle}>
+                      {stageImages.length + "장 연결됨"}
+                    </span>
                   </div>
 
-                  <div style={baseFactPreviewStyle}>
-                    <span>위에서 입력한 핵심 사실</span>
-                    <p>
-                      {generatedSection.content ||
-                        "1단계의 핵심 사실을 먼저 입력해주세요."}
-                    </p>
-                  </div>
+                  <FactField label={stageFact.label} name={stageFact.name}
+                    value={draft[stageFact.name]} onChange={handleFactChange}
+                    placeholder={stageFact.placeholder} multiline />
+
+                  {stage.key === "repair" && (
+                    <label style={fieldLabelStyle}>
+                      <span style={fieldLabelTextStyle}>
+                        짧은 수리 작업명 <RequiredMark />
+                        <span style={optionalTextStyle}>
+                          {repairLabelEdited ? "직접 수정" : "자동 제안"}
+                        </span>
+                      </span>
+                      <input value={effectiveRepairLabel || ""}
+                        onChange={handleRepairLabelChange}
+                        placeholder="예: 액정 교체" style={inputStyle} required />
+                      <span style={helperTextStyle}>
+                        제목과 검색 설명에 사용하는 짧은 작업명입니다.
+                        자세한 작업 내용은 위에서 설명해주세요.
+                      </span>
+                      {repairLabelEdited && (
+                        <button type="button" onClick={resetGeneratedRepairLabel}
+                          style={textButtonStyle}>자동 제안으로 되돌리기</button>
+                      )}
+                    </label>
+                  )}
 
                   <label style={fieldLabelStyle}>
                     <span style={fieldLabelTextStyle}>
-                      단계별 상세 설명
-                      <span style={optionalTextStyle}>선택·권장</span>
+                      상세 설명 <span style={optionalTextStyle}>선택·권장</span>
                     </span>
                     <span style={detailQuestionStyle}>{guide.question}</span>
-                    <textarea
-                      value={detailValue}
+                    <textarea value={detailValue}
                       onChange={(event) =>
                         handleStageDetailChange(stage.key, event.target.value)
                       }
-                      placeholder={guide.placeholder}
-                      style={richTextAreaStyle}
-                    />
+                      placeholder={guide.placeholder} style={richTextAreaStyle} />
                   </label>
 
-                  <div style={sectionCardFooterStyle}>
-                    <span>
-                      공백 제외 {detailValue.replace(/\s+/gu, "").length}자
+                  {stage.key === "verification" && (
+                    <FactField label="이번 기기의 특이사항" name="notes"
+                      value={draft.notes} onChange={handleFactChange}
+                      placeholder="예: 고객 요청으로 보호필름 부착, 데이터 관련 주의사항"
+                      multiline optional />
+                  )}
+
+                  <div style={stagePhotoIntroStyle}>
+                    <strong>이 단계의 실제 사진</strong>
+                    <span style={helperTextStyle}>
+                      사진은 선택 사항입니다. 올린 사진은 해당 단계 아래에 표시됩니다.
                     </span>
-                    {detailValue && (
-                      <button
-                        type="button"
-                        onClick={() => resetStageDetail(stage.key)}
-                        style={textButtonStyle}
-                      >
-                        상세 설명 비우기
-                      </button>
-                    )}
                   </div>
+                  <label style={stageUploadBoxStyle}>
+                    <strong>사진 추가하기</strong>
+                    <span>{stage.title + " 사진을 여러 장 한 번에 선택할 수 있어요."}</span>
+                    <input type="file" accept="image/*" multiple
+                      onChange={(event) => handleDetailImagesUpload(event, stage.key)}
+                      disabled={uploading} style={fileInputStyle} />
+                  </label>
+
+                  {stageImages.length > 0 && (
+                    <div style={stagePhotoGridStyle}>
+                      {stageImages.map((image, photoIndex) => {
+                        const isMain = draft.image_url === image.image_url;
+                        const imageIncomplete = !isFilled(image.description);
+                        return (
+                          <article key={image.client_id || image.image_url}
+                            style={{
+                              ...imageCardStyle,
+                              borderColor: submitAttempted && imageIncomplete
+                                ? "#ef4444" : "#dbeafe",
+                            }}>
+                            <div style={imagePreviewWrapStyle}>
+                              <img src={image.image_url}
+                                alt={image.alt_text || "수리 사진 " + (photoIndex + 1)}
+                                style={imagePreviewStyle} />
+                              <div style={imageBadgeRowStyle}>
+                                <span style={imageNumberBadgeStyle}>
+                                  {"사진 " + (photoIndex + 1)}
+                                </span>
+                                {isMain && <span style={mainBadgeStyle}>대표사진</span>}
+                              </div>
+                            </div>
+                            <div style={imageEditorStyle}>
+                              <label style={fieldLabelStyle}>
+                                <span style={fieldLabelTextStyle}>
+                                  사진에 실제 보이는 내용 <RequiredMark />
+                                </span>
+                                <textarea value={image.description || ""}
+                                  onChange={(event) =>
+                                    handleImageDescriptionChange(
+                                      image.client_id, event.target.value
+                                    )
+                                  }
+                                  placeholder="예: 파손된 기존 액정을 분리한 상태"
+                                  style={imageDescriptionStyle} required />
+                              </label>
+                              <div style={autoAltBoxStyle}>
+                                <span>자동 ALT</span>
+                                <p>{image.alt_text || "사진 설명을 입력하면 생성됩니다."}</p>
+                              </div>
+                              {!isMain && (
+                                <button type="button" onClick={() => selectMainImage(image)}
+                                  style={secondaryButtonStyle}>대표사진으로 선택</button>
+                              )}
+                              <details style={imageAdvancedStyle}>
+                                <summary style={detailsSummaryStyle}>
+                                  다른 단계로 이동 · ALT 수정
+                                </summary>
+                                <div style={detailsBodyStyle}>
+                                  <label style={fieldLabelStyle}>
+                                    <span style={fieldLabelTextStyle}>사진 단계 변경</span>
+                                    <select value={image.stage || ""}
+                                      onChange={(event) =>
+                                        handleImageStageChange(
+                                          image.client_id, event.target.value
+                                        )
+                                      }
+                                      style={inputStyle}>
+                                      {STAGE_OPTIONS.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                          {option.label}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </label>
+                                  <label style={fieldLabelStyle}>
+                                    <span style={fieldLabelTextStyle}>직접 수정 ALT</span>
+                                    <textarea value={image.alt_text || ""}
+                                      onChange={(event) =>
+                                        handleImageAltChange(
+                                          image.client_id, event.target.value
+                                        )
+                                      }
+                                      style={compactTextAreaStyle} />
+                                  </label>
+                                  {image.altEdited && (
+                                    <button type="button"
+                                      onClick={() => resetGeneratedImageAlt(image.client_id)}
+                                      style={textButtonStyle}>
+                                      ALT 자동 생성으로 되돌리기
+                                    </button>
+                                  )}
+                                  <label style={fieldLabelStyle}>
+                                    <span style={fieldLabelTextStyle}>이미지 주소</span>
+                                    <input value={image.image_url || ""}
+                                      onChange={(event) =>
+                                        handleImageUrlChange(image, event.target.value)
+                                      }
+                                      style={inputStyle} />
+                                  </label>
+                                </div>
+                              </details>
+                              <button type="button"
+                                onClick={() => removeDetailImage(image.client_id)}
+                                style={removeButtonStyle}>이 사진 삭제</button>
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  )}
                 </article>
               );
             })}
+          </div>
 
+          {uploading && <p style={uploadingTextStyle}>사진을 업로드하고 있습니다...</p>}
+
+          <details style={advancedSettingsStyle}>
+            <summary style={advancedSummaryStyle}>
+              추가 과정·마무리 글 (필요할 때만 펼치기)
+            </summary>
+            <div style={advancedBodyStyle}>
+              <p style={sectionCardHelpStyle}>
+                기본 네 단계에 넣기 어려운 실제 내용만 추가해주세요.
+                추가 과정은 글만 표시되고 사진과 중복 연결되지 않습니다.
+              </p>
+              <div style={contentSectionListStyle}>
             {extraSections.map((section, index) => {
               const sectionIncomplete =
                 submitAttempted &&
@@ -1386,246 +1363,103 @@ export default function AdminRepairCasesPage() {
             )}
           </div>
 
-          <p style={nonBlockingGuideStyle}>
-            상세 본문이 짧아도 등록할 수 있습니다. 다만 같은 양식에서 문장 몇 개만
-            바꾼 글을 반복하기보다, 이번 기기에서 직접 확인한 고유 정보를 충분히
-            남기는 것이 네이버 검색 경쟁력에 유리합니다.
-          </p>
+
+              <p style={nonBlockingGuideStyle}>
+                이번 수리사례만의 확인 내용이 충분하도록 작성해주세요.
+                같은 문장을 여러 단계에 반복하지 않아도 됩니다.
+              </p>
+            </div>
+          </details>
+
+          <div style={generatedContentStyle}>
+            <div style={generatedHeaderStyle}>
+              <div>
+                <p style={eyebrowStyle}>실제 사실로 자동 정리된 요약</p>
+                <strong style={generatedDeviceStyle}>
+                  {deviceModelLabel || "기기·모델 입력 전"}
+                </strong>
+              </div>
+              <span style={autoBadgeStyle}>자동</span>
+            </div>
+            <p style={generatedBodyStyle}>
+              {introContent || "수리 사실을 입력하면 고객과 검색봇이 읽을 요약이 만들어집니다."}
+            </p>
+          </div>
         </section>
 
         <section style={stepSectionStyle}>
           <div style={stepHeaderStyle}>
             <span style={stepNumberStyle}>3</span>
             <div>
-              <p style={eyebrowStyle}>사진을 보고 직접 확인</p>
-              <h2 style={sectionTitleStyle}>수리 사진</h2>
-            </div>
-          </div>
-
-          <p style={sectionIntroStyle}>
-            사진을 한 번에 올린 뒤 각 사진의 단계와 실제로 보이는 내용만
-            입력하세요. 대표사진은 홈페이지 목록과 검색 공유 이미지에 사용되며,
-            본문에서는 선택한 수리 단계 위치가 그대로 유지됩니다.
-          </p>
-
-          <label style={uploadBoxStyle}>
-            <strong>상세사진 여러 장 선택</strong>
-            <span>
-              첫 번째 사진이 자동 선택되며, 업로드 후 원하는 사진을
-              대표사진으로 바꿀 수 있습니다.
-            </span>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleDetailImagesUpload}
-              disabled={uploading}
-              style={fileInputStyle}
-            />
-          </label>
-
-          {uploading && (
-            <p style={uploadingTextStyle}>
-              사진을 안전하게 업로드하고 있습니다...
-            </p>
-          )}
-
-          {preparedImages.length === 0 ? (
-            <div style={emptyImageStyle}>
-              <strong>사진은 선택 사항입니다.</strong>
-              <p>
-                사진을 올리면 모든 사진에 단계와 실제 설명을 입력해야 등록할 수
-                있습니다.
-              </p>
-            </div>
-          ) : (
-            <div style={imageListStyle}>
-              {preparedImages.map((image, index) => {
-                const isMain = draft.image_url === image.image_url;
-                const imageIncomplete =
-                  !isFilled(image.stage) || !isFilled(image.description);
-
-                return (
-                  <article
-                    key={image.client_id || image.image_url}
-                    style={{
-                      ...imageCardStyle,
-                      borderColor:
-                        submitAttempted && imageIncomplete
-                          ? "#ef4444"
-                          : "#dbeafe",
-                    }}
-                  >
-                    <div style={imagePreviewWrapStyle}>
-                      <img
-                        src={image.image_url}
-                        alt={image.alt_text || "수리 사진 " + (index + 1)}
-                        style={imagePreviewStyle}
-                      />
-
-                      <div style={imageBadgeRowStyle}>
-                        <span style={imageNumberBadgeStyle}>
-                          사진 {index + 1}
-                        </span>
-                        {isMain && <span style={mainBadgeStyle}>대표사진</span>}
-                      </div>
-                    </div>
-
-                    <div style={imageEditorStyle}>
-                      <div style={imageCardHeaderStyle}>
-                        <div>
-                          <strong>{getStageLabel(image.stage)}</strong>
-                          <p style={imageOrderTextStyle}>
-                            단계 기준으로 고객 화면 순서가 자동 정리됩니다.
-                          </p>
-                        </div>
-
-                        {!isMain && (
-                          <button
-                            type="button"
-                            onClick={() => selectMainImage(image)}
-                            style={secondaryButtonStyle}
-                          >
-                            대표사진으로 선택
-                          </button>
-                        )}
-                      </div>
-
-                      <label style={fieldLabelStyle}>
-                        <span style={fieldLabelTextStyle}>
-                          사진 단계 <RequiredMark />
-                        </span>
-                        <select
-                          value={image.stage || ""}
-                          onChange={(event) =>
-                            handleImageStageChange(
-                              image.client_id,
-                              event.target.value,
-                            )
-                          }
-                          style={inputStyle}
-                          required
-                        >
-                          <option value="">직접 선택해주세요</option>
-                          {STAGE_OPTIONS.map((stage) => (
-                            <option key={stage.value} value={stage.value}>
-                              {stage.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-
-                      <label style={fieldLabelStyle}>
-                        <span style={fieldLabelTextStyle}>
-                          사진에 실제로 보이는 내용 <RequiredMark />
-                        </span>
-                        <textarea
-                          value={image.description || ""}
-                          onChange={(event) =>
-                            handleImageDescriptionChange(
-                              image.client_id,
-                              event.target.value,
-                            )
-                          }
-                          placeholder="예: 파손된 기존 액정을 기기에서 분리한 상태"
-                          style={imageDescriptionStyle}
-                          required
-                        />
-                      </label>
-
-                      <div style={autoAltBoxStyle}>
-                        <span>자동 ALT</span>
-                        <p>
-                          {image.alt_text ||
-                            "사진 설명을 입력하면 생성됩니다."}
-                        </p>
-                      </div>
-
-                      <details style={imageAdvancedStyle}>
-                        <summary style={detailsSummaryStyle}>
-                          이미지 주소·ALT 고급 설정
-                        </summary>
-
-                        <div style={detailsBodyStyle}>
-                          <label style={fieldLabelStyle}>
-                            <span style={fieldLabelTextStyle}>이미지 주소</span>
-                            <input
-                              value={image.image_url || ""}
-                              onChange={(event) =>
-                                handleImageUrlChange(image, event.target.value)
-                              }
-                              style={inputStyle}
-                            />
-                          </label>
-
-                          <label style={fieldLabelStyle}>
-                            <span style={fieldLabelTextStyle}>
-                              직접 수정 ALT
-                            </span>
-                            <textarea
-                              value={image.alt_text || ""}
-                              onChange={(event) =>
-                                handleImageAltChange(
-                                  image.client_id,
-                                  event.target.value,
-                                )
-                              }
-                              style={compactTextAreaStyle}
-                            />
-                          </label>
-
-                          {image.altEdited && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                resetGeneratedImageAlt(image.client_id)
-                              }
-                              style={textButtonStyle}
-                            >
-                              ALT 자동 생성으로 되돌리기
-                            </button>
-                          )}
-                        </div>
-                      </details>
-
-                      <button
-                        type="button"
-                        onClick={() => removeDetailImage(image.client_id)}
-                        style={removeButtonStyle}
-                      >
-                        이 사진 삭제
-                      </button>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          )}
-
-          {preparedImages.length > 0 && (
-            <div style={sectionPreviewStyle}>
-              <p style={eyebrowStyle}>고객 화면 구성</p>
-              <strong>
-                {processContentSections.length}개 수리 단계로 자동 정리
-              </strong>
-              <p style={helperTextStyle}>
-                {processContentSections
-                  .map((section) => section.title)
-                  .filter(Boolean)
-                  .join(" → ") || "사진 단계 선택 후 구성됩니다."}
-              </p>
-            </div>
-          )}
-        </section>
-
-        <section style={stepSectionStyle}>
-          <div style={stepHeaderStyle}>
-            <span style={stepNumberStyle}>4</span>
-            <div>
               <p style={eyebrowStyle}>등록 전 마지막 확인</p>
               <h2 style={sectionTitleStyle}>검색 노출 준비</h2>
             </div>
           </div>
+
+          <div
+            style={{
+              ...contentQualityBoxStyle,
+              borderColor: contentQuality.meetsInternalGuidance
+                ? "#86efac"
+                : "#fdba74",
+              background: contentQuality.meetsInternalGuidance
+                ? "#f0fdf4"
+                : "#fff7ed",
+            }}
+          >
+            <div style={contentQualityHeaderStyle}>
+              <strong>
+                사례 고유 본문 {contentQuality.characterCount.toLocaleString()}자
+              </strong>
+              <span
+                style={{
+                  ...contentQualityBadgeStyle,
+                  background: contentQuality.meetsInternalGuidance
+                    ? "#dcfce7"
+                    : "#ffedd5",
+                  color: contentQuality.meetsInternalGuidance
+                    ? "#166534"
+                    : "#9a3412",
+                }}
+              >
+                {contentQuality.meetsInternalGuidance
+                  ? "상세 본문 준비"
+                  : "보완 권장"}
+              </span>
+            </div>
+
+            {contentQuality.meetsInternalGuidance ? (
+              <p style={contentQualityTextStyle}>
+                네 단계에 실제 사례 설명이 고르게 포함되어 있습니다. 반복 문장이나
+                과장 표현이 없는지 마지막으로 확인해주세요.
+              </p>
+            ) : (
+              <p style={contentQualityTextStyle}>
+                네이버가 정한 최소 글자 수는 없습니다. 이 수치는 등록을 막는 기준이
+                아니라 작성 도움용 내부 점검입니다. 증상 발생 상황, 점검 판단 근거,
+                실제 작업 순서, 수리 후 테스트를 각 단계에 2~4문장씩 보완하면 다양한
+                검색 질문에 대응하기 좋습니다.
+              </p>
+            )}
+
+            {contentQuality.shortStageIndexes.length > 0 && (
+              <p style={contentQualityHintStyle}>
+                설명 보강 권장: {contentQuality.shortStageIndexes
+                  .map((index) => AUTHORING_STAGES[index]?.title)
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            )}
+
+            {contentQuality.repeatedParagraphs.length > 0 && (
+              <p style={contentQualityWarningStyle}>
+                같은 긴 문장이 여러 구간에서 반복됩니다. 각 단계에서 실제로 다른
+                내용을 적어주세요.
+              </p>
+            )}
+          </div>
+
+
 
           <div style={reviewGridStyle}>
             <div style={checklistStyle}>
@@ -2717,4 +2551,28 @@ const googleLinkStyle = {
 const neutralLinkStyle = {
   ...baseActionStyle,
   background: "#475569",
+};
+
+
+const stagePhotoIntroStyle = {
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "baseline",
+  gap: "12px",
+  marginTop: "14px",
+  marginBottom: "6px",
+  color: "#1e3a8a",
+};
+
+const stageUploadBoxStyle = {
+  ...uploadBoxStyle,
+  marginTop: "6px",
+  marginBottom: "16px",
+};
+
+const stagePhotoGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 310px), 1fr))",
+  gap: "16px",
+  marginTop: "12px",
 };
