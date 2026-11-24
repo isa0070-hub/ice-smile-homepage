@@ -267,7 +267,7 @@ function makeSymptomLabel(value = "", maxLength = 18) {
     [/(?:후면유리|뒷유리|백글라스)/u, /(파손|깨짐|금감)/u, "후면 유리 파손"],
     [
       /(?:화면|액정|전면유리)/u,
-      /(파손|깨짐|금감)/u,
+      /(파손|깨짐|깨지|깨졌|깨져|금감)/u,
       "액정 파손",
       /(?:파손되지않|파손(?:이|은|는)?없|파손아니|깨지지않|깨짐(?:이|은|는)?없|금(?:이)?없|금가지않)/u,
     ],
@@ -386,7 +386,10 @@ function makeTitleParts(draft, factLength) {
     factLength,
   );
 
-  return [branch, deviceModel, symptom, action, "수리사례"].filter(Boolean);
+  // Avoid headings such as "커넥터 수리 수리사례" without changing their intent.
+  const ending = /수리\s*$/u.test(action) ? "사례" : "수리사례";
+
+  return [branch, deviceModel, symptom, action, ending].filter(Boolean);
 }
 
 function dedupeTitleParts(parts = []) {
@@ -879,6 +882,13 @@ export function validateRepairCaseDraft(draft = {}, images = []) {
   const errors = [];
   const warnings = [];
   const checks = [];
+
+  // The saved category must match a clearly identified Surface device.
+  // This protects new records without silently rewriting existing case data.
+  const deviceIdentity = normalizeAuthoringText([draft.device, draft.model].filter(Boolean).join(" "));
+  if (/(?:서피스|surface)/iu.test(deviceIdentity) && draft.category !== "마이크로소프트 서피스") {
+    errors.push("서피스 기기는 카테고리를 '마이크로소프트 서피스'로 선택해주세요.");
+  }
 
   requiredFields.forEach(([key, label]) => {
     const complete = Boolean(normalizeAuthoringText(draft[key]));
