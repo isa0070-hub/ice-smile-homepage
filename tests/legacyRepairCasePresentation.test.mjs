@@ -79,3 +79,20 @@ test("distinct iPad 9th-generation cases keep distinct metadata", () => {
   assert.ok(Array.from(nowonDescription).length <= 155);
   assert.ok(Array.from(songpaDescription).length <= 155);
 });
+
+test("only known malformed stored titles are corrected while URLs remain unchanged", () => {
+  const brokenIphone = "강변점 아이폰16프로 화장실 타일 바닥에 를 떨어뜨린 액정 교체 수리사례";
+  const brokenTablet = "선릉점 태블릿 PC T830 터치 불량 커넥터 수리 수리사례";
+  assert.equal(
+    getLegacyRepairCaseTitle("iphone-16-pro-screen-replacement", brokenIphone),
+    "강변점 아이폰16프로 전면 유리 파손·액정 교체 사례",
+  );
+  assert.equal(
+    getLegacyRepairCaseTitle("pct830-touch-issue-repair", brokenTablet),
+    "선릉점 태블릿 PC T830 터치 불량 커넥터 수리사례",
+  );
+  assert.equal(
+    getLegacyRepairCaseTitle("iphone-16-pro-screen-replacement", "수동 검토 후 수정한 정상 제목"),
+    "",
+  );
+});
