@@ -31,6 +31,7 @@ import {
   buildRepairCaseSearchSummary,
   buildRepairCaseTitle,
   getRepairCaseSectionFactSummary,
+  getRepairCaseVerificationSummary,
 } from "@/lib/repairCaseAuthoring";
 import {
   findRepresentativeDetailImage,
@@ -292,7 +293,9 @@ function getFactualCaseSections(item) {
     if (role && !byRole[role]) {
       byRole[role] = {
         ...section,
-        content: getRepairCaseSectionFactSummary(section),
+        content: role === "verification"
+          ? getRepairCaseVerificationSummary(section)
+          : getRepairCaseSectionFactSummary(section),
       };
     }
   });
