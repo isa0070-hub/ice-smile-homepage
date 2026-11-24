@@ -13,11 +13,19 @@ const LEGACY_REPAIR_CASE_TITLES = Object.freeze({
     "선릉점 아이폰 15프로 액정 파손·녹색줄 교체 수리 사례",
   "iphone-15-pro-screen-touch-issue-replacement":
     "선릉점 아이폰15프로 화면 떨림·터치 불량 정품 액정 교체 수리사례",
+  "iphone-16-pro-screen-replacement":
+    "강변점 아이폰16프로 전면 유리 파손·액정 교체 사례",
+  "pct830-touch-issue-repair":
+    "선릉점 태블릿 PC T830 터치 불량 커넥터 수리사례",
 });
 
 const CONDITIONAL_REVIEWED_TITLE_SOURCES = Object.freeze({
   "iphone-15-pro-screen-touch-issue-replacement":
     "선릉점 아이폰15프로 터치 불량 정품액정 교체를 원하셨고 정품과 수리사례",
+  "iphone-16-pro-screen-replacement":
+    "강변점 아이폰16프로 화장실 타일 바닥에 를 떨어뜨린 액정 교체 수리사례",
+  "pct830-touch-issue-repair":
+    "선릉점 태블릿 PC T830 터치 불량 커넥터 수리 수리사례",
 });
 
 const LOCATION_NAMES = [
