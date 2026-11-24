@@ -709,6 +709,18 @@ export function getRepairCaseSectionFactSummary(section = {}) {
   return storedSummary || String(section?.content || "").trim();
 }
 
+/**
+ * The completion summary describes only verified functional results.
+ * Optional on-site notes remain in the full section body, but do not
+ * leak into the summary or generated search description.
+ */
+export function getRepairCaseVerificationSummary(section = {}) {
+  const fact = getRepairCaseSectionFactSummary(section);
+  return normalizeAuthoringBodyText(fact)
+    .split(/(?:\n\s*\n|\s+)현장\s*특이사항\s*:\s*/u)[0]
+    .trim();
+}
+
 function countBodyCharacters(value = "") {
   return Array.from(normalizeAuthoringBodyText(value).replace(/\s+/gu, ""))
     .length;
