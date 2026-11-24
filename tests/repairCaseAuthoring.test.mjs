@@ -16,6 +16,7 @@ import {
   getDeviceModelLabel,
   analyzeRepairCaseContentQuality,
   getRepairCaseSectionFactSummary,
+  getRepairCaseVerificationSummary,
   normalizeAuthoringBodyText,
   normalizeAuthoringText,
   parseRepairCaseContentSections,
@@ -752,4 +753,58 @@ test("validation warns about exaggerated or unverifiable claims without hiding t
     assert.ok(warningText.includes(claim), `${claim} warning should be present`);
   }
   assert.match(warningText, /대표 수리 사진을 추가/u);
+});
+
+test("fall onto tile resulting in cracked front glass yields a factual screen-damage title", () => {
+  const draft = {
+    branch: "강변점",
+    category: "애플",
+    device: "아이폰",
+    model: "아이폰16프로",
+    symptom: "화장실 타일 바닥에 아이폰16프로를 떨어뜨린 뒤 전면 유리가 깨지고 화면이 제대로 표시되지 않는 증상으로 접수했습니다.",
+    repairAction: "파손된 액정을 분리하고 새 액정을 교체했습니다.",
+  };
+  const title = buildRepairCaseTitle(draft);
+  const summary = buildRepairCaseSearchSummary(draft);
+  assert.match(title, /아이폰16프로 액정 파손/u);
+  assert.match(title, /액정 교체/u);
+  assert.doesNotMatch(title, /바닥에 를|증상으로 접수/u);
+  assert.match(summary, /액정 파손/u);
+});
+
+test("a completed repair-action name is not duplicated before the case suffix", () => {
+  const draft = {
+    branch: "선릉점",
+    category: "노트북 및 태블릿",
+    device: "태블릿 PC",
+    model: "T830",
+    symptom: "갑자기 터치가 되지 않음",
+    repairAction: "액정 커넥터를 수리함",
+  };
+  const title = buildRepairCaseTitle(draft);
+  assert.match(title, /커넥터 수리 사례$/u);
+  assert.doesNotMatch(title, /수리 수리사례/u);
+});
+
+test("a Surface record in Apple category is rejected before it can be published", () => {
+  const record = {
+    ...completeDraft,
+    category: "애플",
+    device: "서피스랩탑",
+    model: "서피스랩탑4 1979",
+  };
+  const result = validateRepairCaseDraft(record, []);
+  assert.equal(result.isValid, false);
+  assert.ok(result.errors.some((e) => e.includes("서피스 기기")));
+});
+
+test("optional onsite notes remain in body but are excluded from verification summary", () => {
+  const full = "화면 출력과 터치가 정상입니다.\n\n현장 특이사항: 교체 후 추가 테이핑을 진행했습니다.";
+  assert.equal(getRepairCaseVerificationSummary({ content: full }),
+    "화면 출력과 터치가 정상입니다.");
+  assert.equal(getRepairCaseVerificationSummary({
+    content: full,
+    fact_summary: "정상 작동을 확인했습니다",
+  }), "정상 작동을 확인했습니다");
+  assert.match(full, /현장 특이사항/u);
 });
