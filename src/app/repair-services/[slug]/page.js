@@ -434,17 +434,19 @@ export default async function RepairServicePage({ params }) {
           </section>
         )}
 
-        {service.focusCase && (
-          <section style={styles.focusCase}>
+        {service.focusCases?.map(({ title, description, links }) => (
+          <section key={title} style={styles.focusCase}>
             <p style={styles.sectionLabel}>수리사례로 보는 점검 기준</p>
-            <h2 style={styles.focusCaseTitle}>{service.focusCase.title}</h2>
-            <p style={styles.paragraph}>{service.focusCase.description}</p>
+            <h2 style={styles.focusCaseTitle}>{title}</h2>
+            <p style={styles.paragraph}>{description}</p>
 
-            <Link href={service.focusCase.href} style={styles.focusCaseLink}>
-              {service.focusCase.linkLabel}
-            </Link>
+            {links.map(({ href, label }) => (
+              <Link key={href} href={href} style={styles.focusCaseLink}>
+                {label}
+              </Link>
+            ))}
           </section>
-        )}
+        ))}
 
         {caseDataAvailable && (
         <section style={styles.caseSection}>
@@ -790,7 +792,8 @@ const styles = {
   },
 
   focusCaseLink: {
-    display: "inline-block",
+    display: "block",
+    width: "fit-content",
     marginTop: "22px",
     color: "#1d4ed8",
     fontWeight: 900,

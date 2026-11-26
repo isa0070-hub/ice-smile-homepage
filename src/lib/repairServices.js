@@ -64,13 +64,19 @@ export const repairServices = {
       ],
     },
 
-    focusCase: {
-      title: "침수 뒤 재부팅·화면 불통은 무엇을 확인하나요?",
-      description:
-        "물이나 음료가 들어간 뒤 재부팅이나 화면 불통이 반복되면 충전과 반복 전원 시도를 멈춘 상태에서 화면·충전·전원 반응을 함께 확인해야 합니다. 외관 파손만으로 내부 상태를 단정하지 않고, 기기 상태와 부품 재고를 확인한 뒤 작업 범위를 안내합니다.",
-      href: "/repair-cases/iphone-15-screen-water-damage-no-display-repair",
-      linkLabel: "아이폰 15 침수 후 재부팅·화면 불통 점검 사례",
-    },
+    focusCases: [
+      {
+        title: "침수 뒤 재부팅·화면 불통은 무엇을 확인하나요?",
+        description:
+          "물이나 음료가 들어간 뒤 재부팅이나 화면 불통이 반복되면 충전과 반복 전원 시도를 멈춘 상태에서 화면·충전·전원 반응을 함께 확인해야 합니다. 외관 파손만으로 내부 상태를 단정하지 않고, 기기 상태와 부품 재고를 확인한 뒤 작업 범위를 안내합니다.",
+        links: [
+          {
+            href: "/repair-cases/iphone-15-screen-water-damage-no-display-repair",
+            label: "아이폰 15 침수 후 재부팅·화면 불통 점검 사례",
+          },
+        ],
+      },
+    ],
   },
 
   ipad: {
@@ -138,13 +144,30 @@ export const repairServices = {
       ],
     },
 
-    focusCase: {
-      title: "아이패드 침수·화면 무표시는 유리·패널·본체 상태를 구분합니다",
-      description:
-        "유리가 깨졌는지, 화면이 표시되는지, 터치가 반응하는지와 침수 여부는 서로 다른 점검 항목입니다. 겉으로 보이는 손상만으로 작업 범위를 정하지 않고 모델과 현재 기능 상태를 함께 확인합니다.",
-      href: "/repair-cases/ipad-pro-12-9-94th-screen-water-damage-no-display-repair",
-      linkLabel: "iPad Pro 12.9 4세대 침수 후 화면 무표시 점검 사례",
-    },
+    focusCases: [
+      {
+        title: "아이패드 침수·화면 무표시는 유리·패널·본체 상태를 구분합니다",
+        description:
+          "유리가 깨졌는지, 화면이 표시되는지, 터치가 반응하는지와 침수 여부는 서로 다른 점검 항목입니다. 겉으로 보이는 손상만으로 작업 범위를 정하지 않고 모델과 현재 기능 상태를 함께 확인합니다.",
+        links: [
+          {
+            href: "/repair-cases/ipad-pro-12-9-94th-screen-water-damage-no-display-repair",
+            label: "iPad Pro 12.9 4세대 침수 후 화면 무표시 점검 사례",
+          },
+        ],
+      },
+      {
+        title: "강변점 아이패드 프로 충전단자 교체",
+        description:
+          "충전이 끊기거나 케이블을 연결해도 충전 표시가 없으면, 케이블과 충전단자 상태부터 살피고 필요하면 내부 충전 회로도 점검합니다. 강변점에 들어온 아이패드 프로 12.9인치 5세대는 단자 부식이 확인돼 교체했고, 수리 후 정상 충전을 확인했습니다.",
+        links: [
+          {
+            href: "/repair-cases/ipad-pro-12-9-95th-charging-port-not-replacement",
+            label: "아이패드 프로 12.9 5세대 충전단자 교체 사례",
+          },
+        ],
+      },
+    ],
   },
 
   macbook: {
@@ -215,6 +238,20 @@ export const repairServices = {
         "화면·키보드·트랙패드·외부 화면 중 사용 가능한 기능과 침수 여부",
       ],
     },
+
+    focusCases: [
+      {
+        title: "맥북 침수 후 전원이 안 켜질 때 수리 비용은 어떻게 정해지나요?",
+        description:
+          "접수 후 액체가 들어간 범위와 부식 상태, 메인보드의 전원·충전 회로를 확인합니다. 세척 범위와 부품 수리·교체 필요 여부에 따라 수리 비용이 달라집니다. 자료가 중요하다면 접수할 때 알려 주세요. 데이터 접근 가능 여부는 내부 손상과 기기 상태를 점검한 뒤 안내합니다.",
+        links: [
+          {
+            href: "/repair-cases/macbook-pro-m2",
+            label: "선릉점 맥북 프로 M2 음료 침수·전원 불량 사례",
+          },
+        ],
+      },
+    ],
   },
 
   lenovo: {
@@ -379,6 +416,24 @@ export const repairServices = {
 
     notice:
       "서피스 제품은 모델별 분해 구조와 사용 부품이 다릅니다. 기기 뒷면의 모델번호와 현재 증상을 함께 알려주시면 보다 정확하게 확인할 수 있습니다.",
+
+    focusCases: [
+      {
+        title: "강남·선릉 서피스 수리와 방문 접수",
+        description:
+          "선릉점은 선릉역 1번 출구에서 걸어서 약 1분 거리에 있습니다. 서피스 프로의 배터리가 부풀어 화면이 들뜨거나 서피스 랩탑의 충전·전원이 작동하지 않으면, 방문 전 기기 뒷면 모델번호와 현재 증상을 알려 주세요. 모델에 따라 점검 범위와 부품 재고를 안내합니다.",
+        links: [
+          {
+            href: "/repair-cases/surface-pro-8-battery-swelling-no-power-cleaning",
+            label: "선릉점 서피스 프로 8 배터리 팽창·전원 불량 사례",
+          },
+          {
+            href: "/repair-cases/surface-laptop-3-microphone-no-power-not-charging-repair",
+            label: "선릉점 서피스 랩탑 3 충전·전원 불량 사례",
+          },
+        ],
+      },
+    ],
   },
 
   "notebook-tablet": {
