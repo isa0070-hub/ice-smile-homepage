@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SeolleungSurfaceInquiryLink } from "@/components/SeolleungSurfaceContactLinks";
 import styles from "./page.module.css";
 
 export const dynamic = "force-static";
@@ -89,13 +90,11 @@ export default function SeolleungIphoneLandingPage() {
             </span>
           </a>
 
-          <a
-            href="/contact?branch=seolleung&device=surface"
-            data-ga-contact="online_inquiry"
+          <SeolleungSurfaceInquiryLink
             className={styles.surfaceHeroOnline}
           >
             온라인으로 수리 접수하기
-          </a>
+          </SeolleungSurfaceInquiryLink>
 
           <div className={styles.surfaceHeroQuickLinks}>
             <a href="#seolleung-map">지도 바로 보기</a>
@@ -166,14 +165,12 @@ export default function SeolleungIphoneLandingPage() {
             </div>
 
             <div className={styles.onlineActionWrap}>
-              <Link
-                href="/contact?branch=seolleung&device=surface"
-                data-ga-contact="online_inquiry"
+              <SeolleungSurfaceInquiryLink
                 className={styles.onlineActionButton}
               >
                 <span className={styles.onlineActionIcon}>✎</span>
                 온라인으로 수리 접수하기
-              </Link>
+              </SeolleungSurfaceInquiryLink>
             </div>
 
             <div className={styles.secondaryActions}>

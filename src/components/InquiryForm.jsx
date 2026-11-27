@@ -7,6 +7,7 @@ import {
   trackGoogleLead,
 } from "@/components/GoogleAnalyticsTracker";
 import { trackNaverLead } from "@/components/NaverConversionTracker";
+import { isSeolleungSurfaceInquiry } from "@/lib/openAiAdsClick";
 import {
   createInquirySubmissionToken,
   submitOnlineInquiry,
@@ -32,6 +33,7 @@ export default function InquiryForm({
   autoFocus = false,
   initialPreferredBranch = "",
   initialDevice = "",
+  openAiAdsClickReference = "",
   onSubmitted,
 }) {
   const [form, setForm] = useState(() => ({
@@ -41,9 +43,13 @@ export default function InquiryForm({
     device: initialDevice || INITIAL_FORM.device,
   }));
   const [loading, setLoading] = useState(false);
+  const [adsMeasurementConsent, setAdsMeasurementConsent] = useState(false);
   const nameInputRef = useRef(null);
   const submissionTokenRef = useRef(null);
   const startedRef = useRef(false);
+  const canMeasureAdInquiry =
+    openAiAdsClickReference &&
+    isSeolleungSurfaceInquiry(form.preferred_branch, form.device);
 
   useEffect(() => {
     trackGoogleInquiryEvent("inquiry_form_view", {
@@ -93,8 +99,15 @@ export default function InquiryForm({
     }
 
     try {
+      const inquiry = canMeasureAdInquiry && adsMeasurementConsent
+        ? {
+            ...form,
+            ads_measurement_consent: true,
+            openai_ads_oppref: openAiAdsClickReference,
+          }
+        : form;
       const result = await submitOnlineInquiry(
-        form,
+        inquiry,
         submissionTokenRef.current
       );
 
@@ -293,6 +306,21 @@ export default function InquiryForm({
       <p style={styles.consentHelp}>
         접수 정보는 수리 상담 및 접수 처리 외에는 사용하지 않습니다.
       </p>
+
+      {canMeasureAdInquiry && (
+        <label style={styles.consentLabel}>
+          <input
+            type="checkbox"
+            checked={adsMeasurementConsent}
+            onChange={(event) => setAdsMeasurementConsent(event.target.checked)}
+          />
+          <span>
+            광고 성과 측정에 동의합니다 (선택). 접수 완료 시 광고 클릭 식별자,
+            무작위 이벤트 식별자, 접수 여부와 시각을 OpenAI에 전송합니다.
+            성함, 연락처, 문의 내용은 전송하지 않습니다. 동의하지 않아도 접수할 수 있습니다.
+          </span>
+        </label>
+      )}
 
       <button
         type="submit"

@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import {
   adminErrorResponse,
   adminSuccessResponse,
@@ -16,6 +17,7 @@ import {
   validateSubmissionToken,
 } from "@/lib/onlineInquiries";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { createOpenAiAdsLead, sendOpenAiAdsLead } from "@/lib/openAiAdsLead";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -198,6 +200,15 @@ export async function POST(request) {
 
   if (!insertion.inserted) {
     return publicResponse({ ok: true, inserted: false, duplicate: true });
+  }
+
+  const adsLead = createOpenAiAdsLead(
+    parsedBody.value,
+    validation.inquiry,
+    submissionToken,
+  );
+  if (adsLead) {
+    after(() => sendOpenAiAdsLead(adsLead));
   }
 
   try {

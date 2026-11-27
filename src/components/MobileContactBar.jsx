@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import PhoneContactButton from "@/components/PhoneContactButton";
+import { SeolleungSurfaceInquiryLink } from "@/components/SeolleungSurfaceContactLinks";
 import { branchSeo } from "@/lib/branchSeo";
 
 const EXCLUDED_PATHS = ["/admin", "/morning", "/login", "/api"];
@@ -30,6 +31,8 @@ export default function MobileContactBar() {
 
   if (isAdLanding && landingBranchSlug) {
     const branch = branchSeo[landingBranchSlug];
+    const isSeolleungSurface =
+      landingBranchSlug === "seolleung" && landingDeviceSlug === "surface";
 
     const contactParams = new URLSearchParams({
       branch: landingBranchSlug,
@@ -65,13 +68,19 @@ export default function MobileContactBar() {
             톡톡상담
           </a>
 
-          <Link
-            href={`/contact?${contactParams.toString()}`}
-            data-ga-contact="online_inquiry"
-            style={landingInquiryStyle}
-          >
-            온라인접수
-          </Link>
+          {isSeolleungSurface ? (
+            <SeolleungSurfaceInquiryLink style={landingInquiryStyle}>
+              온라인접수
+            </SeolleungSurfaceInquiryLink>
+          ) : (
+            <Link
+              href={`/contact?${contactParams.toString()}`}
+              data-ga-contact="online_inquiry"
+              style={landingInquiryStyle}
+            >
+              온라인접수
+            </Link>
+          )}
         </aside>
       </>
     );
