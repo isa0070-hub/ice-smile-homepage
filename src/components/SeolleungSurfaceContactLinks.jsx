@@ -4,19 +4,6 @@ import { useSyncExternalStore } from "react";
 import { getOpenAiAdsClickReference } from "@/lib/openAiAdsClick";
 
 const contactPath = "/contact?branch=seolleung&device=surface";
-const talkUrl = "https://talk.naver.com/ct/w189h6v?frm=mnmb&frm=nmb_detail#nafullscreen";
-
-export function SeolleungSurfaceTalkLink(props) {
-  return (
-    <a
-      {...props}
-      href={talkUrl}
-      target="_blank"
-      rel="noreferrer"
-      data-ga-contact="naver_talk"
-    />
-  );
-}
 
 function subscribeToBrowserHistory(onChange) {
   window.addEventListener("popstate", onChange);

@@ -1,8 +1,5 @@
 import Link from "next/link";
-import {
-  SeolleungSurfaceInquiryLink,
-  SeolleungSurfaceTalkLink,
-} from "@/components/SeolleungSurfaceContactLinks";
+import { SeolleungSurfaceInquiryLink } from "@/components/SeolleungSurfaceContactLinks";
 import styles from "./page.module.css";
 
 export const dynamic = "force-static";
@@ -79,7 +76,11 @@ export default function SeolleungIphoneLandingPage() {
             </span>
           </a>
 
-          <SeolleungSurfaceTalkLink
+          <a
+            href="https://talk.naver.com/WCH5S2X"
+            target="_blank"
+            rel="noreferrer"
+            data-ga-contact="naver_talk"
             className={`${styles.surfaceHeroButton} ${styles.surfaceHeroTalk}`}
           >
             <span className={styles.surfaceHeroNaverIcon}>N</span>
@@ -87,7 +88,7 @@ export default function SeolleungIphoneLandingPage() {
               <strong>네이버 톡톡 상담</strong>
               <small>빠른 상담이 가능합니다</small>
             </span>
-          </SeolleungSurfaceTalkLink>
+          </a>
 
           <SeolleungSurfaceInquiryLink
             className={styles.surfaceHeroOnline}
@@ -148,15 +149,19 @@ export default function SeolleungIphoneLandingPage() {
                 </span>
               </a>
 
-              <SeolleungSurfaceTalkLink
+              <a
+                href="https://talk.naver.com/WCH5S2X"
+                target="_blank"
+                rel="noreferrer"
                 className={`${styles.mainButton} ${styles.talkButton}`}
+                data-ga-contact="naver_talk"
               >
                 <span className={styles.naverIcon}>N</span>
                 <span>
                   <strong>네이버 톡톡 상담</strong>
                   <small>빠른 상담이 가능합니다</small>
                 </span>
-              </SeolleungSurfaceTalkLink>
+              </a>
             </div>
 
             <div className={styles.onlineActionWrap}>
@@ -251,9 +256,15 @@ export default function SeolleungIphoneLandingPage() {
                 전화 상담
               </a>
 
-              <SeolleungSurfaceTalkLink className={styles.branchTalk}>
+              <a
+                href="https://talk.naver.com/WCH5S2X"
+                target="_blank"
+                rel="noreferrer"
+                data-ga-contact="naver_talk"
+                className={styles.branchTalk}
+              >
                 네이버 톡톡
-              </SeolleungSurfaceTalkLink>
+              </a>
             </div>
           </div>
         </div>
@@ -331,9 +342,14 @@ export default function SeolleungIphoneLandingPage() {
             전화 상담하기
           </a>
 
-          <SeolleungSurfaceTalkLink>
+          <a
+            href="https://talk.naver.com/WCH5S2X"
+            target="_blank"
+            rel="noreferrer"
+            data-ga-contact="naver_talk"
+          >
             네이버 톡톡 상담
-          </SeolleungSurfaceTalkLink>
+          </a>
         </div>
       </section>
     </main>
