@@ -4,6 +4,7 @@ import { Suspense } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import InquiryForm from "@/components/InquiryForm"
+import { getOpenAiAdsClickReference } from "@/lib/openAiAdsClick"
 
 const BRANCH_PREFILLS = Object.freeze({
   gangbyeon: "강변점",
@@ -34,14 +35,21 @@ function ContactFormFromQuery() {
     DEVICE_PREFILLS,
     searchParams?.get("device"),
   )
+  const openAiAdsClickReference =
+    process.env.NEXT_PUBLIC_OPENAI_ADS_PIXEL_ID &&
+    preferredBranch === "선릉점" &&
+    device === "서피스"
+      ? getOpenAiAdsClickReference(searchParams?.get("oppref"))
+      : ""
 
   return (
     <InquiryForm
-      key={`${preferredBranch}:${device}`}
+      key={`${preferredBranch}:${device}:${openAiAdsClickReference}`}
       formLocation="contact_page"
       idPrefix="contact"
       initialPreferredBranch={preferredBranch}
       initialDevice={device}
+      openAiAdsClickReference={openAiAdsClickReference}
     />
   )
 }

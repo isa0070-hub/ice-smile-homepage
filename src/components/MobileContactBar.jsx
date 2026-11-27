@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import PhoneContactButton from "@/components/PhoneContactButton";
+import {
+  SeolleungSurfaceInquiryLink,
+  SeolleungSurfaceTalkLink,
+} from "@/components/SeolleungSurfaceContactLinks";
 import { branchSeo } from "@/lib/branchSeo";
 
 const EXCLUDED_PATHS = ["/admin", "/morning", "/login", "/api"];
@@ -30,6 +34,8 @@ export default function MobileContactBar() {
 
   if (isAdLanding && landingBranchSlug) {
     const branch = branchSeo[landingBranchSlug];
+    const isSeolleungSurface =
+      landingBranchSlug === "seolleung" && landingDeviceSlug === "surface";
 
     const contactParams = new URLSearchParams({
       branch: landingBranchSlug,
@@ -55,23 +61,35 @@ export default function MobileContactBar() {
             전화상담
           </a>
 
-          <a
-            href="https://talk.naver.com/WCH5S2X"
-            target="_blank"
-            rel="noreferrer"
-            data-ga-contact="naver_talk"
-            style={landingTalkStyle}
-          >
-            톡톡상담
-          </a>
-
-          <Link
-            href={`/contact?${contactParams.toString()}`}
-            data-ga-contact="online_inquiry"
-            style={landingInquiryStyle}
-          >
-            온라인접수
-          </Link>
+          {isSeolleungSurface ? (
+            <>
+              <SeolleungSurfaceTalkLink style={landingTalkStyle}>
+                톡톡상담
+              </SeolleungSurfaceTalkLink>
+              <SeolleungSurfaceInquiryLink style={landingInquiryStyle}>
+                온라인접수
+              </SeolleungSurfaceInquiryLink>
+            </>
+          ) : (
+            <>
+              <a
+                href="https://talk.naver.com/WCH5S2X"
+                target="_blank"
+                rel="noreferrer"
+                data-ga-contact="naver_talk"
+                style={landingTalkStyle}
+              >
+                톡톡상담
+              </a>
+              <Link
+                href={`/contact?${contactParams.toString()}`}
+                data-ga-contact="online_inquiry"
+                style={landingInquiryStyle}
+              >
+                온라인접수
+              </Link>
+            </>
+          )}
         </aside>
       </>
     );
